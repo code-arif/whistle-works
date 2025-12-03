@@ -25,9 +25,11 @@
                 </li>
              
                  <li class="slide">
-                    <a class="side-menu__item {{  request()->routeIs('admin.festival.*') ? 'has-link active' : '' }}" href="{{ route('admin.festival.index') }}">
-                         <i class="fa-solid fa-church side-menu__icon"></i>
-                        <span class="side-menu__label">Festival</span>
+                    <a class="side-menu__item {{  request()->routeIs('admin.sports-type.*') ? 'has-link active' : '' }}" href="{{ route('admin.sports-type.index') }}">
+
+                         <i id="sportsIcon" class="fa-solid side-menu__icon"></i>
+                         <span class="side-menu__label">Sports Type</span>
+
                     </a>
                 </li> 
                
@@ -167,4 +169,41 @@
         </div>
     </div>
 </div>
+
+<script>
+    const sportsIcons = [
+        "fa-football"
+        , "fa-basketball"
+        , "fa-baseball"
+        , "fa-volleyball"
+        , "fa-table-tennis"
+        , "fa-dumbbell"
+        , "fa-golf-ball-tee"
+        , "fa-hockey-puck"
+    ];
+
+    const iconElement = document.getElementById("sportsIcon");
+
+    function changeIcon() {
+        // Remove previous icon classes
+        sportsIcons.forEach(icon => iconElement.classList.remove(icon));
+
+        // Pick a random icon
+        const randomIcon = sportsIcons[Math.floor(Math.random() * sportsIcons.length)];
+
+        // Add new icon
+        iconElement.classList.add(randomIcon);
+    }
+
+    // Change every 2 seconds
+    setInterval(changeIcon, 2000);
+
+    // Set one icon instantly on load
+    changeIcon();
+
+</script>
+
+
+
+
 <!--/APP-SIDEBAR-->

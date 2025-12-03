@@ -12,7 +12,6 @@ use App\Http\Controllers\Web\Backend\ImageController;
 use App\Http\Controllers\Web\Backend\OrderController;
 use App\Http\Controllers\Web\Backend\BookingController;
 use App\Http\Controllers\Web\Backend\ContactController;
-use App\Http\Controllers\Web\Backend\ProductController;
 use App\Http\Controllers\Web\Backend\CategoryController;
 use App\Http\Controllers\Web\Backend\LivewireController;
 use App\Http\Controllers\Web\Backend\TemplateController;
@@ -34,22 +33,12 @@ use App\Http\Controllers\Web\Backend\Settings\ProfileController;
 use App\Http\Controllers\Web\Backend\Settings\SettingController;
 use App\Http\Controllers\Web\Backend\Access\PermissionController;
 use App\Http\Controllers\Web\Backend\Settings\FirebaseController;
-use App\Http\Controllers\Web\Backend\Boosting\BoostPlanController;
 use App\Http\Controllers\Web\Backend\Settings\GoogleMapController;
 use App\Http\Controllers\Web\Backend\Settings\SignatureController;
 use App\Http\Controllers\Web\Backend\Settings\MailSettingController;
-use App\Http\Controllers\Web\Backend\Boosting\BoostingListController;
-use App\Http\Controllers\Web\Backend\CMS\Web\Home\HomeAboutController;
-use App\Http\Controllers\Web\Backend\CMS\Web\Home\HomeIntroController;
-use App\Http\Controllers\Web\Backend\AdminRefund\AdminRefundController;
-use App\Http\Controllers\Web\Backend\CMS\Web\Home\HomeBannerController;
-use App\Http\Controllers\Web\Backend\CMS\Web\HowitWorks\HeroController;
-use App\Http\Controllers\Web\Backend\CMS\Web\Home\HomeExampleController;
-use App\Http\Controllers\Web\Backend\CMS\Web\HowitWorks\SafelyShopController;
-use App\Http\Controllers\Web\Backend\ProductUploadsTips\UploadTipsController;
-use App\Http\Controllers\Web\Backend\CMS\Web\HowitWorks\SimpleSellingController;
 use App\Http\Controllers\Web\Backend\CMS\Web\PrivacyTerms\PrivacAndTermsController;
 use App\Http\Controllers\Web\Backend\FestivalController;
+use App\Http\Controllers\Web\Backend\SportsType\SportsTypeController;
 
 Route::get("dashboard", [DashboardController::class, 'index'])->name('dashboard');
 
@@ -113,7 +102,7 @@ Route::controller(ProductBrandController::class)->prefix('brand')->name('brand.'
 });
 
 
-Route::controller(FestivalController::class)->prefix('festival')->name('festival.')->group(function () {
+Route::controller(SportsTypeController::class)->prefix('sports-type')->name('sports-type.')->group(function () {
     Route::get('/', 'index')->name('index');
     Route::get('/create', 'create')->name('create');
     Route::post('/store', 'store')->name('store');
@@ -194,10 +183,10 @@ Route::controller(ContactController::class)->prefix('contact')->name('contact.')
 * Transaction
 */
 
-Route::controller(TransactionController::class)->prefix('transaction')->name('transaction.')->group(function () {
-    Route::get('/{user_id?}', 'index')->name('index');
-    Route::get('/show/{id}', 'show')->name('show');
-});
+// Route::controller(TransactionController::class)->prefix('transaction')->name('transaction.')->group(function () {
+//     Route::get('/{user_id?}', 'index')->name('index');
+//     Route::get('/show/{id}', 'show')->name('show');
+// });
 
 
 /*
