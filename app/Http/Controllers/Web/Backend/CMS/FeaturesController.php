@@ -27,7 +27,7 @@ class FeaturesController extends Controller
                     $image = $item->image && file_exists(public_path($item->image))
                         ? asset($item->image)
                         : asset('default/no image.webp');
-                    return '<img src="' . $image . '" alt="Image" width="40" style="border: 2px solid #eee">';
+                    return '<img src="' . $image . '" alt="Image" width="40" style="border: 2px solid #eee; background: #00aeefe6;">';
                 })
 
                 ->addColumn('title', fn($item) => ucfirst($item->title))
@@ -62,14 +62,16 @@ class FeaturesController extends Controller
     public function store(CmsRequest $request)
     {
         try {
-            $validated_data = $request->validated();
+            $validated = $request->validated();
 
-            CMS::where([
-                'page' => 'home',
-                'section' => 'features',
-                'name' => 'item',
-            ])->update($validated_data);
-
+            CMS::updateOrCreate(
+                [
+                    'page'    => 'home',
+                    'section' => 'features',
+                    'name'    => 'item',
+                ],
+                $validated
+            );
 
             return back()->with('t-success', 'Content updated successfully!');
         } catch (Exception $e) {

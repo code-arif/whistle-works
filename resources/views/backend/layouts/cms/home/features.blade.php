@@ -22,9 +22,8 @@
                         </ol>
                     </div>
                 </div>
+                
                 {{-- PAGE-HEADER --}}
-
-
                 <div class="row">
                     {{-- how it works  need section --}}
                     <div class="col-lg-4 col-xl-4 col-md-12 col-sm-12">
