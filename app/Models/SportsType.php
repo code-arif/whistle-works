@@ -11,4 +11,6 @@ class SportsType extends Model
         'icon',
         'status',
     ];
+
+    protected $hidden = ['created_at','updated_at','icon'];
 }
