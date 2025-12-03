@@ -74,17 +74,65 @@ class Campcontroller extends Controller
     }
 
     // Edit Camp
-    public function editCamp(Request $request, $id)
+    public function updateCamp(Request $request, $id)
     {
-       $authUser = auth('api')->user();
-       $camp = Camp::where('id', $id)->where('director_id', $authUser->id)->first();
-       if (!$camp) {
-           return response()->json([
-               'status'  => false,
-               'message' => 'Camp not found or you do not have permission to edit this camp.',
-           ], 404);
-       }
+        $user = auth('api')->user();
 
-       
+        // Find the camp
+        $camp = Camp::where('id', $id)->where('director_id', $user->id)->first();
+        if (!$camp) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Camp not found.',
+            ], 404);
+        }
+
+        // Validate only the fields that exist in the request
+        $validated = $request->validate([
+            'camp_name'       => 'sometimes|string|max:255',
+            'location'        => 'sometimes|string|max:255',
+            'start_date'      => 'sometimes|date',
+            'end_date'        => 'sometimes|date|after_or_equal:start_date',
+            'camp_details'    => 'sometimes|string',
+            'price'           => 'sometimes|numeric',
+            'sports_type_id'  => 'sometimes|exists:sports_types,id',
+            'camp_logo'       => 'sometimes|image|max:2048',
+        ]);
+
+        // Update sports type if provided
+        if ($request->filled('sports_type_id')) {
+            $sportsType = SportsType::find($request->sports_type_id);
+            if ($sportsType) {
+                $camp->sports_type_id   = $sportsType->id;
+                $camp->sports_type_name = $sportsType->sports_name;
+            }
+        }
+
+        // Update camp logo if uploaded
+        if ($request->hasFile('camp_logo')) {
+            // Delete old logo if exists
+            if ($camp->camp_logo) {
+                UploadFile::deleteImage($camp->camp_logo);
+            }
+            $camp->camp_logo = UploadFile::uploadFiles(
+                $request->file('camp_logo'),
+                'uploads/camp_logos'
+            );
+        }
+
+        // Update other fields dynamically if present
+        $fields = ['camp_name', 'location', 'start_date', 'end_date', 'camp_details', 'price'];
+        foreach ($fields as $field) {
+            if ($request->filled($field)) {
+                $camp->$field = $request->$field;
+            }
+        }
+
+        $camp->save();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Camp updated successfully.',
+        ], 200);
     }
 }
