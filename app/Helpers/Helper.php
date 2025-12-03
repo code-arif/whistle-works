@@ -13,13 +13,13 @@ use Kreait\Firebase\Messaging\Notification;
 class Helper
 {
     //! File or Image Upload
-    public static function fileUpload($file, string $folder, string $name): ?string
+    public static function fileUpload($file, $folder): ?string
     {
         if (!$file->isValid()) {
             return null;
         }
 
-        $imageName = Str::slug($name) . '.' . $file->extension();
+        $imageName = time() . '-' . Str::random(5) . '.' . $file->getClientOriginalExtension();
         $path      = public_path('uploads/' . $folder);
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
@@ -116,5 +116,4 @@ class Helper
         }
         return;
     }
-
 }

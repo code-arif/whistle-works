@@ -13,15 +13,18 @@ use App\Http\Controllers\Web\Backend\OrderController;
 use App\Http\Controllers\Web\Backend\BookingController;
 use App\Http\Controllers\Web\Backend\ContactController;
 use App\Http\Controllers\Web\Backend\CategoryController;
+use App\Http\Controllers\Web\Backend\FestivalController;
 use App\Http\Controllers\Web\Backend\LivewireController;
 use App\Http\Controllers\Web\Backend\TemplateController;
 use App\Http\Controllers\Web\Backend\DashboardController;
+use App\Http\Controllers\Web\Backend\CMS\SliderController;
 use App\Http\Controllers\Web\Backend\SocialLinkController;
 use App\Http\Controllers\Web\Backend\SubscriberController;
 use App\Http\Controllers\Web\Backend\Access\RoleController;
 use App\Http\Controllers\Web\Backend\Access\UserController;
 use App\Http\Controllers\Web\Backend\SubcategoryController;
 use App\Http\Controllers\Web\Backend\TransactionController;
+use App\Http\Controllers\Web\Backend\CMS\HomePageController;
 use App\Http\Controllers\Web\Backend\ProductBrandController;
 use App\Http\Controllers\Web\Backend\Settings\EnvController;
 use App\Http\Controllers\Web\Backend\Settings\LogoController;
@@ -32,13 +35,13 @@ use App\Http\Controllers\Web\Backend\Settings\CaptchaController;
 use App\Http\Controllers\Web\Backend\Settings\ProfileController;
 use App\Http\Controllers\Web\Backend\Settings\SettingController;
 use App\Http\Controllers\Web\Backend\Access\PermissionController;
+use App\Http\Controllers\Web\Backend\CMS\FeaturesController;
 use App\Http\Controllers\Web\Backend\Settings\FirebaseController;
 use App\Http\Controllers\Web\Backend\Settings\GoogleMapController;
 use App\Http\Controllers\Web\Backend\Settings\SignatureController;
 use App\Http\Controllers\Web\Backend\Settings\MailSettingController;
-use App\Http\Controllers\Web\Backend\CMS\Web\PrivacyTerms\PrivacAndTermsController;
-use App\Http\Controllers\Web\Backend\FestivalController;
 use App\Http\Controllers\Web\Backend\SportsType\SportsTypeController;
+use App\Http\Controllers\Web\Backend\CMS\Web\PrivacyTerms\PrivacAndTermsController;
 
 Route::get("dashboard", [DashboardController::class, 'index'])->name('dashboard');
 
@@ -207,6 +210,29 @@ Route::prefix('cms')->name('cms.')->group(function () {
         Route::post('/trust-and-sefty/update', 'trustAndService')->name('trust-and-sefty.update');
     });
 
+    // home - hero section
+    Route::get('/home/hero', [HomePageController::class, 'heroIndex'])->name('home.hero.section');
+    Route::post('/home/hero/update', [HomePageController::class, 'heroUpdate'])->name('home.hero.section.update');
+
+    // home - training camp section
+    Route::get('/home/training-camp', [HomePageController::class, 'trainingCampIndex'])->name('home.training-camp.section');
+    Route::post('/home/training-camp/update', [HomePageController::class, 'trainingCampUpdate'])->name('home.training-camp.section.update');
+
+    // home page partner section Routes
+    Route::get('/home/partner', [SliderController::class, 'index'])->name('home.slider.index');
+    Route::post('/partner/update', [SliderController::class, 'headerUpdate'])->name('home.slider.header.update');
+    Route::post('/partner/store', [SliderController::class, 'store'])->name('home.slider.store');
+    Route::post('/partner/{id}/status', [SliderController::class, 'updateStatus'])->name('home.slider.status');
+    Route::delete('/partner/{id}', [SliderController::class, 'destroy'])->name('home.slider.destroy');
+    Route::post('/partner/update-order', [SliderController::class, 'updateOrder'])->name('home.slider.updateOrder');
+
+    // home page feature section
+    Route::get('/home/features', [FeaturesController::class, 'index'])->name('home.features.index');
+    Route::post('/home/features/store', [FeaturesController::class, 'store'])->name('home.features.store');
+    Route::post('/home/features/item/store', [FeaturesController::class, 'storeItem'])->name('home.features.item.store');
+    Route::get('/home/features/item/edit/{id}', [FeaturesController::class, 'editItem'])->name('home.features.item.edit');
+    Route::post('/home/features/item/update/{id}', [FeaturesController::class, 'updateItem'])->name('home.features.item.update');
+    Route::delete('/home/features/item/delete/{id}', [FeaturesController::class, 'destroy'])->name('home.features.item.destroy');
 });
 
 /*
