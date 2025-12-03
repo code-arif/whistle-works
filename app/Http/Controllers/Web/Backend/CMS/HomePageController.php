@@ -91,4 +91,45 @@ class HomePageController extends Controller
             return back()->with('t-error', 'Failed to update: ' . $e->getMessage());
         }
     }
+
+
+    /**
+     * show home page operation section data
+     */
+    public function operationIndex(Request $request)
+    {
+        $data = CMS::where('page', 'home')->where('section', 'operations')->where('name', 'item')->first();
+
+        return view("backend.layouts.cms.home.operations", compact(["data"]));
+    }
+
+
+    /**
+     * update operation section
+     **/
+    public function operationUpdate(CmsRequest $request)
+    {
+        try {
+            $validated_data = $request->validated();
+
+            // get the existing record
+            $existing = CMS::where('page', 'home')
+                ->where('section', 'operations')
+                ->where('name', 'item')
+                ->first();
+
+            CMS::updateOrCreate(
+                [
+                    'page' => 'home',
+                    'section' => 'operations',
+                    'name' => 'item'
+                ],
+                $validated_data
+            );
+
+            return back()->with('t-success', 'Content updated successfully!');
+        } catch (Exception $e) {
+            return back()->with('t-error', 'Failed to update: ' . $e->getMessage());
+        }
+    }
 }

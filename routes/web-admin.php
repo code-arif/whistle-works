@@ -24,18 +24,19 @@ use App\Http\Controllers\Web\Backend\Access\RoleController;
 use App\Http\Controllers\Web\Backend\Access\UserController;
 use App\Http\Controllers\Web\Backend\SubcategoryController;
 use App\Http\Controllers\Web\Backend\TransactionController;
+use App\Http\Controllers\Web\Backend\CMS\FeaturesController;
 use App\Http\Controllers\Web\Backend\CMS\HomePageController;
 use App\Http\Controllers\Web\Backend\ProductBrandController;
 use App\Http\Controllers\Web\Backend\Settings\EnvController;
 use App\Http\Controllers\Web\Backend\Settings\LogoController;
 use App\Http\Controllers\Web\Backend\Settings\OtherController;
+use App\Http\Controllers\Web\Backend\CMS\TestimonialController;
 use App\Http\Controllers\Web\Backend\Settings\SocialController;
 use App\Http\Controllers\Web\Backend\Settings\StripeController;
 use App\Http\Controllers\Web\Backend\Settings\CaptchaController;
 use App\Http\Controllers\Web\Backend\Settings\ProfileController;
 use App\Http\Controllers\Web\Backend\Settings\SettingController;
 use App\Http\Controllers\Web\Backend\Access\PermissionController;
-use App\Http\Controllers\Web\Backend\CMS\FeaturesController;
 use App\Http\Controllers\Web\Backend\Settings\FirebaseController;
 use App\Http\Controllers\Web\Backend\Settings\GoogleMapController;
 use App\Http\Controllers\Web\Backend\Settings\SignatureController;
@@ -233,6 +234,19 @@ Route::prefix('cms')->name('cms.')->group(function () {
     Route::get('/home/features/item/edit/{id}', [FeaturesController::class, 'editItem'])->name('home.features.item.edit');
     Route::post('/home/features/item/update/{id}', [FeaturesController::class, 'updateItem'])->name('home.features.item.update');
     Route::delete('/home/features/item/delete/{id}', [FeaturesController::class, 'destroy'])->name('home.features.item.destroy');
+
+    // home - hero operations
+    Route::get('/home/operations', [HomePageController::class, 'operationIndex'])->name('home.operation.section');
+    Route::post('/home/operations/update', [HomePageController::class, 'operationUpdate'])->name('home.operation.section.update');
+
+    // home page - testimonial section
+    Route::get('/home/testimonial', [TestimonialController::class, 'index'])->name('home.testimonial.section');
+    Route::post('/home/testimonial/update', [TestimonialController::class, 'update'])->name('home.testimonial.section.update');
+    Route::post('/reviews/store', [TestimonialController::class, 'store'])->name('reviews.store');
+    Route::get('/reviews/edit/{id}', [TestimonialController::class, 'edit'])->name('reviews.edit');
+    Route::get('/reviews/show/{id}', [TestimonialController::class, 'show'])->name('reviews.show'); // NEW
+    Route::post('/reviews/update/{id}', [TestimonialController::class, 'update'])->name('reviews.update');
+    Route::delete('/reviews/delete/{id}', [TestimonialController::class, 'destroy'])->name('reviews.destroy');
 });
 
 /*

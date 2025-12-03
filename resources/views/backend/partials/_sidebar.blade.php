@@ -148,7 +148,7 @@
                         <li><a href="{{ route('admin.cms.home.training-camp.section') }}" class="slide-item">Training Camps Section</a></li>
                         <li><a href="{{ route('admin.cms.home.slider.index') }}" class="slide-item">Partners Section</a></li>
                         <li><a href="{{ route('admin.cms.home.features.index') }}" class="slide-item">Features Section</a></li>
-                        <li><a href="{{ route('admin.cms.privecyandterms.privacy') }}" class="slide-item">Operations Section</a></li>
+                        <li><a href="{{ route('admin.cms.home.operation.section') }}" class="slide-item">Operations Section</a></li>
                         <li><a href="{{ route('admin.cms.privecyandterms.privacy') }}" class="slide-item">Testimonial Section</a></li>
                     </ul>
                 </li>
