@@ -10,6 +10,6 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
 Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function () {
     Route::controller(Campcontroller::class)->group(function () {
         Route::get('camp/sports-type', 'getSportsType');
+        Route::post('camp/create', 'createCamp');
     });
 });
- 
