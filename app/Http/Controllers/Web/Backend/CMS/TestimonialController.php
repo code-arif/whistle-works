@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Web\Backend\CMS;
 use Exception;
 use App\Models\CMS;
 use App\Models\Review;
+use App\Helpers\Helper;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Http\Requests\CmsRequest;
 use App\Http\Controllers\Controller;
+use App\Models\Testimonials;
 use Yajra\DataTables\Facades\DataTables;
 
 class TestimonialController extends Controller
@@ -19,14 +21,12 @@ class TestimonialController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $reviews = Review::latest('id')->get();
+            $reviews = Testimonials::latest('id')->get();
 
             return DataTables::of($reviews)
                 ->addIndexColumn()
                 ->addColumn('author_name', fn($row) => $row->author_name)
-                ->addColumn('review_text', fn($row) => Str::limit(strip_tags($row->review_text), 80, '...'))
-                ->addColumn('rating', fn($row) => $row->rating ?? '---')
-                ->addColumn('week_label', fn($row) => $row->week_label ?? '---')
+                ->addColumn('designation', fn($row) => $row->designation)
                 ->addColumn('author_avatar', function ($row) {
                     if ($row->author_avatar) {
                         return '<img src="' . asset($row->author_avatar) . '" alt="' . $row->author_name . '" width="80">';
@@ -50,7 +50,7 @@ class TestimonialController extends Controller
                 ->make(true);
         }
 
-        $count = Review::count();
+        $count = Testimonials::count();
         $data = CMS::where('page', 'home')->where('section', 'testimonial')->where('name', 'item')->first();
 
         return view('backend.layouts.cms.home.testimonial', compact(['count', 'data']));
@@ -118,7 +118,7 @@ class TestimonialController extends Controller
     }
 
     // Edit review
-    public function edit($id)
+    public function editReview($id)
     {
         try {
             $review = Review::find($id);
@@ -134,7 +134,7 @@ class TestimonialController extends Controller
     }
 
     // View review
-    public function show($id)
+    public function showReview($id)
     {
         try {
             $review = Review::find($id);
@@ -150,7 +150,7 @@ class TestimonialController extends Controller
     }
 
     // update review
-    public function update(Request $request, $id)
+    public function updateReview(Request $request, $id)
     {
         $review = Review::find($id);
         if (!$review) {
@@ -173,9 +173,9 @@ class TestimonialController extends Controller
             if ($request->hasFile('author_avatar')) {
                 // Delete old image
                 if ($review->author_avatar) {
-                    Helper::deleteImage($review->author_avatar);
+                    Helper::fileDelete($review->author_avatar);
                 }
-                $validatedData['author_avatar'] = Helper::uploadImage($request->file('author_avatar'), 'review/images');
+                $validatedData['author_avatar'] = Helper::fileUpload($request->file('author_avatar'), 'review/images');
             }
 
             $review->update($validatedData);
@@ -194,7 +194,7 @@ class TestimonialController extends Controller
     }
 
     // delete review
-    public function destroy($id)
+    public function destroyReview($id)
     {
         $review = Review::find($id);
         if (!$review) {

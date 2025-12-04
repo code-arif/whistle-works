@@ -240,13 +240,13 @@ Route::prefix('cms')->name('cms.')->group(function () {
     Route::post('/home/operations/update', [HomePageController::class, 'operationUpdate'])->name('home.operation.section.update');
 
     // home page - testimonial section
-    Route::get('/home/testimonial', [TestimonialController::class, 'index'])->name('home.testimonial.section');
-    Route::post('/home/testimonial/update', [TestimonialController::class, 'update'])->name('home.testimonial.section.update');
-    Route::post('/reviews/store', [TestimonialController::class, 'store'])->name('reviews.store');
-    Route::get('/reviews/edit/{id}', [TestimonialController::class, 'edit'])->name('reviews.edit');
-    Route::get('/reviews/show/{id}', [TestimonialController::class, 'show'])->name('reviews.show'); // NEW
-    Route::post('/reviews/update/{id}', [TestimonialController::class, 'update'])->name('reviews.update');
-    Route::delete('/reviews/delete/{id}', [TestimonialController::class, 'destroy'])->name('reviews.destroy');
+    Route::get('/home/testimonial', [TestimonialController::class, 'index'])->name('home.testimonial.index');
+    Route::post('/home/testimonial/update', [TestimonialController::class, 'update'])->name('home.testimonial.update');
+    Route::post('/reviews/store', [TestimonialController::class, 'storeReview'])->name('home.testimonial.item.store');
+    Route::get('/reviews/edit/{id}', [TestimonialController::class, 'editReview'])->name('home.testimonial.item.edit');
+    Route::get('/reviews/show/{id}', [TestimonialController::class, 'showReview'])->name('home.testimonial.item.show');
+    Route::post('/reviews/update/{id}', [TestimonialController::class, 'updateReview'])->name('home.testimonial.item.update');
+    Route::delete('/reviews/delete/{id}', [TestimonialController::class, 'destroyReview'])->name('home.testimonial.item.delete');
 });
 
 /*
