@@ -149,29 +149,6 @@
                                 <span class="text-danger error-text author_name_error"></span>
                             </div>
 
-                            <!-- Week Label -->
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Week Label</label>
-                                <input type="text" class="form-control" name="week_label" id="week_label"
-                                    placeholder="e.g., Week 1, Week 2">
-                                <span class="text-danger error-text week_label_error"></span>
-                            </div>
-
-                            <!-- Rating -->
-                            <div class="col-md-12 mb-3">
-                                <label class="form-label">Rating (1-5) <span class="text-danger">*</span></label>
-                                <div class="rating-stars block" id="rating">
-                                    <input type="number" readonly class="rating form-control d-none" name="rating"
-                                        id="rating_value" min="1" max="5" value="5">
-                                    <div class="stars">
-                                        @for ($i = 1; $i <= 5; $i++)
-                                            <i class="fa fa-star" data-rating="{{ $i }}"></i>
-                                        @endfor
-                                    </div>
-                                </div>
-                                <span class="text-danger error-text rating_error"></span>
-                            </div>
-
                             <!-- Review Text -->
                             <div class="col-md-12 mb-3">
                                 <label class="form-label">Review Text</label>
