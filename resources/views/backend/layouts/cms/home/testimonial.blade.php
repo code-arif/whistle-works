@@ -107,12 +107,13 @@
                                                 <th>#</th>
                                                 <th>Author</th>
                                                 <th>Designation</th>
-                                                <th>Review Text</th>
                                                 <th>Avatar</th>
                                                 <th>Action</th>
                                             </tr>
                                         </thead>
-                                        <tbody></tbody>
+                                        <tbody>
+                                            {{-- all data will pupulated here --}}
+                                        </tbody>
                                     </table>
                                 </div>
 
@@ -147,6 +148,14 @@
                                 <input type="text" class="form-control" name="author_name" id="author_name"
                                     placeholder="Enter author name">
                                 <span class="text-danger error-text author_name_error"></span>
+                            </div>
+
+                            {{-- Designations --}}
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Designation <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="designation" id="designation"
+                                    placeholder="Enter designation">
+                                <span class="text-danger error-text designation_error"></span>
                             </div>
 
                             <!-- Review Text -->
@@ -200,13 +209,8 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Week Label:</label>
-                            <p id="view_week_label" class="text-muted"></p>
-                        </div>
-
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label fw-bold">Rating:</label>
-                            <div id="view_rating_stars"></div>
+                            <label class="form-label fw-bold">Designation:</label>
+                            <p id="view_designation" class="text-muted"></p>
                         </div>
 
                         <div class="col-md-12 mb-3">
@@ -282,8 +286,6 @@
                 $('#reviewForm')[0].reset();
                 $('#reviewID').val('');
                 $('.error-text').text('');
-                $('#rating_value').val(5);
-                $('#rating .fa-star').removeClass('active').slice(0, 5).addClass('active');
                 $('.dropify').dropify('destroy').dropify();
                 $('#reviewSubmitBtn').prop('disabled', false).text('Save Review');
                 $('#reviewModal').modal('show');
@@ -355,16 +357,8 @@
                         $('#reviewModalLabel').text('Edit Review');
                         $('#reviewID').val(res.data.id);
                         $('#author_name').val(res.data.author_name);
+                        $('#designation').val(res.data.designation);
                         $('#review_text').val(res.data.review_text || '');
-                        $('#week_label').val(res.data.week_label || '');
-
-                        // Rating Stars
-                        let rating = res.data.rating || 5;
-                        $('#rating_value').val(rating);
-                        $('#rating .fa-star').removeClass('active');
-                        for (let i = 1; i <= rating; i++) {
-                            $(`#rating .fa-star[data-rating="${i}"]`).addClass('active');
-                        }
 
                         // Handle Dropify image
                         let imageInput = $('#author_avatar').dropify();
@@ -397,7 +391,7 @@
                 $.get(url, function(res) {
                     if (res.success) {
                         $('#view_author_name').text(res.data.author_name || 'N/A');
-                        $('#view_week_label').text(res.data.week_label || 'N/A');
+                        $('#view_designation').text(res.data.designation || 'N/A');
                         $('#view_review_text').text(res.data.review_text ||
                             'No review text provided');
 

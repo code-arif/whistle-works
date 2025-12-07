@@ -90,23 +90,22 @@ class TestimonialController extends Controller
     public function storeReview(Request $request)
     {
         $validatedData = $request->validate([
-            'author_name'   => 'required|string|max:100|unique:reviews,author_name',
+            'author_name'   => 'required|string|max:100|unique:testimonials,author_name',
             'review_text'   => 'nullable|string',
-            'rating'        => 'nullable|in:1,2,3,4,5',
-            'week_label'    => 'nullable|string|max:100',
+            'designation'   => 'nullable|string|max:100',
             'author_avatar' => 'nullable|image|max:5120',
         ]);
 
         try {
             // Handle image upload if provided
             if ($request->hasFile('author_avatar')) {
-                $validatedData['author_avatar'] = Helper::uploadImage($request->file('author_avatar'), 'review/images');
+                $validatedData['author_avatar'] = Helper::fileUpload($request->file('author_avatar'), 'testimonial/images');
             }
 
-            Review::create($validatedData);
+            Testimonials::create($validatedData);
             return response()->json([
                 'success' => true,
-                'message' => 'Review created successfully!',
+                'message' => 'Testimonial created successfully!',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
@@ -121,15 +120,15 @@ class TestimonialController extends Controller
     public function editReview($id)
     {
         try {
-            $review = Review::find($id);
+            $review = Testimonials::find($id);
 
             if (!$review) {
-                return response()->json(['success' => false, 'message' => 'Review not found.'], 404);
+                return response()->json(['success' => false, 'message' => 'Testimonial not found.'], 404);
             }
 
             return response()->json(['success' => true, 'data' => $review]);
         } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Failed to fetch review. ' . $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to fetch testimonial. ' . $e->getMessage()]);
         }
     }
 
@@ -137,34 +136,33 @@ class TestimonialController extends Controller
     public function showReview($id)
     {
         try {
-            $review = Review::find($id);
+            $review = Testimonials::find($id);
 
             if (!$review) {
-                return response()->json(['success' => false, 'message' => 'Review not found.'], 404);
+                return response()->json(['success' => false, 'message' => 'Testimonial not found.'], 404);
             }
 
             return response()->json(['success' => true, 'data' => $review]);
         } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Failed to fetch review. ' . $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to fetch testimonial. ' . $e->getMessage()]);
         }
     }
 
     // update review
     public function updateReview(Request $request, $id)
     {
-        $review = Review::find($id);
+        $review = Testimonials::find($id);
         if (!$review) {
             return response()->json([
                 'success' => false,
-                'message' => 'Review not found.'
+                'message' => 'Testimonial not found.'
             ], 404);
         }
 
         $validatedData = $request->validate([
-            'author_name'   => 'required|string|max:100|unique:reviews,author_name,' . $review->id,
+            'author_name'   => 'required|string|max:100|unique:testimonials,author_name,' . $review->id,
             'review_text'   => 'nullable|string',
-            'rating'        => 'nullable|in:1,2,3,4,5',
-            'week_label'    => 'nullable|string|max:100',
+            'designation'   => 'nullable|string|max:100',
             'author_avatar' => 'nullable|image|max:5120',
         ]);
 
@@ -175,19 +173,19 @@ class TestimonialController extends Controller
                 if ($review->author_avatar) {
                     Helper::fileDelete($review->author_avatar);
                 }
-                $validatedData['author_avatar'] = Helper::fileUpload($request->file('author_avatar'), 'review/images');
+                $validatedData['author_avatar'] = Helper::fileUpload($request->file('author_avatar'), 'testimonial/images');
             }
 
             $review->update($validatedData);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Review updated successfully!',
+                'message' => 'Testimonial updated successfully!',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update Review.',
+                'message' => 'Failed to update Testimonial.',
                 'error'   => $e->getMessage(),
             ], 500);
         }
@@ -196,18 +194,18 @@ class TestimonialController extends Controller
     // delete review
     public function destroyReview($id)
     {
-        $review = Review::find($id);
+        $review = Testimonials::find($id);
         if (!$review) {
             return response()->json([
                 'success' => false,
-                'message' => 'Review not found.'
+                'message' => 'Testimonial not found.'
             ], 404);
         }
 
         try {
             // Delete image if exists
             if ($review->author_avatar) {
-                Helper::deleteImage($review->author_avatar);
+                Helper::fileDelete($review->author_avatar);
             }
 
             $review->delete();

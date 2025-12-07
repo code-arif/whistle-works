@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\Frontend\Review\ReviewController;
 use App\Http\Controllers\Api\Frontend\Users\UsersListController;
 use App\Http\Controllers\Api\Frontend\Wishlist\WishlistController;
 use App\Http\Controllers\Api\Frontend\AddTocart\AddToCartController;
+use App\Http\Controllers\Api\Frontend\CMS\HomePageController;
 use App\Http\Controllers\Api\Gateway\Stripe\StripeOnBoardingController;
 use App\Http\Controllers\Api\Frontend\FestiveAlbum\FestiveAlbumController;
 
@@ -200,6 +201,9 @@ Route::middleware(['auth:api'])->controller(ReviewController::class)->group(func
     Route::post('/review-like/{reviewId}', 'likeReview');
     Route::post('/comment-like/{commentId}', 'likeComment');
 });
+
+//cms get api
+Route::get('/cms/home', [HomePageController::class, 'home']);
 
 
 

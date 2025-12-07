@@ -84,7 +84,7 @@ class SliderController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Slider Store Failed: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
@@ -108,7 +108,7 @@ class SliderController extends Controller
                 'success' => true,
                 'message' => 'Status updated successfully!'
             ], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Slider Status Update Failed: ' . $e->getMessage());
 
             return response()->json([
@@ -135,7 +135,7 @@ class SliderController extends Controller
                 'success' => true,
                 'message' => 'Slider deleted successfully!'
             ], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Slider Delete Failed: ' . $e->getMessage());
 
             return response()->json([
@@ -159,7 +159,7 @@ class SliderController extends Controller
                 'success' => true,
                 'message' => 'Order updated successfully!'
             ], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Slider Order Update Failed: ' . $e->getMessage());
 
             return response()->json([

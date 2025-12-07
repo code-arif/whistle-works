@@ -84,7 +84,7 @@ class PrivacAndTermsController extends Controller
      */
     public function whyDesiCarouselUpdate(Request $request)
     {
-        
+
         $request->validate([
             'description' => 'required',
         ]);
@@ -109,7 +109,7 @@ class PrivacAndTermsController extends Controller
 
     // trust and service
 
-    
+
      public function trustSefty()
     {
         $trust_and_sefty = PrivecyAndTerms::where('type', 'trust&service')->first();
@@ -118,7 +118,7 @@ class PrivacAndTermsController extends Controller
 
      public function trustAndService(Request $request)
     {
-        
+
         $request->validate([
             'description' => 'required',
         ]);
