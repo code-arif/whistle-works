@@ -2,26 +2,93 @@
 
 namespace Modules\Director\Models;
 
+use App\Models\User;
 use App\Models\SportsType;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-// use Modules\Director\Database\Factories\CampFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Camp extends Model
 {
-    use HasFactory;
+    protected $guarded = [];
+
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+    ];
 
     /**
-     * The attributes that are mass assignable.
+     * Get the director that owns the camp
      */
-    protected $fillable = ['director_id', 'sports_type_id', 'sports_type_name', 'camp_name', 'camp_logo', 'location', 'start_date', 'end_date', 'camp_details', 'price', 'status'];
-
-
-    /**
-     * Get the sports type associated with the camp.
-     */
-    public function sportsType()
+    public function director(): BelongsTo
     {
-        return $this->belongsTo(SportsType::class, 'sports_type_id');
+        return $this->belongsTo(User::class, 'director_id');
+    }
+
+    /**
+     * Get the sports type
+     */
+    public function sportsType(): BelongsTo
+    {
+        return $this->belongsTo(SportsType::class);
+    }
+
+    /**
+     * Get the camp's schedule
+     */
+    public function schedule(): HasOne
+    {
+        return $this->hasOne(Schedule::class);
+    }
+
+    /**
+     * Get checked-in referees
+     */
+    public function checkedInReferees(): HasMany
+    {
+        return $this->hasMany(CampRefereeCheckin::class);
+    }
+
+    /**
+     * Get camp logo URL
+     */
+    public function getCampLogoUrlAttribute()
+    {
+        return $this->camp_logo
+            ? asset('/' . $this->camp_logo)
+            : null;
+    }
+
+    /**
+     * Check if camp is active
+     */
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    /**
+     * Check if camp has started
+     */
+    public function hasStarted(): bool
+    {
+        return now()->gte($this->start_date);
+    }
+
+    /**
+     * Check if camp has ended
+     */
+    public function hasEnded(): bool
+    {
+        return now()->gt($this->end_date);
+    }
+
+    /**
+     * Get camp duration in days
+     */
+    public function getDurationAttribute(): int
+    {
+        return $this->start_date->diffInDays($this->end_date) + 1;
     }
 }
