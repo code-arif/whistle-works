@@ -13,25 +13,35 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->nullable();
             $table->string('first_name')->nullable();
+            $table->string('last_name')->nullable();
+            $table->string('address')->nullable();
             $table->string('username')->unique();
             $table->string('slug')->unique();
             $table->string('email')->unique();
+            $table->string('phone')->unique()->nullable();
+            $table->string('password')->nullable();
+            $table->text('biography')->nullable();
+
+
             $table->string('otp')->nullable();
             $table->timestamp('otp_expires_at')->nullable();
             $table->timestamp('otp_verified_at')->nullable();
             $table->longText('reset_password_token')->nullable();
             $table->timestamp('reset_password_token_expire_at')->nullable();
+
             $table->string('avatar')->nullable();
-            $table->string('password');
+
             $table->timestamp('last_activity_at')->nullable();
+
             $table->string('stripe_customer_id')->nullable();
             $table->string('stripe_account_id')->nullable();
             $table->float('balance')->nullable();
             $table->string('stripe_subscription_id')->nullable();
             $table->unsignedBigInteger('plan_id')->nullable();
+
             $table->enum('status', ['active', 'inactive'])->default('active');
+
             $table->rememberToken();
             $table->softDeletes();
             $table->timestamps();

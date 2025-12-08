@@ -89,20 +89,7 @@ Route::middleware(['auth:api'])->controller(ImageController::class)->prefix('aut
     Route::post('/store', 'store');
     Route::get('/delete/{id}', 'destroy');
 });
-Route::middleware(['auth:api'])->controller(FestiveAlbumController::class)->group(function () {
-    Route::post('/create-album', 'store');
-    Route::post('/update-album/{id}', 'update');
-    Route::get('/all-albums', 'allAlbums');
-    Route::get('/my-albums', 'myAlbums');
-    Route::get('/public-albums', 'getPublicAlbums');
-    Route::get('/private-albums', 'getPrivateAlbums');
-    Route::delete('/delete-image/{id}', 'deleteDocuments');
-    Route::delete('/delete-album/{id}', 'destroy');
 
-    Route::get('/album-details/{id}', 'albumDetails');
-
-    Route::get('/festival', 'getFestive');
-});
 
 // wishlist
 Route::middleware(['auth:api'])->controller(WishlistController::class)->group(function () {
@@ -115,12 +102,12 @@ Route::middleware(['auth:api'])->controller(WishlistController::class)->group(fu
 */
 Route::group(['middleware' => 'guest:api'], function ($router) {
     //register
-    Route::post('register', [RegisterController::class, 'register']);
-    Route::post('/verify-email', [RegisterController::class, 'VerifyEmail']);
-    Route::post('/resend-otp', [RegisterController::class, 'ResendOtp']);
-    Route::post('/verify-otp', [RegisterController::class, 'VerifyEmail']);
+    Route::post('/register', [RegisterController::class, 'register']); // done
+    Route::post('/verify-email', [RegisterController::class, 'VerifyEmail']); // done
+    Route::post('/resend-otp', [RegisterController::class, 'ResendOtp']); // done
+    Route::post('/verify-otp', [RegisterController::class, 'VerifyEmail']); // done
     //login
-    Route::post('login', [LoginController::class, 'login'])->name('api.login');
+    Route::post('/login', [LoginController::class, 'login'])->name('api.login'); // done
     //forgot password
     Route::post('/forget-password', [ResetPasswordController::class, 'forgotPassword']);
     Route::post('/otp-token', [ResetPasswordController::class, 'MakeOtpToken']);
@@ -131,12 +118,11 @@ Route::group(['middleware' => 'guest:api'], function ($router) {
 
 Route::group(['middleware' => ['auth:api', 'api-otp']], function ($router) {
     Route::get('/refresh-token', [LoginController::class, 'refreshToken']);
-    Route::post('/logout', [LogoutController::class, 'logout']);
-    Route::get('/user-details', [UserController::class, 'me']);
-    Route::get('/account/switch', [UserController::class, 'accountSwitch']);
-    Route::post('/update-profile', [UserController::class, 'updateProfile']);
-    Route::post('/update-avatar', [UserController::class, 'updateAvatar']);
-    Route::delete('/delete-profile', [UserController::class, 'destroy']);
+    Route::post('/logout', [LogoutController::class, 'logout']); // done
+    Route::get('/user-details', [UserController::class, 'me']); // done
+    Route::post('/update-profile', [UserController::class, 'updateProfile']); // done
+    Route::post('/update-avatar', [UserController::class, 'updateAvatar']); // done
+    Route::delete('/delete-profile', [UserController::class, 'destroy']); // done
     Route::post('/change-password', [UserController::class, 'changePassword']);
 });
 
@@ -204,10 +190,4 @@ Route::middleware(['auth:api'])->controller(ReviewController::class)->group(func
 
 //cms get api
 Route::get('/cms/home', [HomePageController::class, 'home']);
-
-
-
-// Festival
-
-Route::get('/festive', [FestiveAlbumController::class, 'getFestive']);
 

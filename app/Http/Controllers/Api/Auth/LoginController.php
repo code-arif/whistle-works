@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Helpers\Helper;
+use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Validator;
 
 class LoginController extends Controller
 {
+    use ApiResponse;
+
     public $select;
     public function __construct()
     {
@@ -20,69 +23,84 @@ class LoginController extends Controller
         $this->select = ['id', 'name', 'username', 'email', 'avatar', 'otp_verified_at', 'last_activity_at'];
     }
 
-    public function Login(Request $request)
+    /**
+     * User Login
+     */
+    public function login(Request $request)
     {
         try {
+            // Validate Request
             $validator = Validator::make($request->all(), [
                 'email'    => 'required|email|exists:users,email',
                 'password' => 'required|string|min:6',
             ]);
 
             if ($validator->fails()) {
-                return Helper::jsonResponse(false, 'Validation failed', 422, $validator->errors());
+                return $this->error($validator->errors(), 'Validation failed', 422);
             }
 
-            $user = User::where('email', $request->email);
+            // Find User
+            $user = User::where('email', $request->email)->first();
 
             if (!$user) {
-                return Helper::jsonResponse(false, 'User not found', 404);
+                return $this->error(null, 'User not found', 404);
             }
 
-            $user = $user->where('status', 'active')->first();
-
-            if (!$user) {
-                return Helper::jsonResponse(false, 'user is not active', 404);
+            // Check Active Status
+            if ($user->status !== 'active') {
+                return $this->error(null, 'User is not active', 403);
             }
 
-            //! Check the password
+            // Check Password
             if (!Hash::check($request->password, $user->password)) {
-                return Helper::jsonResponse(false, 'Invalid Credentials', 422);
-            }
-            
-            //? Check if the email is verified before login is successful
-            if (!$user->otp_verified_at) {
-                return Helper::jsonResponse(false, 'Email not verified. Please verify your email before logging in.', 403, ['is_otp_verified' => $user->isOtpVerified]);
-            }else{
-                $user->update([
-                    'otp'            => null,
-                    'otp_expires_at' => null,
-                    'reset_password_token' => null,
-                    'reset_password_token_expire_at' => null
-                ]);
+                return $this->error(null, 'Invalid credentials', 422);
             }
 
+            // Check Email Verification
+            if (!$user->otp_verified_at) {
+                return $this->error(
+                    ['is_otp_verified' => false],
+                    'Email not verified. Please verify your email before logging in.',
+                    403
+                );
+            }
+
+            // Clear OTP / Reset fields after verification
             $user->update([
-                'last_activity_at' => now(),
+                'otp'                              => null,
+                'otp_expires_at'                   => null,
+                'reset_password_token'             => null,
+                'reset_password_token_expire_at'   => null,
+                'last_activity_at'                 => now(),
             ]);
 
-            //* Generate token if email is verified
+            // Generate Token
             $token = auth('api')->login($user);
 
-            return response()->json([
-                'status'     => true,
-                'message'    => 'Login successful',
-                'code'       => 200,
-                'token_type' => 'bearer',
-                'user_id'    => $user->id,
+            // Success Response
+            return $this->success('Login successful', [
+                'user'       => [
+                    'id'          => $user->id,
+                    'email'       => $user->email,
+                    'username'    => $user->username,
+                    'name'        => $user->name,
+                    'first_name'  => $user->first_name,
+                    'last_name'   => $user->last_name,
+                    'avatar'      => $user->avatar,
+                    'address'     => $user->address,
+                    'status'      => $user->status,
+                    'role'        => $user->role ?? null,
+                    'biography'   => $user->biography,
+                ],
                 'token'      => $token,
+                'token_type' => 'bearer',
                 'expires_in' => auth('api')->factory()->getTTL() * 60,
-                
-            ], 200);
-
+            ]);
         } catch (Exception $e) {
-            return Helper::jsonResponse(false, 'An error occurred during login.', 500, ['error' => $e->getMessage()]);
+            return $this->error(['error' => $e->getMessage()], 'An error occurred during login', 500);
         }
     }
+
 
     public function refreshToken()
     {
@@ -102,5 +120,4 @@ class LoginController extends Controller
             'data' => auth('api')->user()
         ]);
     }
-
 }

@@ -14,15 +14,6 @@ trait ApiResponse
         ], $code);
     }
 
-    // public function error($message = null, $code = 500)
-    // {
-    //     return response()->json([
-    //         'success' => false,
-    //         'message' => $message,
-    //         'code'    => $code,
-    //     ], $code);
-    // }
-
     public function error($data, $message = null, $code = 500)
     {
         return response()->json([

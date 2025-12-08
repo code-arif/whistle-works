@@ -2,10 +2,11 @@
 
 namespace Modules\Director\Http\Controllers\Api\Schedule;
 
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
-use Modules\Director\Models\{Camp, CampRefereeCheckin};
+use Illuminate\Http\Request;
+use Modules\Director\Models\Camp;
+use App\Http\Controllers\Controller;
+use Modules\Director\Models\CampRefereeCheckin;
 
 class RefereeCheckinController extends Controller
 {

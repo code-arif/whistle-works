@@ -8,82 +8,119 @@ use App\Models\User;
 use App\Models\Artist;
 use App\Helpers\Helper;
 use App\Models\Festival;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\AlbumForUserResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Resources\MyalbumResource;
 use App\Http\Resources\AllAlbumResource;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Resources\AlbumForUserResource;
 
 class UserController extends Controller
 {
+    use ApiResponse;
+
     public $select;
-    
+
     public function __construct()
     {
         parent::__construct();
         $this->select = ['id', 'first_name', 'last_name', 'username', 'address', 'slug',  'email', 'avatar'];
     }
 
+    /**
+     * Get User Details
+     */
     public function me()
     {
-        $user = User::select($this->select)->find(auth('api')->id());
+        $user = auth('api')->user();
 
         if (!$user) {
-            return Helper::jsonResponse(false, 'User not found', 404, null);
+            return $this->error('User not found', 404);
         }
-        return Helper::jsonResponse(true, 'User details fetched successfully', 200, $user);
+
+        $response = [
+            'id' => $user->id,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'username' => $user->username,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'address' => $user->address,
+            'biography' => $user->biography,
+            'avatar' => $user->avatar
+                ? asset($user->avatar)
+                : asset('default/profile.jpg'),
+            'slug' => $user->slug,
+            'role' => $user->role,
+            'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+        ];
+
+        return $this->success('User details fetched successfully', $response, 200, );
     }
 
-
+    /**
+     * Update User Profile
+     */
     public function updateProfile(Request $request)
     {
         $validatedData = $request->validate([
-            'name' => 'required|string|max:100',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
-            'password' => 'nullable|string|min:6|confirmed',
-            'bio' => 'nullable|string|max:1000',
-            'country' => 'nullable|string|max:100',
-            'sex' => 'nullable|string|max:10',
-            'age' => 'nullable|integer|min:0',
+            'first_name' => 'nullable|string|max:100',
+            'last_name'  => 'nullable|string|max:100',
+            'biography'  => 'nullable|string|max:2500',
+            'phone'      => 'required|string|max:150|unique:users,phone,' . auth('api')->id(),
+            'address'    => 'required|string',
         ]);
-
-        if (!empty($validatedData['password'])) {
-            $validatedData['password'] = bcrypt($validatedData['password']);
-        } else if (array_key_exists('password', $validatedData)) {
-            unset($validatedData['password']);
-        }
 
         $user = auth('api')->user();
 
-        /** ✅ Username generator: only if user has no username yet OR name changed */
-        if (!$user->username || $user->name !== $validatedData['name']) {
-            $validatedData['username'] = '@' . strtolower($validatedData['name']) . '_' . $this->randomAlphaNum(4);
-        }
-        if ($request->hasFile('avatar')) {
-            if (!empty($user->avatar)) {
-                Helper::fileDelete(public_path($user->getRawOriginal('avatar')));
-            }
-            $validatedData['avatar'] = Helper::fileUpload($request->file('avatar'), 'user/avatar', getFileName($request->file('avatar')));
-        } else {
-            $validatedData['avatar'] = $user->avatar;
+        /**
+         * Username generator:
+         * username will be generated only if username is empty
+         */
+        if (!$user->username) {
+            $generated = strtolower(($validatedData['first_name'] ?? 'user')) . '_' . $this->randomAlphaNum(4);
+            $validatedData['username'] = $generated;
         }
 
         $user->update($validatedData);
 
-        $data = User::select($this->select)->find($user->id);
-        return Helper::jsonResponse(true, 'Profile updated successfully', 200, $data);
+        $response = [
+            'id' => $user->id,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'username' => $user->username,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'address' => $user->address,
+            'biography' => $user->biography,
+            'avatar' => $user->avatar
+                ? asset($user->avatar)
+                : asset('default/profile.jpg'),
+            'slug' => $user->slug,
+            'role' => $user->role,
+            'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+        ];
+
+        return Helper::jsonResponse(true, 'Profile updated successfully', 200, $response);
     }
 
+    /**
+     * Generate random alphanumeric string
+     */
     private function randomAlphaNum($length = 4)
     {
         return substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, $length);
     }
 
-
+    /**
+     * Update User Avatar
+     */
     public function updateAvatar(Request $request)
     {
         $validatedData = $request->validate([
@@ -94,22 +131,24 @@ class UserController extends Controller
             Helper::fileDelete(public_path($user->getRawOriginal('avatar')));
         }
         $validatedData['avatar'] = Helper::fileUpload($request->file('avatar'), 'user/avatar', getFileName($request->file('avatar')));
+
         $user->update($validatedData);
-        $data = User::select($this->select)->find($user->id);
-        return Helper::jsonResponse(true, 'Avatar updated successfully', 200, $data);
+
+        $response = [
+            'id' => $user->id,
+            'avatar' => $user->avatar
+                ? asset($user->avatar)
+                : asset('default/profile.jpg'),
+            'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+        ];
+
+        return Helper::jsonResponse(true, 'Avatar updated successfully', 200, $response);
     }
 
-    public function delete()
-    {
-        $user = User::findOrFail(auth('api')->id());
-        if (!empty($user->avatar) && file_exists(public_path($user->avatar))) {
-            Helper::fileDelete(public_path($user->avatar));
-        }
-        Auth::logout('api');
-        $user->delete();
-        return Helper::jsonResponse(true, 'Profile deleted successfully', 200);
-    }
-
+    /**
+     * Delete User Profile
+     */
     public function destroy()
     {
         $user = User::findOrFail(auth('api')->id());
@@ -118,17 +157,19 @@ class UserController extends Controller
         }
         Auth::logout('api');
         $user->forceDelete();
-        return Helper::jsonResponse(true, 'Profile deleted successfully', 200);
+        return $this->success('User profile deleted successfully', [], 200);
     }
 
 
-
+    /**
+     * Change User Password
+     */
     public function changePassword(Request $request)
     {
         $user = auth()->guard('api')->user();
 
         if (!$user) {
-            return Helper::jsonResponse(false, 'User not found', 404, null);
+            return $this->error([], 'User not found', 404);
         }
 
         // Validate input
@@ -139,18 +180,18 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return Helper::jsonResponse(false, 'Validation failed', 422, $validator->errors());
+            return $this->error($validator->errors(), 'Validation failed', 422);
         }
 
         // Check if old password is correct
         if (!Hash::check($request->old_password, $user->password)) {
-            return Helper::jsonResponse(false, 'Old password does not match', 400, null);
+            return $this->error([], 'Old password does not match', 400);
         }
 
         // Update with new password
         $user->password = Hash::make($request->new_password);
         $user->save();
 
-        return Helper::jsonResponse(true, 'Password changed successfully', 200, null);
+        return $this->success('Password changed successfully', [], 200);
     }
 }

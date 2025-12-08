@@ -35,24 +35,34 @@ class User extends Authenticatable implements JWTSubject
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'first_name',
         'last_name',
-        'username',
         'address',
+        'username',
+        'slug',
         'email',
+        'phone',
         'password',
+        'biography',
+
         'otp',
         'otp_expires_at',
-        'last_activity_at',
-        'slug',
-        'avatar',
-        'balance',
         'otp_verified_at',
-        'bio',
-        'sex',
-        'country',
-        'age',
+        'reset_password_token',
+        'reset_password_token_expire_at',
+
+        'avatar',
+        'last_activity_at',
+
+        'stripe_customer_id',
+        'stripe_account_id',
+        'balance',
+        'stripe_subscription_id',
+        'plan_id',
+
+        'status'
     ];
+
 
     /**
      * The attributes that should be hidden for serialization.
@@ -210,21 +220,5 @@ class User extends Authenticatable implements JWTSubject
         return $this->friends()->orWhere(function ($query) {
             $query->whereIn('friend_id', $this->friendOf()->pluck('user_id'));
         });
-    }
-
-    // Festive Albums relation
-    public function festiveAlbums()
-    {
-        return $this->hasMany(FestiveAlbum::class);
-    }
-
-    public function artists()
-    {
-        return $this->hasMany(Artist::class, 'user_id'); // adjust foreign key if needed
-    }
-
-    public function whishlists()
-    {
-        return $this->hasMany(Wishlist::class);
     }
 }
