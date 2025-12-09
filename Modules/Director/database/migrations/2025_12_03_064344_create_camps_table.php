@@ -19,11 +19,13 @@ return new class extends Migration
             $table->string('camp_name');
             $table->string('camp_logo');
             $table->string('location')->nullable();
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
             $table->date('start_date');
             $table->date('end_date');
             $table->longText('camp_details');
             $table->decimal('price', 8, 2);
-            $table->enum('status', ['active', 'inactive'])->default('active'); 
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });
     }

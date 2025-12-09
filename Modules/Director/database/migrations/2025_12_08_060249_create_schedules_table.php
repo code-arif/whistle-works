@@ -22,6 +22,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('schedule_id')->constrained()->onDelete('cascade');
             $table->string('location_name');
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
             $table->integer('court_count')->default(1);
             $table->timestamps();
         });
@@ -47,6 +49,7 @@ return new class extends Migration
             $table->string('court_name'); // Court 1, Court 2, etc.
             $table->integer('court_number');
             $table->enum('status', ['available', 'assigned', 'completed'])->default('available');
+            $table->boolean('is_block')->default(false);
             $table->timestamps();
         });
 

@@ -64,8 +64,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
 // ==========================================
 Route::middleware(['auth:api', 'role:referee'])->prefix('v1')->group(function () {
     Route::controller(RefereeCheckinController::class)->group(function () {
-        Route::post('camp/{campId}/checkin', 'checkin');
-        Route::delete('camp/{campId}/checkout', 'checkout');
+        Route::post('camp/{campId}/checkin', 'checkin'); // done
         Route::get('my-checkins', 'getMyCheckins');
     });
 });

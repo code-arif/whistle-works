@@ -59,26 +59,7 @@ class RefereeCheckinController extends Controller
             201
         );
     }
-
-    /**
-     * Referee checks out from a camp
-     */
-    public function checkout($campId)
-    {
-        $referee = auth('api')->user();
-
-        $checkin = CampRefereeCheckin::where('camp_id', $campId)
-            ->where('referee_id', $referee->id)
-            ->first();
-
-        if (!$checkin) {
-            return $this->error('Not checked in to this camp.', null, 404);
-        }
-
-        $checkin->delete();
-
-        return $this->success('Checked out successfully.', null, 200);
-    }
+    
 
     /**
      * Get list of checked-in referees (Director only)

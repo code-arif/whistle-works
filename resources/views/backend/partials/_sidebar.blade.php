@@ -21,7 +21,7 @@
                 <li class="slide">
                     <a class="side-menu__item {{ request()->routeIs('dashboard') ? 'has-link active' : '' }}"
                         href="{{ route('admin.dashboard') }}">
-                        <i class="fa-solid fa-house side-menu__icon"></i>
+                        <i class="fa-solid fa-gauge-high side-menu__icon"></i>
                         <span class=" side-menu__label">Dashboard</span>
                     </a>
                 </li>
@@ -29,8 +29,7 @@
                 <li class="slide">
                     <a class="side-menu__item {{ request()->routeIs('admin.sports-type.*') ? 'has-link active' : '' }}"
                         href="{{ route('admin.sports-type.index') }}">
-
-                        <i id="sportsIcon" class="fa-solid side-menu__icon"></i>
+                        <i class="fa-solid fa-baseball-bat-ball side-menu__icon"></i>
                         <span class="side-menu__label">Sports Type</span>
 
                     </a>
@@ -144,12 +143,18 @@
                     </a>
 
                     <ul class="slide-menu">
-                        <li><a href="{{ route('admin.cms.home.hero.section') }}" class="slide-item">Hero Section</a></li>
-                        <li><a href="{{ route('admin.cms.home.training-camp.section') }}" class="slide-item">Training Camps Section</a></li>
-                        <li><a href="{{ route('admin.cms.home.slider.index') }}" class="slide-item">Partners Section</a></li>
-                        <li><a href="{{ route('admin.cms.home.features.index') }}" class="slide-item">Features Section</a></li>
-                        <li><a href="{{ route('admin.cms.home.operation.section') }}" class="slide-item">Operations Section</a></li>
-                        <li><a href="{{ route('admin.cms.home.testimonial.index') }}" class="slide-item">Testimonial Section</a></li>
+                        <li><a href="{{ route('admin.cms.home.hero.section') }}" class="slide-item">Hero Section</a>
+                        </li>
+                        <li><a href="{{ route('admin.cms.home.training-camp.section') }}" class="slide-item">Training
+                                Camps Section</a></li>
+                        <li><a href="{{ route('admin.cms.home.slider.index') }}" class="slide-item">Partners
+                                Section</a></li>
+                        <li><a href="{{ route('admin.cms.home.features.index') }}" class="slide-item">Features
+                                Section</a></li>
+                        <li><a href="{{ route('admin.cms.home.operation.section') }}" class="slide-item">Operations
+                                Section</a></li>
+                        <li><a href="{{ route('admin.cms.home.testimonial.index') }}" class="slide-item">Testimonial
+                                Section</a></li>
                     </ul>
                 </li>
                 <li>
@@ -228,7 +233,21 @@
     changeIcon();
 </script>
 
-
-
-
 <!--/APP-SIDEBAR-->
+
+<style>
+    .side-header {
+        width: 100px;
+        height: 75px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #header-brand-logo {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+</style>
