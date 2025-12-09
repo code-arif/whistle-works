@@ -24,10 +24,16 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
     });
 });
 
-// Camp List Route (no authentication required)
-Route::get('v1/camp/sports-type', [NoAuthCampController::class, 'getSportsType']); // done
-Route::get('v1/camp/list', [NoAuthCampController::class, 'campList']); // done
-Route::get('v1/camp/locations', [NoAuthCampController::class, 'getLocations']); // done
+
+// ==========================================
+// PUBLIC ROUTES (No Auth Required)
+// ==========================================
+Route::prefix('v1/camp')->group(function () {
+    // Camp List & Details (Public)
+    Route::get('/sports-type', [NoAuthCampController::class, 'getSportsType']);
+    Route::get('/list', [NoAuthCampController::class, 'campList']);
+    Route::get('/locations', [NoAuthCampController::class, 'getLocations']);
+});
 
 
 // ==========================================
@@ -49,17 +55,22 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::post('camp/{campId}/schedule/clear', 'clearSchedule');
     });
 
-    // Referee Assignment Management
-    Route::controller(RefereeAssignController::class)->group(function () {
-        Route::post('camp/{campId}/assign-referees', 'assignReferees');
-        Route::delete('camp/{campId}/remove-referee/{refereeId}', 'removeReferee');
-        Route::get('camp/{campId}/assigned-referees', 'getAssignedReferees');
-    });
 
     // Referee Check-in Management (Director View)
     Route::controller(RefereeCheckinController::class)->group(function () {
         Route::get('camp/{campId}/checked-in-referees', 'getCheckedInReferees');
         Route::post('camp/{campId}/bulk-checkin', 'bulkCheckin');
+    });
+
+    // Referee Assignment Management
+    Route::controller(RefereeAssignController::class)->group(function () {
+        // Slot-specific assignment
+        Route::post('game-slot/{slotId}/assign-referee', 'assignReferees');
+        Route::delete('game-slot/{assignmentId}/remove-referee', 'removeReferee');
+
+        // Camp-wide referees
+        Route::get('camp/{campId}/available-referees', 'getAvailableReferees');
+        Route::get('game-slot/{slotId}/assigned-referees', 'getAssignedReferees');
     });
 });
 
@@ -71,14 +82,4 @@ Route::middleware(['auth:api', 'role:referee'])->prefix('v1')->group(function ()
         Route::post('camp/{campId}/checkin', 'checkin'); // done
         Route::get('my-checkins', 'getMyCheckins');
     });
-});
-
-// ==========================================
-// PUBLIC ROUTES (No Auth Required)
-// ==========================================
-Route::prefix('v1')->group(function () {
-    // Camp List & Details (Public)
-    Route::get('camp/sports-type', [Campcontroller::class, 'getSportsType']);
-    Route::get('camp/list', [Campcontroller::class, 'campList']);
-    Route::get('camp/locations', [Campcontroller::class, 'getLocations']);
 });

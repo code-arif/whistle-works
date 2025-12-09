@@ -22,11 +22,35 @@ class CampResource extends JsonResource
             'sports_type_name'  => $this->sports_type_name,
             'status'            => $this->status,
             'created_at'        => $this->created_at->format('Y-m-d H:i:s'),
+
+            // NEW: Day-wise date range list
+            'date_range'        => $this->generateDateRange($this->start_date, $this->end_date),
+
             'sport'             => [
-                'id'            => $this->sportsType ? $this->sportsType->id : null,
-                'sports_name'  => $this->sportsType ? $this->sportsType->sports_name : null,
-                'icon'         => $this->sportsType && $this->sportsType->icon ? asset($this->sportsType->icon) : null,
+                'id'            => $this->sportsType->id ?? null,
+                'sports_name'   => $this->sportsType->sports_name ?? null,
+                'icon'          => $this->sportsType && $this->sportsType->icon ? asset($this->sportsType->icon) : null,
             ],
         ];
+    }
+
+    /**
+     * Generate date range array
+     */
+    private function generateDateRange($start, $end)
+    {
+        $dates = [];
+
+        $startDate = \Carbon\Carbon::parse($start);
+        $endDate   = \Carbon\Carbon::parse($end);
+
+        while ($startDate->lte($endDate)) {
+            $dates[] = [
+                'day' => $startDate->format('F d'),
+            ];
+            $startDate->addDay();
+        }
+
+        return $dates;
     }
 }

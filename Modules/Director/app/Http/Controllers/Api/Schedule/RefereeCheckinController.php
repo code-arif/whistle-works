@@ -59,12 +59,11 @@ class RefereeCheckinController extends Controller
             201
         );
     }
-    
 
     /**
      * Get list of checked-in referees (Director only)
      */
-    public function getCheckedInReferees($campId)
+    public function getCheckedInReferees(Request $request, $campId)
     {
         $user = auth('api')->user();
 
@@ -77,29 +76,41 @@ class RefereeCheckinController extends Controller
             return $this->error('Camp not found.', null, 404);
         }
 
-        $checkins = CampRefereeCheckin::where('camp_id', $campId)
-            ->with('referee:id,name,email,phone')
-            ->latest('checked_in_at')
-            ->get();
+        $perPage = $request->get('per_page', 10);
 
-        $formatted = $checkins->map(function ($checkin) {
+        $checkins = CampRefereeCheckin::where('camp_id', $campId)
+            ->with('referee:id,first_name,last_name,email,phone')
+            ->latest('checked_in_at')
+            ->paginate($perPage);
+
+        // Format each item
+        $formatted = $checkins->getCollection()->map(function ($checkin) {
             return [
                 'id' => $checkin->id,
                 'referee' => $checkin->referee,
-                'checked_in_at' => $checkin->checked_in_at->format('Y-m-d H:i:s'),
-                'checked_in_ago' => $checkin->checked_in_at->diffForHumans()
+                'checked_in_ago' => $checkin->checked_in_at->diffForHumans(),
             ];
         });
+
+        // Replace paginated collection with formatted items
+        $checkins->setCollection($formatted);
 
         return $this->success(
             'Checked-in referees fetched successfully.',
             [
-                'total_referees' => $formatted->count(),
-                'referees' => $formatted
+                'total_referees' => $checkins->total(),
+                'referees' => $checkins->items(),
+                'pagination' => [
+                    'current_page' => $checkins->currentPage(),
+                    'last_page'    => $checkins->lastPage(),
+                    'per_page'     => $checkins->perPage(),
+                    'total'        => $checkins->total(),
+                ],
             ],
             200
         );
     }
+
 
     /**
      * Get my checked-in camps (Referee)
