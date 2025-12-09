@@ -11,11 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Crews table
         Schema::create('crews', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('game_slot_id')->constrained()->onDelete('cascade');
             $table->string('name');
+            $table->string('description')->nullable();
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
-            
         });
     }
 

@@ -22,7 +22,9 @@ class ScheduleCreateRequest extends FormRequest
             'time_ranges.*.end_time' => 'required|date_format:H:i|after:time_ranges.*.start_time',
             'locations' => 'required|array|min:1',
             'locations.*.location_name' => 'required|string|max:255',
-            'locations.*.court_count' => 'required|integer|min:1|max:20'
+            'locations.*.court_count' => 'required|integer|min:1|max:20',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ];
     }
 

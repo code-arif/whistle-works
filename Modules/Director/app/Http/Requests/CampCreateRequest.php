@@ -21,6 +21,8 @@ class CampCreateRequest extends FormRequest
             'camp_details'     => 'nullable|string',
             'camp_logo'        => 'nullable|file|image|max:2048',
             'price'            => 'required|numeric|min:0',
+            'latitude'         => 'nullable|numeric|between:-90,90',
+            'longitude'        => 'nullable|numeric|between:-180,180',
         ];
     }
 

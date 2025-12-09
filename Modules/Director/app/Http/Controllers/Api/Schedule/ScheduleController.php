@@ -59,6 +59,8 @@ class ScheduleController extends Controller
                 ScheduleLocation::create([
                     'schedule_id' => $schedule->id,
                     'location_name' => $location['location_name'],
+                    'latitude' => $location['latitude'] ?? null,
+                    'longitude' => $location['longitude'] ?? null,
                     'court_count' => $location['court_count']
                 ]);
             }

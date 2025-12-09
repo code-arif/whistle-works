@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Director\Http\Controllers\DirectorController;
 use Modules\Director\Http\Controllers\Api\Camp\Campcontroller;
+use Modules\Director\Http\Controllers\Api\Camp\NoAuthCampController;
 use Modules\Director\Http\Controllers\Api\Schedule\RefereeAssignController;
 use Modules\Director\Http\Controllers\Api\Schedule\ScheduleController;
 use Modules\Director\Http\Controllers\Api\Schedule\RefereeCheckinController;
@@ -17,13 +18,16 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::post('camp/status/{id}', 'updateStatus'); // done
         Route::delete('camp/delete/{id}', 'deleteCamp'); // done
         Route::get('camp/details/{id}', 'campDetails'); // done
+
+        // Director camp list
+        Route::get('/director/camp/list', 'directorCampList'); // done
     });
 });
 
 // Camp List Route (no authentication required)
-Route::get('v1/camp/sports-type', [Campcontroller::class, 'getSportsType']); // done
-Route::get('v1/camp/list', [Campcontroller::class, 'campList']); // done
-Route::get('v1/camp/locations', [Campcontroller::class, 'getLocations']); // done
+Route::get('v1/camp/sports-type', [NoAuthCampController::class, 'getSportsType']); // done
+Route::get('v1/camp/list', [NoAuthCampController::class, 'campList']); // done
+Route::get('v1/camp/locations', [NoAuthCampController::class, 'getLocations']); // done
 
 
 // ==========================================

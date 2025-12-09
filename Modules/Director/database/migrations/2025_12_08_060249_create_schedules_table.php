@@ -52,38 +52,13 @@ return new class extends Migration
             $table->boolean('is_block')->default(false);
             $table->timestamps();
         });
-
-        // Referee assignments
-        Schema::create('referee_assignments', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('game_slot_id')->constrained()->onDelete('cascade');
-            $table->foreignId('referee_id')->constrained('users')->onDelete('cascade');
-            $table->enum('assignment_type', ['manual', 'auto'])->default('manual');
-            $table->timestamps();
-
-            // Prevent duplicate assignments
-            $table->unique(['game_slot_id', 'referee_id']);
-        });
-
-        // Referee check-ins for camps
-        Schema::create('camp_referee_checkins', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('camp_id')->constrained()->onDelete('cascade');
-            $table->foreignId('referee_id')->constrained('users')->onDelete('cascade');
-            $table->timestamp('checked_in_at');
-            $table->timestamps();
-
-            $table->unique(['camp_id', 'referee_id']);
-        });
     }
 
     public function down()
     {
-        Schema::dropIfExists('referee_assignments');
         Schema::dropIfExists('game_slots');
         Schema::dropIfExists('schedule_time_ranges');
         Schema::dropIfExists('schedule_locations');
-        Schema::dropIfExists('camp_referee_checkins');
         Schema::dropIfExists('schedules');
     }
 };
