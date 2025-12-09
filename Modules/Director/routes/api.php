@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Director\Http\Controllers\DirectorController;
 use Modules\Director\Http\Controllers\Api\Camp\Campcontroller;
 use Modules\Director\Http\Controllers\Api\Camp\NoAuthCampController;
+use Modules\Director\Http\Controllers\Api\Court\CourtManageController;
 use Modules\Director\Http\Controllers\Api\Schedule\RefereeAssignController;
 use Modules\Director\Http\Controllers\Api\Schedule\ScheduleController;
 use Modules\Director\Http\Controllers\Api\Schedule\RefereeCheckinController;
@@ -65,13 +66,15 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
     // Referee Assignment Management
     Route::controller(RefereeAssignController::class)->group(function () {
         // Slot-specific assignment
-        Route::post('game-slot/{slotId}/assign-referee', 'assignReferees');
+        Route::post('game-slot/{slotId}/assign-referee', 'assignReferees'); // working
         Route::delete('game-slot/{assignmentId}/remove-referee', 'removeReferee');
 
         // Camp-wide referees
-        Route::get('camp/{campId}/available-referees', 'getAvailableReferees');
-        Route::get('game-slot/{slotId}/assigned-referees', 'getAssignedReferees');
+        Route::get('camp/{campId}/available-referees', 'getAvailableReferees'); // working
+        Route::get('game-slot/{slotId}/assigned-referees', 'getAssignedReferees'); // working
     });
+
+    Route::post('/game-slot/{slotId}/block-unblock', [CourtManageController::class, 'blockUnblockGameSlot']); // working
 });
 
 // ==========================================

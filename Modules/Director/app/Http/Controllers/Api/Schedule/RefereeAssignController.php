@@ -2,6 +2,7 @@
 
 namespace Modules\Director\Http\Controllers\Api\Schedule;
 
+use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +13,7 @@ use Modules\Director\Models\{Camp, Schedule, ScheduleLocation, ScheduleTimeRange
 class RefereeAssignController extends Controller
 {
     use ApiResponse;
-    
+
     /**
      * Assign referee to game slot
      */
@@ -139,18 +140,44 @@ class RefereeAssignController extends Controller
             return $this->error('Camp not found.', null, 404);
         }
 
-        $referees = CampRefereeCheckin::where('camp_id', $campId)
-            ->with('referee:id,name,email')
+        // Step 1: Get all checked-in referees
+        $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
+            ->pluck('referee_id');
+
+        // Step 2: Get referees already assigned to ANY slot of this camp
+        $assignedReferees = RefereeAssignment::whereHas('gameSlot.schedule', function ($q) use ($campId) {
+            $q->where('camp_id', $campId);
+        })
+            ->pluck('referee_id')
+            ->toArray();
+
+        // Step 3: Filter available referees (checked-in but not assigned)
+        $availableRefereeIds = $checkedInReferees->filter(function ($refId) use ($assignedReferees) {
+            return !in_array($refId, $assignedReferees);
+        });
+
+        // Step 4: Fetch referee basic info
+        $referees = User::whereIn('id', $availableRefereeIds)
+            ->select('id', 'first_name', 'last_name', 'email', 'avatar')
             ->get()
-            ->pluck('referee');
+            ->map(function ($ref) {
+                return [
+                    'id' => $ref->id,
+                    'name' => $ref->first_name . ' ' . $ref->last_name,
+                    'email' => $ref->email,
+                    'avatar' => $ref->avatar ? asset($ref->avatar) : null,
+                ];
+            });
 
         return $this->success(
             'Available referees fetched successfully.',
-            ['referees' => $referees],
+            [
+                'total' => $referees->count(),
+                'referees' => $referees
+            ],
             200
         );
     }
-
 
     /**
      * Get available referees for a camp
@@ -165,7 +192,24 @@ class RefereeAssignController extends Controller
             return $this->error('Unauthorized.', null, 403);
         }
 
-        $assigned = $slot->refereeAssignments()->with('referee')->get();
+        $assigned = $slot->refereeAssignments()
+            ->with('referee:id,first_name,last_name,email')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'court' => [
+                        'court_id' => $item->game_slot_id,
+                        'court_name' => $item->gameSlot->court_name,
+                    ],
+                    'refree' => [
+                        'referee_id'    => $item->referee->id,
+                        'name'    => $item->referee->first_name . ' ' . $item->referee->last_name,
+                        'email'         => $item->referee->email,
+                    ],
+                    'assignment_type' => $item->assignment_type,
+                ];
+            });
 
         return $this->success(
             'Assigned referees fetched successfully.',
