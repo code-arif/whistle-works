@@ -7,6 +7,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Modules\Director\Transformers\Referee\AvailableRefereeResource;
 use Modules\Director\Models\{Camp, Crew, CrewMember, CampRefereeCheckin, GameSlot, RefereeAssignment};
 
 class CrewManageController extends Controller
@@ -543,32 +544,37 @@ class CrewManageController extends Controller
             return $this->error('Camp not found.', null, 404);
         }
 
-        // Get all checked-in referees
-        $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
+        // Get all checked-in referee IDs
+        $checkedInRefereeIds = CampRefereeCheckin::where('camp_id', $campId)
             ->pluck('referee_id');
 
-        // Get referees already in crews for this camp
-        $refereesInCrews = CrewMember::whereHas('crew', function ($query) use ($campId) {
-            $query->where('camp_id', $campId);
+        // Get referee IDs already assigned to any crew in this camp
+        $assignedRefereeIds = CrewMember::whereHas('crew', function ($q) use ($campId) {
+            $q->where('camp_id', $campId);
         })->pluck('referee_id');
 
-        // Available referees = checked in but not in any crew
-        $availableRefereeIds = $checkedInReferees->diff($refereesInCrews);
+        // Available = checked-in but not assigned
+        $availableRefereeIds = $checkedInRefereeIds->diff($assignedRefereeIds);
+
+        $perPage = request()->get('per_page', 15); // default 15
 
         $availableReferees = User::whereIn('id', $availableRefereeIds)
-            ->select('id', 'first_name', 'last_name', 'email', 'phone')
-            ->get();
+            ->select('id', 'first_name', 'last_name', 'email', 'phone', 'avatar')
+            ->orderBy('first_name')
+            ->paginate($perPage);
 
-        return $this->success(
-            'Available referees fetched successfully.',
-            [
-                'total_checked_in' => $checkedInReferees->count(),
-                'in_crews' => $refereesInCrews->count(),
-                'available' => $availableReferees->count(),
-                'referees' => $availableReferees
+        return $this->success('Available referees fetched successfully.', [
+            'total_checked_in' => $checkedInRefereeIds->count(),
+            'in_crews'         => $assignedRefereeIds->count(),
+            'available'        => $availableReferees->total(),
+            'referees' => AvailableRefereeResource::collection($availableReferees),
+            'pagination'       => [
+                'total'         => $availableReferees->total(),
+                'per_page'      => $availableReferees->perPage(),
+                'current_page'  => $availableReferees->currentPage(),
+                'last_page'     => $availableReferees->lastPage(),
             ],
-            200
-        );
+        ], 200);
     }
 
     /**
