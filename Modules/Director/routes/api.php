@@ -9,6 +9,7 @@ use Modules\Director\Http\Controllers\Api\Crew\CrewManageController;
 use Modules\Director\Http\Controllers\Api\Court\CourtManageController;
 use Modules\Director\Http\Controllers\Api\Schedule\ScheduleController;
 use Modules\Director\Http\Controllers\Api\Schedule\RefereeAssignController;
+use Modules\Director\Http\Controllers\Api\CourtAssign\CourtAssignController;
 use Modules\Director\Http\Controllers\Api\Schedule\RefereeCheckinController;
 
 Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
@@ -46,25 +47,25 @@ Route::prefix('v1/camp')->group(function () {
 Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function () {
 
     // Crew Management
-    Route::controller(CrewManageController::class)->group(function () {
+    Route::group([], function () {
         // CRUD Operations
-        Route::post('/camp/{campId}/crew/create', 'createCrew'); // working
-        Route::get('/camp/{campId}/crews', 'getCrews'); // working
-        Route::get('/crew/{crewId}', 'getCrewDetails'); // working
-        Route::put('/crew/{crewId}', 'updateCrew'); // working
-        Route::delete('/crew/{crewId}', 'deleteCrew'); // working
+        Route::post('/camp/{campId}/crew/create', [CrewManageController::class, 'createCrew']); // working
+        Route::get('/camp/{campId}/crews', [CrewManageController::class, 'getCrews']); // working
+        Route::get('/crew/{crewId}', [CrewManageController::class, 'getCrewDetails']); // working
+        Route::put('/crew/{crewId}', [CrewManageController::class, 'updateCrew']); // working
+        Route::delete('/crew/{crewId}', [CrewManageController::class, 'deleteCrew']); // working
 
         // Member Management
-        Route::post('/crew/{crewId}/add-members', 'addMembers'); // working
-        Route::delete('/crew/{crewId}/remove-members', 'removeMembers'); // working
-
+        Route::post('/crew/{crewId}/add-members', [CrewManageController::class, 'addMembers']);
+        Route::delete('/crew/{crewId}/remove-members', [CrewManageController::class, 'removeMembers']);
 
         // Available Referees
-        Route::get('/camp/{campId}/available-referees-for-crew', 'getAvailableReferees'); // working
+        Route::get('/camp/{campId}/available-referees-for-crew', [CrewManageController::class, 'getAvailableReferees']);
+        Route::get('/camp/{campId}/all-checked-in-referees', [CrewManageController::class, 'getAllCheckedInReferees']);
 
         // Crew Assignment to Game Slots
-        Route::post('game-slot/{gameSlotId}/assign-crew', 'assignCrewToSlot');
-        Route::delete('game-slot/{gameSlotId}/remove-crew', 'removeCrewFromSlot');
+        // Route::post('game-slot/{gameSlotId}/assign-crew', [CrewManageController::class, 'assignCrewToSlot']);
+        // Route::delete('game-slot/{gameSlotId}/remove-crew', [CrewManageController::class, 'removeCrewFromSlot']);
     });
 
     // Schedule Management
@@ -81,7 +82,6 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::post('camp/{campId}/schedule/publish', 'publishSchedule');
         Route::post('camp/{campId}/schedule/clear', 'clearSchedule');
     });
-
 
     // Referee Check-in Management (Director View)
     Route::controller(RefereeCheckinController::class)->group(function () {
@@ -101,6 +101,30 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
     });
 
     Route::post('/game-slot/{slotId}/block-unblock', [CourtManageController::class, 'blockUnblockGameSlot']); // working
+
+
+    // Court Assignment Management
+    // routes/api.php or module routes file
+
+    Route::prefix('director/court-assign')->group(function () {
+        // Individual referee assignment
+        Route::post('slot/{slotId}/assign-individual', [CourtAssignController::class, 'assignIndividualReferees']);
+
+        // Crew assignment
+        Route::post('slot/{slotId}/assign-crew', [CourtAssignController::class, 'assignCrew']);
+
+        // Auto-assign all slots
+        Route::post('camp/{campId}/auto-assign', [CourtAssignController::class, 'autoAssignReferees']);
+
+        // Remove assignment (crew or individual)
+        Route::delete('assignment/{assignmentId}/remove', [CourtAssignController::class, 'removeAssignment']);
+
+        // Get slot assignments
+        Route::get('slot/{slotId}/assignments', [CourtAssignController::class, 'getSlotAssignments']);
+
+        // Get available referees
+        Route::get('camp/{campId}/available-referees', [CourtAssignController::class, 'getAvailableReferees']);
+    });
 });
 
 // ==========================================

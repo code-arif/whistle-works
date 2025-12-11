@@ -37,26 +37,10 @@ return new class extends Migration
             $table->time('end_time');
             $table->timestamps();
         });
-
-        // Game slots
-        Schema::create('game_slots', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('schedule_id')->constrained()->onDelete('cascade');
-            $table->foreignId('schedule_location_id')->constrained()->onDelete('cascade');
-            $table->date('game_date');
-            $table->time('start_time');
-            $table->time('end_time');
-            $table->string('court_name'); // Court 1, Court 2, etc.
-            $table->integer('court_number');
-            $table->enum('status', ['available', 'assigned', 'completed'])->default('available');
-            $table->boolean('is_block')->default(false);
-            $table->timestamps();
-        });
     }
 
     public function down()
     {
-        Schema::dropIfExists('game_slots');
         Schema::dropIfExists('schedule_time_ranges');
         Schema::dropIfExists('schedule_locations');
         Schema::dropIfExists('schedules');

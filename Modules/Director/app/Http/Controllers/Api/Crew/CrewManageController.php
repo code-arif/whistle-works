@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Modules\Director\Transformers\Referee\AvailableRefereeResource;
+use Modules\Director\Transformers\Referee\CheckedInRefereeResource;
 use Modules\Director\Models\{Camp, Crew, CrewMember, CampRefereeCheckin, GameSlot, RefereeAssignment};
 
 class CrewManageController extends Controller
@@ -578,79 +579,38 @@ class CrewManageController extends Controller
     }
 
     /**
-     * Bulk add members to crew
+     * Get all checked-in referees for a camp
      */
-    public function bulkAddMembers(Request $request, $crewId)
+    public function getAllCheckedInReferees($campId)
     {
         $user = auth('api')->user();
 
-        $request->validate([
-            'referee_ids' => 'required|array|min:1',
-            'referee_ids.*' => 'exists:users,id'
-        ]);
+        // Verify camp ownership
+        $camp = Camp::where('id', $campId)
+            ->where('director_id', $user->id)
+            ->first();
 
-        $crew = Crew::with('camp')->find($crewId);
-
-        if (!$crew) {
-            return $this->error('Crew not found.', null, 404);
+        if (!$camp) {
+            return $this->error('Camp not found.', null, 404);
         }
 
-        // Verify ownership
-        if ($crew->camp->director_id !== $user->id) {
-            return $this->error('Unauthorized.', null, 403);
-        }
+        $perPage = request()->get('per_page', 15); // default 15
 
-        $added = [];
-        $skipped = [];
-        $errors = [];
+        $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
+            ->with('referee')
+            ->paginate($perPage);
 
-        foreach ($request->referee_ids as $refereeId) {
-            // Check if checked in
-            $isCheckedIn = CampRefereeCheckin::where('camp_id', $crew->camp_id)
-                ->where('referee_id', $refereeId)
-                ->exists();
+            // return $checkedInReferees;exit();
 
-            if (!$isCheckedIn) {
-                $errors[] = [
-                    'referee_id' => $refereeId,
-                    'reason' => 'Not checked in to camp'
-                ];
-                continue;
-            }
-
-            // Check if already in a crew for this camp
-            $existingMembership = CrewMember::whereHas('crew', function ($query) use ($crew) {
-                $query->where('camp_id', $crew->camp_id);
-            })
-                ->where('referee_id', $refereeId)
-                ->exists();
-
-            if ($existingMembership) {
-                $skipped[] = $refereeId;
-                continue;
-            }
-
-            // Add to crew
-            CrewMember::create([
-                'crew_id' => $crewId,
-                'referee_id' => $refereeId,
-                'joined_at' => now()
-            ]);
-
-            $added[] = $refereeId;
-        }
-
-        return $this->success(
-            'Bulk add members completed.',
-            [
-                'added_count' => count($added),
-                'skipped_count' => count($skipped),
-                'error_count' => count($errors),
-                'added_ids' => $added,
-                'skipped_ids' => $skipped,
-                'errors' => $errors
+        return $this->success('Checked-in referees fetched successfully.', [
+            'total' => $checkedInReferees->total(),
+            'referees' => CheckedInRefereeResource::collection($checkedInReferees),
+            'pagination' => [
+                'total'         => $checkedInReferees->total(),
+                'per_page'      => $checkedInReferees->perPage(),
+                'current_page'  => $checkedInReferees->currentPage(),
+                'last_page'     => $checkedInReferees->lastPage(),
             ],
-            200
-        );
+        ], 200);
     }
 }

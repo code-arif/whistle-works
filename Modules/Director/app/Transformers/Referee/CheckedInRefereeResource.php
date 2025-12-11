@@ -1,0 +1,25 @@
+<?php
+
+namespace Modules\Director\Transformers\Referee;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class CheckedInRefereeResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     */
+    public function toArray($request)
+    {
+        return [
+            'id'     => $this->id,
+            'name'   => $this->referee->first_name . ' ' . $this->referee->last_name,
+            'email'  => $this->referee->email,
+            'phone'  => $this->referee->phone,
+            'avatar' => $this->referee->avatar
+                ? asset('/' . $this->referee->avatar)
+                : asset('default/profile.jpg'),
+        ];
+    }
+}

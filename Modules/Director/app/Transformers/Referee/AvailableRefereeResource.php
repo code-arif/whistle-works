@@ -17,7 +17,7 @@ class AvailableRefereeResource extends JsonResource
             'phone'  => $this->phone,
             'avatar' => $this->avatar
                 ? asset('storage/' . $this->avatar)
-                : asset('default/profile.jpg'), // তুমি যেভাবে স্টোর করো সেভাবে path দাও
+                : asset('default/profile.jpg'),
         ];
     }
 }
