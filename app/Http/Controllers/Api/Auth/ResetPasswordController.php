@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Auth;
 use App\Http\Controllers\Controller;
 use App\Helpers\Helper;
 use App\Models\User;
+use App\Traits\ApiResponse;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -12,12 +13,17 @@ use Illuminate\Support\Str;
 
 class ResetPasswordController extends Controller
 {
+    use ApiResponse;
     public $select;
     public function __construct()
     {
         parent::__construct();
-        $this->select = ['id', 'name', 'email', 'avatar'];   
+        $this->select = ['id', 'name', 'email', 'avatar'];
     }
+
+    /**
+     * Send OTP to user email for password reset.
+     */
     public function forgotPassword(Request $request)
     {
         $request->validate([
@@ -34,19 +40,12 @@ class ResetPasswordController extends Controller
                 $user->otp            = $otp;
                 $user->otp_expires_at = Carbon::now()->addMinutes(60);
                 $user->save();
-
-                return response()->json([
-                    'status'  => true,
-                    'message' => 'OTP sent to your email.',
-                    'code'    => 200,
-                    'otp'    => $otp,
-                ]);
             } else {
-                return Helper::jsonErrorResponse('Invalid Email Address', 404);
+                return $this->success('Invalid Email Address', [], 404);
             }
 
         } catch (Exception $e) {
-            return Helper::jsonErrorResponse($e->getMessage(), 500);
+            return $this->error($e->getMessage(), 500);
         }
     }
 
@@ -56,7 +55,7 @@ class ResetPasswordController extends Controller
             'email' => 'required|email|exists:users,email',
             'otp'   => 'required|digits:4',
         ]);
-        
+
         try {
             $email = $request->input('email');
             $otp   = $request->input('otp');
@@ -111,7 +110,7 @@ class ResetPasswordController extends Controller
             }
 
             if (!empty($user->reset_password_token) && $user->reset_password_token === $request->token && $user->reset_password_token_expire_at >= Carbon::now()) {
-                
+
                 $user->password = Hash::make($newPassword);
                 $user->reset_password_token = null;
                 $user->reset_password_token_expire_at = null;
