@@ -21,7 +21,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::post('camp/update/{id}', 'updateCamp'); // done
         Route::post('camp/status/{id}', 'updateStatus'); // done
         Route::delete('camp/delete/{id}', 'deleteCamp'); // done
-        Route::get('camp/details/{id}', 'campDetails'); // done
+        Route::get('camp/details/{id}', 'campDetails'); // for deployeing
 
         // Director camp list
         Route::get('/director/camp/list', 'directorCampList'); // done
