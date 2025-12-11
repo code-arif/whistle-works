@@ -19,16 +19,20 @@ return new class extends Migration
             // Polymorphic: either a crew OR individual referees
             $table->nullableMorphs('assignable');
 
-            $table->enum('assignment_type', ['crew', 'individual'])->index(); // To quickly identify type of assignment
+            $table->enum('assignment_type', ['crew', 'individual'])->index();
             $table->string('position')->nullable();
             $table->boolean('is_auto_assigned')->default(false);
             $table->timestamp('assigned_at')->useCurrent();
-
             $table->timestamps();
 
-            // Ensure unique assignments
-            $table->unique(['game_slot_id', 'assignable_id', 'assignable_type']);
+            // Custom short name for unique constraint
+            $table->unique(
+                ['game_slot_id', 'assignable_id', 'assignable_type'],
+                'slot_assignable_unique' // Short custom name
+            );
         });
+
+
     }
 
     /**
