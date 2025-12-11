@@ -106,12 +106,16 @@ Route::group(['middleware' => 'guest:api'], function ($router) {
     Route::post('/verify-email', [RegisterController::class, 'VerifyEmail']); // done
     Route::post('/resend-otp', [RegisterController::class, 'ResendOtp']); // done
     Route::post('/verify-otp', [RegisterController::class, 'VerifyEmail']); // done
+
     //login
     Route::post('/login', [LoginController::class, 'login'])->name('api.login'); // done
+
     //forgot password
-    Route::post('/forget-password', [ResetPasswordController::class, 'forgotPassword']);
-    Route::post('/otp-token', [ResetPasswordController::class, 'MakeOtpToken']);
-    Route::post('/reset-password', [ResetPasswordController::class, 'ResetPassword']);
+    Route::post('/forgot-password', [ResetPasswordController::class, 'forgotPassword']); // done
+    Route::post('/forgot-password/resend-otp', [ResetPasswordController::class, 'resendOtp']); // done
+    Route::post('/otp-token', [ResetPasswordController::class, 'MakeOtpToken']); // done
+    Route::post('/reset-password', [ResetPasswordController::class, 'ResetPassword']); // done
+
     //social login
     Route::post('/social-login', [SocialLoginController::class, 'SocialLogin']);
 });
@@ -123,7 +127,7 @@ Route::group(['middleware' => ['auth:api', 'api-otp']], function ($router) {
     Route::post('/update-profile', [UserController::class, 'updateProfile']); // done
     Route::post('/update-avatar', [UserController::class, 'updateAvatar']); // done
     Route::delete('/delete-profile', [UserController::class, 'destroy']); // done
-    Route::post('/change-password', [UserController::class, 'changePassword']);
+    Route::post('/change-password', [UserController::class, 'changePassword']); // done
 });
 
 // get faqs
@@ -190,4 +194,3 @@ Route::middleware(['auth:api'])->controller(ReviewController::class)->group(func
 
 //cms get api
 Route::get('/cms/home', [HomePageController::class, 'home']);
-

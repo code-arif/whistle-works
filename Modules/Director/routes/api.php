@@ -14,6 +14,7 @@ use Modules\Director\Http\Controllers\Api\Schedule\RefereeCheckinController;
 Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
     Route::apiResource('directors', DirectorController::class)->names('director');
 });
+
 Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function () {
     Route::controller(Campcontroller::class)->group(function () {
         Route::post('camp/create', 'createCamp'); // done

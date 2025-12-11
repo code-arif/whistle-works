@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api\Auth;
+
 use App\Http\Controllers\Controller;
 use App\Helpers\Helper;
 use App\Models\User;
@@ -43,7 +44,41 @@ class ResetPasswordController extends Controller
             } else {
                 return $this->success('Invalid Email Address', [], 404);
             }
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), 500);
+        }
+    }
 
+
+    /**
+     * Resend OTP to user email for password reset.
+     */
+    public function resendOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        try {
+            $email = $request->input('email');
+            $user = User::where('email', $email)->first();
+
+            if ($user) {
+                $otp = rand(1000, 9999);
+                $user->otp = $otp;
+                $user->otp_expires_at = Carbon::now()->addMinutes(60);
+                $user->save();
+
+                // Mail::to($email)->send(new OtpMail($otp, $user, 'Reset Your Password'));
+
+                $response = [
+                    'otp'    => $otp,
+                ];
+
+                return $this->success('OTP resent successfully', $response, 200);
+            } else {
+                return $this->success('Invalid Email Address', [], 404);
+            }
         } catch (Exception $e) {
             return $this->error($e->getMessage(), 500);
         }
@@ -62,7 +97,7 @@ class ResetPasswordController extends Controller
             $user = User::where('email', $email)->first();
 
             if (!$user) {
-                return Helper::jsonErrorResponse( 'User not found', 404);
+                return Helper::jsonErrorResponse('User not found', 404);
             }
 
             if (Carbon::parse($user->otp_expires_at)->isPast()) {
@@ -106,7 +141,7 @@ class ResetPasswordController extends Controller
 
             $user = User::where('email', $email)->first();
             if (!$user) {
-                return Helper::jsonErrorResponse( 'User not found', 404);
+                return Helper::jsonErrorResponse('User not found', 404);
             }
 
             if (!empty($user->reset_password_token) && $user->reset_password_token === $request->token && $user->reset_password_token_expire_at >= Carbon::now()) {
@@ -118,10 +153,9 @@ class ResetPasswordController extends Controller
                 $user->save();
 
                 return Helper::jsonResponse(true, 'Password reset successfully.', 200);
-            }else{
+            } else {
                 return Helper::jsonErrorResponse('Invalid Token', 419);
             }
-
         } catch (Exception $e) {
             return Helper::jsonErrorResponse($e->getMessage(), 500);
         }
