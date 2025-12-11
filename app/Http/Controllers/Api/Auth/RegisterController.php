@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Traits\ApiResponse;
 use Exception;
 use Carbon\Carbon;
 use App\Traits\SMS;
@@ -19,7 +20,7 @@ use App\Notifications\RegistrationNotification;
 class RegisterController extends Controller
 {
 
-    use SMS;
+    use SMS, ApiResponse;
 
     public $select;
     public function __construct()
@@ -101,12 +102,24 @@ class RegisterController extends Controller
 
             $token = auth('api')->login($user);
 
-            return response()->json([
-                'status'     => true,
-                'message'    => 'User register in successfully.',
-                'code'       => 200,
+            $response = [
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'username' => $user->username,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'address' => $user->address,
+                'avatar' => $user->avatar,
+                'role' => $user->role,
+                'biography' => $user->biography,
                 'otp' => auth('api')->user()->otp,
-            ], 200);
+            ];
+
+            return $this->success(
+                'User registered successfully. Please verify your email using the OTP sent to your email address.',
+                $response,
+                201
+            );
         } catch (Exception $e) {
             DB::rollBack();
             return Helper::jsonErrorResponse('User registration failed', 500, [$e->getMessage()]);
@@ -167,22 +180,16 @@ class RegisterController extends Controller
                 "success" => true,
                 "message" => "Email verified successfully.",
                 "data" => [
-                    "user" => [
-                        "id"         => $user->id,
-                        "email"      => $user->email,
-                        "username"   => $user->username,
-                        "name"       => $user->name,
-                        "first_name" => $user->first_name,
-                        "last_name"  => $user->last_name,
-                        "avatar"     => $user->avatar,
-                        "address"    => $user->address,
-                        "status"     => $user->status,
-                        "role"       => $user->role,
-                        "biography"  => $user->biography,
-                    ],
-                    "token"       => $token,
-                    "token_type"  => "bearer",
-                    "expires_in"  => $expires_in
+                    "id"         => $user->id,
+                    "email"      => $user->email,
+                    "username"   => $user->username,
+                    "first_name" => $user->first_name,
+                    "last_name"  => $user->last_name,
+                    "avatar"     => $user->avatar,
+                    "address"    => $user->address,
+                    "status"     => $user->status,
+                    "role"       => $user->role,
+                    "biography"  => $user->biography,
                 ],
                 "code" => 200
             ], 200);
