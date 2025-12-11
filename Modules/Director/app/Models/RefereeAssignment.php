@@ -21,4 +21,17 @@ class RefereeAssignment extends Model
     {
         return $this->belongsTo(User::class, 'referee_id');
     }
+
+    public function crew(): BelongsTo
+    {
+        return $this->belongsTo(Crew::class);
+    }
+
+    /**
+     * Check if assigned as part of crew
+     */
+    public function isCrewAssignment(): bool
+    {
+        return $this->crew_id !== null;
+    }
 }

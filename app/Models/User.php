@@ -75,8 +75,6 @@ class User extends Authenticatable implements JWTSubject
     ];
 
     protected $appends = [
-        // 'role',
-        'is_online',
         'balance'
     ];
 
@@ -109,11 +107,6 @@ class User extends Authenticatable implements JWTSubject
         return $value;
     }
 
-    public function getIsOnlineAttribute()
-    {
-        return $this->last_activity_at > now()->subMinutes(5);
-    }
-
     public function getBalanceAttribute()
     {
         $increment = $this->transactions()->where('type', 'increment')->sum('amount');
@@ -131,31 +124,6 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(FirebaseTokens::class);
     }
 
-    //chat model relation
-    public function senders()
-    {
-        return $this->hasMany(Chat::class, 'sender_id');
-    }
-
-    public function receivers()
-    {
-        return $this->hasMany(Chat::class, 'receiver_id');
-    }
-
-    public function roomsAsUserOne()
-    {
-        return $this->hasMany(Room::class, 'user_one_id');
-    }
-
-    public function roomsAsUserTwo()
-    {
-        return $this->hasMany(Room::class, 'user_two_id');
-    }
-
-    public function allRooms()
-    {
-        return Room::where('user_one_id', $this->id)->orWhere('user_two_id', $this->id);
-    }
 
     public function profile()
     {
@@ -167,58 +135,8 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(Transaction::class);
     }
 
-    // product like
-    public function likedProducts()
+    public function referee()
     {
-        return $this->belongsToMany(Product::class, 'product_likes')->withTimestamps();
-    }
-
-    // Friend requests
-    public function sentRequests()
-    {
-        return $this->hasMany(FriendRequest::class, 'sender_id');
-    }
-
-    // Receive requests
-    public function receivedRequests()
-    {
-        return $this->hasMany(FriendRequest::class, 'receiver_id');
-    }
-
-    // User Model
-    public function friends()
-    {
-        // where user_id is me
-        $friends1 = $this->belongsToMany(
-            User::class,
-            'friends',
-            'user_id',
-            'friend_id'
-        )->withTimestamps()->withPivot('became_friends_at');
-
-        // Where friend_id is me
-        $friends2 = $this->belongsToMany(
-            User::class,
-            'friends',
-            'friend_id',
-            'user_id'
-        )->withTimestamps()->withPivot('became_friends_at');
-
-        // When do Union then the same columns specify
-        return $friends1->union($friends2->getQuery());
-    }
-
-    public function friendOf()
-    {
-        return $this->belongsToMany(User::class, 'friends', 'friend_id', 'user_id')
-            ->withTimestamps();
-    }
-
-    // Optional: Combined friends (both directions)
-    public function allFriends()
-    {
-        return $this->friends()->orWhere(function ($query) {
-            $query->whereIn('friend_id', $this->friendOf()->pluck('user_id'));
-        });
+        return $this->belongsTo(User::class, 'referee_id');
     }
 }

@@ -14,7 +14,7 @@ return new class extends Migration
         // Crews table
         Schema::create('crews', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('game_slot_id')->constrained()->onDelete('cascade');
+            $table->foreignId('camp_id')->constrained('camps')->onDelete('cascade');
             $table->string('name');
             $table->string('description')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');

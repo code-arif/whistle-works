@@ -30,4 +30,25 @@ class GameSlot extends Model
     {
         return $this->hasMany(RefereeAssignment::class);
     }
+
+    public function crew(): BelongsTo
+    {
+        return $this->belongsTo(Crew::class);
+    }
+
+    /**
+     * Check if assigned by crew
+     */
+    public function isCrewAssignment(): bool
+    {
+        return $this->assignment_mode === 'crew' && $this->crew_id !== null;
+    }
+
+    /**
+     * Check if assigned individually
+     */
+    public function isIndividualAssignment(): bool
+    {
+        return $this->assignment_mode === 'individual';
+    }
 }

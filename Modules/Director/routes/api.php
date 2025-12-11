@@ -1,12 +1,14 @@
 <?php
 
+use Modules\Director\Models\Crew;
 use Illuminate\Support\Facades\Route;
 use Modules\Director\Http\Controllers\DirectorController;
 use Modules\Director\Http\Controllers\Api\Camp\Campcontroller;
 use Modules\Director\Http\Controllers\Api\Camp\NoAuthCampController;
+use Modules\Director\Http\Controllers\Api\Crew\CrewManageController;
 use Modules\Director\Http\Controllers\Api\Court\CourtManageController;
-use Modules\Director\Http\Controllers\Api\Schedule\RefereeAssignController;
 use Modules\Director\Http\Controllers\Api\Schedule\ScheduleController;
+use Modules\Director\Http\Controllers\Api\Schedule\RefereeAssignController;
 use Modules\Director\Http\Controllers\Api\Schedule\RefereeCheckinController;
 
 Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
@@ -41,6 +43,29 @@ Route::prefix('v1/camp')->group(function () {
 // DIRECTOR ROUTES (Auth Required)
 // ==========================================
 Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function () {
+
+    // Crew Management
+    Route::controller(CrewManageController::class)->group(function () {
+        // CRUD Operations
+        Route::post('/camp/{campId}/crew/create', 'createCrew'); // working
+        Route::get('/camp/{campId}/crews', 'getCrews'); // working
+        Route::get('/crew/{crewId}', 'getCrewDetails'); // working
+        Route::put('/crew/{crewId}', 'updateCrew'); // working
+        Route::delete('/crew/{crewId}', 'deleteCrew'); // working
+
+        // Member Management
+        Route::post('/crew/{crewId}/add-members', 'addMembers'); // working
+        Route::delete('/crew/{crewId}/remove-members', 'removeMembers'); // working
+
+
+        // Available Referees
+        Route::get('/camp/{campId}/available-referees-for-crew', 'getAvailableReferees'); // working
+
+        // Crew Assignment to Game Slots
+        Route::post('game-slot/{gameSlotId}/assign-crew', 'assignCrewToSlot');
+        Route::delete('game-slot/{gameSlotId}/remove-crew', 'removeCrewFromSlot');
+    });
+
     // Schedule Management
     Route::controller(ScheduleController::class)->group(function () {
         // Create & View Schedule

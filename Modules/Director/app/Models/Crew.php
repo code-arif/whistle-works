@@ -2,21 +2,51 @@
 
 namespace Modules\Director\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-// use Modules\Director\Database\Factories\CrewFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Crew extends Model
 {
-    use HasFactory;
+    protected $guarded = [];
+
+    public function camp(): BelongsTo
+    {
+        return $this->belongsTo(Camp::class);
+    }
+
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'crew_members', 'crew_id', 'referee_id')
+            ->withTimestamps()
+            ->withPivot('joined_at');
+    }
+
+    public function crewMembers(): HasMany
+    {
+        return $this->hasMany(CrewMember::class);
+    }
+
+    public function gameSlots(): HasMany
+    {
+        return $this->hasMany(GameSlot::class);
+    }
 
     /**
-     * The attributes that are mass assignable.
+     * Get member count
      */
-    protected $fillable = [];
+    public function getMemberCountAttribute()
+    {
+        return $this->members()->count();
+    }
 
-    // protected static function newFactory(): CrewFactory
-    // {
-    //     // return CrewFactory::new();
-    // }
+    /**
+     * Check if referee is already in this crew
+     */
+    public function hasMember($refereeId): bool
+    {
+        return $this->members()->where('users.id', $refereeId)->exists();
+    }
 }

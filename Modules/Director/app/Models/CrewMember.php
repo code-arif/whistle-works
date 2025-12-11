@@ -2,21 +2,26 @@
 
 namespace Modules\Director\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 // use Modules\Director\Database\Factories\CrewMemberFactory;
 
 class CrewMember extends Model
 {
-    use HasFactory;
+    protected $guarded = [];
 
-    /**
-     * The attributes that are mass assignable.
-     */
-    protected $fillable = [];
+    protected $casts = [
+        'joined_at' => 'datetime',
+    ];
 
-    // protected static function newFactory(): CrewMemberFactory
-    // {
-    //     // return CrewMemberFactory::new();
-    // }
+    public function crew(): BelongsTo
+    {
+        return $this->belongsTo(Crew::class);
+    }
+
+    public function referee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'referee_id');
+    }
 }
