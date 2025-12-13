@@ -46,7 +46,7 @@ class ResetPasswordController extends Controller
                     'email'  => $email,
                     'otp'    => $otp,
                 ];
-                return $this->success('OTP sent successfully', ['response' => $response], 200);
+                return $this->success('OTP sent successfully', ['data' => $response], 200);
             } else {
                 return $this->success('Invalid Email Address', [], 404);
             }
