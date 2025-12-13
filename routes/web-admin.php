@@ -46,7 +46,6 @@ use App\Http\Controllers\Web\Backend\CMS\Web\PrivacyTerms\PrivacAndTermsControll
 
 Route::get("dashboard", [DashboardController::class, 'index'])->name('dashboard');
 
-
 /*
 * CRUD
 */

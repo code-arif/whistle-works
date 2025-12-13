@@ -113,4 +113,12 @@ class GameSlot extends Model
 
         return max(0, 3 - $currentCount);
     }
+
+    /**
+     * Get all assignments for this game slot (crew or individual)
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(GameSlotAssignment::class, 'game_slot_id');
+    }
 }

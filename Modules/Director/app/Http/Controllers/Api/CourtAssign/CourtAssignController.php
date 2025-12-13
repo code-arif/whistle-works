@@ -227,7 +227,7 @@ class CourtAssignController extends Controller
             return $this->error('Camp not found.', null, 404);
         }
 
-        // Get all available slots (no crew assignments)
+        // Get available slots
         $availableSlots = GameSlot::whereHas('schedule', function ($q) use ($campId) {
             $q->where('camp_id', $campId);
         })
@@ -235,81 +235,91 @@ class CourtAssignController extends Controller
             ->whereDoesntHave('assignments', function ($q) {
                 $q->where('assignment_type', 'crew');
             })
+            ->orderBy('game_date')
+            ->orderBy('start_time')
             ->get();
 
         if ($availableSlots->isEmpty()) {
             return $this->error('No available slots found.', null, 404);
         }
 
-        // Get all checked-in referees
+        // Get checked-in referees
         $checkedInRefereeIds = CampRefereeCheckin::where('camp_id', $campId)
             ->pluck('referee_id')
+            ->shuffle()
             ->toArray();
 
         if (empty($checkedInRefereeIds)) {
             return $this->error('No checked-in referees available.', null, 404);
         }
 
-        DB::beginTransaction();
-        try {
-            $assignedSlotsCount = 0;
-            $totalAssignments = 0;
+        $totalReferees = count($checkedInRefereeIds);
+        $totalSlots = $availableSlots->count();
+        $maxPerSlot = 3;
 
-            foreach ($availableSlots as $slot) {
-                // Get already assigned referee IDs for this slot
-                $alreadyAssigned = GameSlotAssignment::where('game_slot_id', $slot->id)
-                    ->where('assignment_type', 'individual')
-                    ->where('assignable_type', User::class)
-                    ->pluck('assignable_id')
-                    ->toArray();
+        // Clear previous individual assignments (recommended for true auto-assign)
+        DB::transaction(function () use ($availableSlots) {
+            GameSlotAssignment::whereIn('game_slot_id', $availableSlots->pluck('id'))
+                ->where('assignment_type', 'individual')
+                ->delete();
 
-                $availableCount = 3 - count($alreadyAssigned);
+            // Reset status
+            GameSlot::whereIn('id', $availableSlots->pluck('id'))
+                ->update(['status' => 'available']);
+        });
 
-                if ($availableCount <= 0) {
-                    continue; // Slot is full
-                }
+        $assignmentsCreated = 0;
+        $slotsAssigned = 0; // slots with at least 1 referee
 
-                // Get referees not assigned to this slot
-                $availableReferees = array_diff($checkedInRefereeIds, $alreadyAssigned);
+        // Referee queue - will cycle
+        $refereeQueue = $checkedInRefereeIds;
 
-                if (empty($availableReferees)) {
-                    continue;
-                }
+        foreach ($availableSlots as $slot) {
+            $currentCount = 0; // how many assigned in this slot
 
-                // Randomly select referees
-                shuffle($availableReferees);
-                $selectedReferees = array_slice($availableReferees, 0, $availableCount);
+            while ($currentCount < $maxPerSlot && !empty($refereeQueue)) {
+                $refereeId = array_shift($refereeQueue);
 
-                foreach ($selectedReferees as $refereeId) {
-                    GameSlotAssignment::create([
-                        'game_slot_id' => $slot->id,
-                        'assignable_type' => User::class,
-                        'assignable_id' => $refereeId,
-                        'assignment_type' => 'individual',
-                        'is_auto_assigned' => true,
-                    ]);
-                    $totalAssignments++;
-                }
+                GameSlotAssignment::create([
+                    'game_slot_id'     => $slot->id,
+                    'assignable_type'  => User::class,
+                    'assignable_id'    => $refereeId,
+                    'assignment_type'  => 'individual',
+                    'is_auto_assigned' => true,
+                    'assigned_at'      => now(),
+                ]);
 
-                // Update slot status
-                $slot->update(['status' => 'assigned']);
-                $assignedSlotsCount++;
+                $assignmentsCreated++;
+                $currentCount++;
+
+                // Put back in queue for reuse
+                $refereeQueue[] = $refereeId;
             }
 
-            DB::commit();
+            if ($currentCount > 0) {
+                $slotsAssigned++;
+                $slot->update(['status' => 'assigned']);
+            }
 
-            return $this->success(
-                'Auto-assignment completed successfully.',
-                [
-                    'total_slots_assigned' => $assignedSlotsCount,
-                    'total_referee_assignments' => $totalAssignments
-                ],
-                200
-            );
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return $this->error('Auto-assignment failed: ' . $e->getMessage(), null, 500);
+            // Optional: Stop early if referees are too few and slots are too many
+            // Example: if referees < slots, don't over-assign
+            // But if you want maximum coverage, keep going
         }
+
+        // Final stats
+        $stats = [
+            'total_slots'               => $totalSlots,
+            'slots_assigned'            => $slotsAssigned,
+            'total_referee_assignments' => $assignmentsCreated,
+            'total_checked_in_referees' => $totalReferees,
+            'average_per_referee'       => $totalReferees > 0 ? round($assignmentsCreated / $totalReferees, 2) : 0,
+        ];
+
+        return $this->success(
+            'Auto-assignment completed successfully with balanced distribution.',
+            $stats,
+            200
+        );
     }
 
     /**
