@@ -204,7 +204,7 @@
                                             <h2 class="fw-bold mb-0">{{ $sportsStats['total'] }}</h2>
                                             <small class="text-muted">Total Sports</small>
                                         </div>
-                                        <div class="bordered-1 border-info rounded-2 p-3 me-3">
+                                        <div class="bordered-1 border-warning rounded-2 p-3 me-3">
                                             <h2 class="fw-bold mb-0">{{ $sportsStats['active'] }}</h2>
                                             <small class="text-muted">Active Sports</small>
                                         </div>
