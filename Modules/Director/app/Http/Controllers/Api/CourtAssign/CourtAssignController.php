@@ -652,4 +652,27 @@ class CourtAssignController extends Controller
 
         return GameSlotRefereeResource::collection($assignments);
     }
+
+    /**
+     * Toggle block/unblock a court slot
+     */
+    public function toggleBlockSlot($slotId)
+    {
+        $user = auth('api')->user();
+
+        $slot = GameSlot::with('schedule.camp')->findOrFail($slotId);
+
+        if ($slot->schedule->camp->director_id !== $user->id) {
+            return $this->error('Unauthorized.', null, 403);
+        }
+
+        $newBlockStatus = !$slot->is_block;
+        $slot->update(['is_block' => $newBlockStatus]);
+
+        return $this->success(
+            $newBlockStatus ? 'Slot blocked successfully.' : 'Slot unblocked successfully.',
+            ['slot_id' => $slotId, 'is_blocked' => $newBlockStatus],
+            200
+        );
+    }
 }

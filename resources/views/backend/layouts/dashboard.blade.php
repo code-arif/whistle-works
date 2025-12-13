@@ -197,25 +197,24 @@
                             <div class="card-header">
                                 <h4 class="card-title">Sports Types</h4>
                             </div>
-                            <div class="card-body">
-                                <div class="text-center mb-3">
-                                    <div class="d-flex justify-content-center align-item-center p-3">
-                                        <div class="bordered-1 border-primary rounded-2 p-3 me-3">
-                                            <h2 class="fw-bold mb-0">{{ $sportsStats['total'] }}</h2>
+                            <div class="card-body p-3">
+                                <div class="text-center mb-5">
+                                    <div class="d-flex justify-content-center align-item-center p-3 gap-2">
+                                        <div class="p-3" style="border: 1px solid rgb(0, 162, 255); border-radius: 5px">
+                                            <h2 class="fw-bold text-primary mb-0">{{ $sportsStats['total'] }}</h2>
                                             <small class="text-muted">Total Sports</small>
                                         </div>
-                                        <div class="bordered-1 border-warning rounded-2 p-3 me-3">
-                                            <h2 class="fw-bold mb-0">{{ $sportsStats['active'] }}</h2>
+                                        <div class="p-3" style="border: 1px solid rgb(0, 196, 0); border-radius: 5px;">
+                                            <h2 class="fw-bold text-success mb-0">{{ $sportsStats['active'] }}</h2>
                                             <small class="text-muted">Active Sports</small>
                                         </div>
-                                        <div class="bordered-1 border-danger rounded-2 p-3">
-                                            <h2 class="fw-bold mb-0">{{ $sportsStats['inactive'] }}</h2>
+                                        <div class="p-3" style="border: 1px solid red; border-radius: 5px;">
+                                            <h2 class="fw-bold text-danger mb-0">{{ $sportsStats['inactive'] }}</h2>
                                             <small class="text-muted">In Active Sports</small>
                                         </div>
                                     </div>
-
                                 </div>
-                                <div class="chart-container" style="position: relative; height: 180px; width: 100%;">
+                                <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
                                     <canvas id="sportsTypeChart"></canvas>
                                 </div>
                             </div>
@@ -226,7 +225,7 @@
                 <!-- CHARTS ROW -->
                 <div class="row mt-5">
                     <!-- Monthly Camps Trend -->
-                    <div class="col-lg-8">
+                    <div class="col-lg-12">
                         <div class="card" style="height: 90%">
                             <div class="card-header d-flex justify-content-between">
                                 <h4 class="card-title">Monthly Camps Trend</h4>

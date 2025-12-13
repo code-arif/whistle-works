@@ -11,7 +11,7 @@ use Modules\Director\Helpers\UploadFile;
 use Modules\Director\Transformers\CampResource;
 use Modules\Director\Http\Requests\CampCreateRequest;
 
-class Campcontroller extends Controller
+class CampManageController extends Controller
 {
     use ApiResponse;
 

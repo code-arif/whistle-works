@@ -35,6 +35,16 @@
                     </a>
                 </li>
 
+                {{-- user list --}}
+                <li class="slide">
+                    <a class="side-menu__item {{ request()->routeIs('admin.sports-type.*') ? 'has-link active' : '' }}"
+                        href="{{ route('admin.sports-type.index') }}">
+                        <i class="fa-solid fa-users side-menu__icon"></i>
+                        <span class="side-menu__label">User List</span>
+
+                    </a>
+                </li>
+
                 <!-- <li>
                     <h3>Components</h3>
                 </li> -->
