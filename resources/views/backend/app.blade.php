@@ -12,24 +12,24 @@
     <meta name="keywords" content="{!! strip_tags(settings()->keywords ?? '') !!}">
 
     <!-- FAVICON -->
-    <link rel="shortcut icon" type="image/x-icon" href="{{ asset(settings()->favicon ?? 'default/logo.svg') }}" />
+    <link rel="shortcut icon" type="image/png" href="{{ asset(settings()->favicon ?? 'default/favicon.png') }}" />
 
     <!-- TITLE -->
     <title>{{ config('app.name') }} - {{ $title ?? settings()->title ?? '' }}</title>
     <!-- Scripts -->
 
     <script>
-   
+
     window.authUserId = {{ auth()->id() ?? 'null' }};
 </script>
 
     @vite(['resources/js/app.js'])
-    
+
     @include('backend.partials._styles')
 
     @livewireStyles
-    
-    
+
+
 </head>
 
 <body class="ltr app sidebar-mini">
@@ -53,7 +53,7 @@
     @include('backend.partials._scripts')
 
     @livewireScripts
-    
+
 </body>
 
 </html>

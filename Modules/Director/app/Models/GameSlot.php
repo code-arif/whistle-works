@@ -5,8 +5,6 @@ namespace Modules\Director\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-// use Modules\Director\Database\Factories\GameSlotFactory;
 
 class GameSlot extends Model
 {
@@ -26,6 +24,17 @@ class GameSlot extends Model
         return $this->belongsTo(ScheduleLocation::class, 'schedule_location_id');
     }
 
+    /**
+     * New polymorphic assignments relationship
+     */
+    public function slotAssignments(): HasMany
+    {
+        return $this->hasMany(GameSlotAssignment::class);
+    }
+
+    /**
+     * Legacy relationship - keep for backward compatibility if needed
+     */
     public function refereeAssignments(): HasMany
     {
         return $this->hasMany(RefereeAssignment::class);
@@ -37,18 +46,71 @@ class GameSlot extends Model
     }
 
     /**
-     * Check if assigned by crew
+     * Check if slot has crew assignment
      */
-    public function isCrewAssignment(): bool
+    public function hasCrewAssignment(): bool
     {
-        return $this->assignment_mode === 'crew' && $this->crew_id !== null;
+        return $this->slotAssignments()
+            ->where('assignment_type', 'crew')
+            ->exists();
     }
 
     /**
-     * Check if assigned individually
+     * Check if slot has individual assignments
      */
-    public function isIndividualAssignment(): bool
+    public function hasIndividualAssignments(): bool
     {
-        return $this->assignment_mode === 'individual';
+        return $this->slotAssignments()
+            ->where('assignment_type', 'individual')
+            ->exists();
+    }
+
+    /**
+     * Get total referee count (crew members + individuals)
+     */
+    public function getTotalRefereesAttribute(): int
+    {
+        $crewAssignment = $this->slotAssignments()
+            ->where('assignment_type', 'crew')
+            ->with('assignable.members')
+            ->first();
+
+        if ($crewAssignment) {
+            return $crewAssignment->assignable->members->count();
+        }
+
+        return $this->slotAssignments()
+            ->where('assignment_type', 'individual')
+            ->count();
+    }
+
+    /**
+     * Check if slot is full (has 3 referees or crew)
+     */
+    public function isFull(): bool
+    {
+        if ($this->hasCrewAssignment()) {
+            return true; // Crew takes full slot
+        }
+
+        return $this->slotAssignments()
+            ->where('assignment_type', 'individual')
+            ->count() >= 3;
+    }
+
+    /**
+     * Get available slots for individual assignment
+     */
+    public function availableSlots(): int
+    {
+        if ($this->hasCrewAssignment()) {
+            return 0;
+        }
+
+        $currentCount = $this->slotAssignments()
+            ->where('assignment_type', 'individual')
+            ->count();
+
+        return max(0, 3 - $currentCount);
     }
 }

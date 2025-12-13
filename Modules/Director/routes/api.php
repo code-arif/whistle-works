@@ -69,18 +69,26 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
     });
 
     // Schedule Management
-    Route::controller(ScheduleController::class)->group(function () {
+    Route::group([], function () {
+
+        // Get camp date range before creating schedule
+        Route::get('camp/{campId}/date-range', [ScheduleController::class, 'getCampDateRange']);
+
         // Create & View Schedule
-        Route::post('camp/{campId}/schedule/create', 'createSchedule'); // working
-        Route::get('camp/{campId}/schedule', 'getSchedule'); // working
-        Route::delete('camp/{campId}/schedule', 'deleteSchedule'); // working
+        Route::post('camp/{campId}/schedule/create', [ScheduleController::class, 'createSchedule']); // working
+        Route::get('camp/{campId}/schedule', [ScheduleController::class, 'getSchedule']); // working
+        Route::delete('camp/{campId}/schedule', [ScheduleController::class, 'deleteSchedule']); // pending
 
         // Game Slots
-        Route::get('camp/{campId}/schedule/game-slots', 'getGameSlots'); // working
+        Route::get('camp/{campId}/schedule/game-slots', [ScheduleController::class, 'getGameSlots']); // working
+
+        // Game slots management
+        Route::get('camp/{campId}/schedule/game-slots', [ScheduleController::class, 'getGameSlots']); // working
+        Route::patch('slot/{slotId}/toggle-block', [ScheduleController::class, 'toggleBlockSlot']); // working
 
         // Schedule Actions
-        Route::post('camp/{campId}/schedule/publish', 'publishSchedule');
-        Route::post('camp/{campId}/schedule/clear', 'clearSchedule');
+        Route::post('camp/{campId}/schedule/publish', [ScheduleController::class, 'publishSchedule']); // working
+        Route::post('camp/{campId}/schedule/clear', [ScheduleController::class, 'clearSchedule']);
     });
 
     // Referee Check-in Management (Director View)
@@ -90,17 +98,15 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
     });
 
     // Referee Assignment Management
-    Route::controller(RefereeAssignController::class)->group(function () {
-        // Slot-specific assignment
-        Route::post('game-slot/{slotId}/assign-referee', 'assignReferees'); // working
-        Route::delete('game-slot/{assignmentId}/remove-referee', 'removeReferee');
+    // Route::controller(RefereeAssignController::class)->group(function () {
+    //     // Slot-specific assignment
+    //     Route::post('game-slot/{slotId}/assign-referee', 'assignReferees'); // working
+    //     Route::delete('game-slot/{assignmentId}/remove-referee', 'removeReferee');
 
-        // Camp-wide referees
-        Route::get('camp/{campId}/available-referees', 'getAvailableReferees'); // working
-        Route::get('game-slot/{slotId}/assigned-referees', 'getAssignedReferees'); // working
-    });
-
-    Route::post('/game-slot/{slotId}/block-unblock', [CourtManageController::class, 'blockUnblockGameSlot']); // working
+    //     // Camp-wide referees
+    //     Route::get('camp/{campId}/available-referees', 'getAvailableReferees'); // working
+    //     Route::get('game-slot/{slotId}/assigned-referees', 'getAssignedReferees'); // working
+    // });
 
 
     // Court Assignment Management

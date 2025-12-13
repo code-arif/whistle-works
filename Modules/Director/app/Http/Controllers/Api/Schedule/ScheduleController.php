@@ -3,16 +3,62 @@
 namespace Modules\Director\Http\Controllers\Api\Schedule;
 
 use Carbon\Carbon;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Traits\ApiResponse;
-use Modules\Director\Models\{Camp, Schedule, ScheduleLocation, ScheduleTimeRange, GameSlot, RefereeAssignment, CampRefereeCheckin};
+use Modules\Director\Models\GameSlotAssignment;
 use Modules\Director\Http\Requests\{ScheduleCreateRequest, LocationAddRequest};
+use Modules\Director\Models\{Camp, Schedule, ScheduleLocation, ScheduleTimeRange, GameSlot};
 
 class ScheduleController extends Controller
 {
     use ApiResponse;
+
+    /**
+     * Get camp date range for schedule creation
+     */
+    public function getCampDateRange($campId)
+    {
+        $user = auth('api')->user();
+
+        $camp = Camp::where('id', $campId)
+            ->where('director_id', $user->id)
+            ->first();
+
+        if (!$camp) {
+            return $this->error('Camp not found.', null, 404);
+        }
+
+        // Generate all dates between start and end
+        $startDate = Carbon::parse($camp->start_date);
+        $endDate = Carbon::parse($camp->end_date);
+
+        $dates = [];
+        $currentDate = $startDate->copy();
+
+        while ($currentDate->lte($endDate)) {
+            $dates[] = [
+                'date' => $currentDate->format('Y-m-d'),
+                'day' => $currentDate->format('l'), // Monday, Tuesday, etc.
+                'formatted' => $currentDate->format('M d, Y')
+            ];
+            $currentDate->addDay();
+        }
+
+        return $this->success(
+            'Camp date range fetched successfully.',
+            [
+                'camp_id' => $camp->id,
+                'camp_name' => $camp->camp_name,
+                'start_date' => $camp->start_date,
+                'end_date' => $camp->end_date,
+                'total_days' => count($dates),
+                'dates' => $dates
+            ],
+            200
+        );
+    }
 
     /**
      * Create schedule with time ranges and locations
@@ -32,7 +78,18 @@ class ScheduleController extends Controller
 
         // Check if schedule already exists
         if ($camp->schedule()->exists()) {
-            return $this->error('Schedule already exists for this camp.', null, 400);
+            return $this->error('Schedule already exists for this camp. Delete existing schedule first.', null, 400);
+        }
+
+        // Validate dates are within camp range
+        foreach ($request->time_ranges as $range) {
+            $rangeDate = Carbon::parse($range['date']);
+            $campStart = Carbon::parse($camp->start_date);
+            $campEnd = Carbon::parse($camp->end_date);
+
+            if ($rangeDate->lt($campStart) || $rangeDate->gt($campEnd)) {
+                return $this->error("Date {$range['date']} is outside camp date range.", null, 400);
+            }
         }
 
         DB::beginTransaction();
@@ -66,13 +123,16 @@ class ScheduleController extends Controller
             }
 
             // Generate game slots
-            $this->generateGameSlots($schedule);
+            $slotsGenerated = $this->generateGameSlots($schedule);
 
             DB::commit();
 
             return $this->success(
                 'Schedule created successfully.',
-                $this->formatScheduleResponse($schedule),
+                array_merge(
+                    $this->formatScheduleResponse($schedule),
+                    ['slots_generated' => $slotsGenerated]
+                ),
                 201
             );
         } catch (\Exception $e) {
@@ -82,39 +142,58 @@ class ScheduleController extends Controller
     }
 
     /**
-     * Generate game slots based on time ranges and courts
+     * Generate game slots based on time ranges, game duration, and courts
+     *
+     * Logic:
+     * - For each date with time range
+     * - Calculate how many games fit in that time (duration-based)
+     * - For each game time slot, create entries for ALL courts
      */
     private function generateGameSlots(Schedule $schedule)
     {
         $timeRanges = $schedule->timeRanges;
         $locations = $schedule->locations;
-        $gameDuration = $schedule->game_duration;
+        $gameDuration = $schedule->game_duration; // in minutes
+
+        $totalSlotsCreated = 0;
 
         foreach ($timeRanges as $range) {
             $startTime = Carbon::parse($range->start_time);
             $endTime = Carbon::parse($range->end_time);
+            $gameDate = $range->date;
 
-            foreach ($locations as $location) {
-                for ($courtNum = 1; $courtNum <= $location->court_count; $courtNum++) {
-                    $currentTime = $startTime->copy();
+            // Calculate how many games can fit
+            $currentTime = $startTime->copy();
 
-                    while ($currentTime->copy()->addMinutes($gameDuration)->lte($endTime)) {
+            while ($currentTime->copy()->addMinutes($gameDuration)->lte($endTime)) {
+                $slotStartTime = $currentTime->format('H:i:s');
+                $slotEndTime = $currentTime->copy()->addMinutes($gameDuration)->format('H:i:s');
+
+                // Create slots for ALL locations and ALL courts
+                foreach ($locations as $location) {
+                    for ($courtNum = 1; $courtNum <= $location->court_count; $courtNum++) {
                         GameSlot::create([
                             'schedule_id' => $schedule->id,
                             'schedule_location_id' => $location->id,
-                            'game_date' => $range->date,
-                            'start_time' => $currentTime->format('H:i:s'),
-                            'end_time' => $currentTime->copy()->addMinutes($gameDuration)->format('H:i:s'),
+                            'game_date' => $gameDate,
+                            'start_time' => $slotStartTime,
+                            'end_time' => $slotEndTime,
                             'court_name' => $location->location_name . ' - Court ' . $courtNum,
                             'court_number' => $courtNum,
-                            'status' => 'available'
+                            'status' => 'available',
+                            'is_block' => false
                         ]);
 
-                        $currentTime->addMinutes($gameDuration);
+                        $totalSlotsCreated++;
                     }
                 }
+
+                // Move to next time slot
+                $currentTime->addMinutes($gameDuration);
             }
         }
+
+        return $totalSlotsCreated;
     }
 
     /**
@@ -132,7 +211,9 @@ class ScheduleController extends Controller
             return $this->error('Camp not found.', null, 404);
         }
 
-        $schedule = $camp->schedule()->with(['locations', 'timeRanges', 'gameSlots.refereeAssignments.referee'])->first();
+        $schedule = $camp->schedule()
+            ->with(['locations', 'timeRanges', 'gameSlots'])
+            ->first();
 
         if (!$schedule) {
             return $this->error('Schedule not found.', null, 404);
@@ -145,8 +226,10 @@ class ScheduleController extends Controller
         );
     }
 
+
     /**
-     * Get game slots grouped by date and court
+     * Get game slots grouped by date, time, and court
+     * This is for the UI grid display
      */
     public function getGameSlots($campId, Request $request)
     {
@@ -165,33 +248,109 @@ class ScheduleController extends Controller
             return $this->error('Schedule not found.', null, 404);
         }
 
-        // Get date from request or first date
-        $date = $request->date ?? $schedule->timeRanges()->orderBy('date')->first()->date;
+        // Get available dates
+        $availableDates = $schedule->timeRanges()
+            ->orderBy('date')
+            ->get()
+            ->map(function ($range) {
+                return [
+                    'date' => $range->date,
+                    'formatted' => Carbon::parse($range->date)->format('F d'),
+                    'day' => Carbon::parse($range->date)->format('l')
+                ];
+            });
 
-        // Get game slots for specific date
+        // Get date from request or use first date
+        $selectedDate = $request->date ?? $availableDates->first()['date'];
+
+        // Get all game slots for selected date
         $gameSlots = GameSlot::where('schedule_id', $schedule->id)
-            ->where('game_date', $date)
-            ->with(['location', 'refereeAssignments.referee'])
+            ->where('game_date', $selectedDate)
+            ->with(['location', 'slotAssignments.assignable'])
             ->orderBy('start_time')
             ->orderBy('court_number')
             ->get();
 
-        // Group by time and court
-        $grouped = $gameSlots->groupBy('start_time')->map(function ($slots) {
-            return $slots->groupBy('court_name');
-        });
+        // Group by time
+        $timeSlots = $gameSlots->groupBy('start_time')->map(function ($slots, $time) {
+            return [
+                'time' => Carbon::parse($time)->format('h:i A'),
+                'time_24h' => $time,
+                'courts' => $slots->map(function ($slot) {
+                    return [
+                        'slot_id' => $slot->id,
+                        'court_name' => $slot->court_name,
+                        'court_number' => $slot->court_number,
+                        'location' => $slot->location->location_name,
+                        'status' => $slot->status,
+                        'is_blocked' => $slot->is_block,
+                        'start_time' => $slot->start_time,
+                        'end_time' => $slot->end_time,
+                        'assignments_count' => $slot->slotAssignments->count(),
+                        'assignments' => $slot->slotAssignments->map(function ($assignment) {
+                            if ($assignment->assignment_type === 'crew') {
+                                return [
+                                    'type' => 'crew',
+                                    'crew_name' => $assignment->assignable->name ?? 'Unknown',
+                                ];
+                            } else {
+                                return [
+                                    'type' => 'individual',
+                                    'referee_name' => ($assignment->assignable->first_name ?? '') . ' ' . ($assignment->assignable->last_name ?? ''),
+                                ];
+                            }
+                        })
+                    ];
+                })->values()
+            ];
+        })->values();
 
-        // Get available dates
-        $availableDates = $schedule->timeRanges()->pluck('date')->unique()->values();
+        // Get unique court names for header
+        $courtHeaders = $gameSlots->unique('court_name')
+            ->sortBy('court_number')
+            ->map(function ($slot) {
+                return [
+                    'location' => $slot->location->location_name,
+                    'court_name' => $slot->court_name,
+                    'court_number' => $slot->court_number
+                ];
+            })
+            ->values();
 
         return $this->success(
             'Game slots fetched successfully.',
             [
-                'current_date' => $date,
+                'selected_date' => $selectedDate,
+                'selected_date_formatted' => Carbon::parse($selectedDate)->format('F d, Y'),
                 'available_dates' => $availableDates,
-                'game_slots' => $grouped,
-                'locations' => $schedule->locations
+                'court_headers' => $courtHeaders,
+                'time_slots' => $timeSlots,
+                'total_slots' => $gameSlots->count(),
+                'assigned_slots' => $gameSlots->where('status', 'assigned')->count()
             ],
+            200
+        );
+    }
+
+    /**
+     * Block/Unblock a specific game slot
+     */
+    public function toggleBlockSlot($slotId)
+    {
+        $user = auth('api')->user();
+
+        $slot = GameSlot::with('schedule.camp')->findOrFail($slotId);
+
+        if ($slot->schedule->camp->director_id !== $user->id) {
+            return $this->error('Unauthorized.', null, 403);
+        }
+
+        $newBlockStatus = !$slot->is_block;
+        $slot->update(['is_block' => $newBlockStatus]);
+
+        return $this->success(
+            $newBlockStatus ? 'Slot blocked successfully.' : 'Slot unblocked successfully.',
+            ['slot_id' => $slotId, 'is_blocked' => $newBlockStatus],
             200
         );
     }
@@ -222,7 +381,7 @@ class ScheduleController extends Controller
     }
 
     /**
-     * Clear schedule (remove all assignments)
+     * Clear schedule (remove all assignments but keep slots)
      */
     public function clearSchedule($campId)
     {
@@ -243,16 +402,18 @@ class ScheduleController extends Controller
 
         DB::beginTransaction();
         try {
-            // Remove all assignments
-            RefereeAssignment::whereIn('game_slot_id', $schedule->gameSlots()->pluck('id'))
-                ->delete();
+            // Remove all assignments using new table
+            GameSlotAssignment::whereIn(
+                'game_slot_id',
+                $schedule->gameSlots()->pluck('id')
+            )->delete();
 
             // Reset slot statuses
             $schedule->gameSlots()->update(['status' => 'available']);
 
             DB::commit();
 
-            return $this->success('Schedule cleared successfully.', null, 200);
+            return $this->success('All assignments cleared successfully.', null, 200);
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error('Failed to clear schedule: ' . $e->getMessage(), null, 500);
@@ -279,7 +440,7 @@ class ScheduleController extends Controller
             return $this->error('Schedule not found.', null, 404);
         }
 
-        $schedule->delete();
+        $schedule->delete(); // Cascade will handle related records
 
         return $this->success('Schedule deleted successfully.', null, 200);
     }
@@ -294,11 +455,26 @@ class ScheduleController extends Controller
             'camp_id' => $schedule->camp_id,
             'game_duration' => $schedule->game_duration,
             'status' => $schedule->status,
-            'time_ranges' => $schedule->timeRanges,
-            'locations' => $schedule->locations,
+            'time_ranges' => $schedule->timeRanges->map(function ($range) {
+                return [
+                    'date' => $range->date,
+                    'formatted_date' => Carbon::parse($range->date)->format('M d, Y'),
+                    'start_time' => Carbon::parse($range->start_time)->format('h:i A'),
+                    'end_time' => Carbon::parse($range->end_time)->format('h:i A'),
+                ];
+            }),
+            'locations' => $schedule->locations->map(function ($location) {
+                return [
+                    'id' => $location->id,
+                    'name' => $location->location_name,
+                    'court_count' => $location->court_count,
+                ];
+            }),
             'total_game_slots' => $schedule->gameSlots()->count(),
             'assigned_slots' => $schedule->gameSlots()->where('status', 'assigned')->count(),
-            'created_at' => $schedule->created_at
+            'available_slots' => $schedule->gameSlots()->where('status', 'available')->count(),
+            'blocked_slots' => $schedule->gameSlots()->where('is_block', true)->count(),
+            'created_at' => $schedule->created_at->format('Y-m-d H:i:s')
         ];
     }
 }
