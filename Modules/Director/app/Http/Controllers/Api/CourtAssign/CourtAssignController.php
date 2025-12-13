@@ -12,8 +12,10 @@ use Modules\Director\Models\{
     GameSlot,
     GameSlotAssignment,
     CampRefereeCheckin,
-    Crew
+    Crew,
+    Schedule
 };
+use Modules\Director\Transformers\CourtAssign\GameSlotRefereeResource;
 
 class CourtAssignController extends Controller
 {
@@ -194,7 +196,7 @@ class CourtAssignController extends Controller
                 'members' => $crew->members->map(fn($m) => [
                     'id' => $m->id,
                     'name' => $m->first_name . ' ' . $m->last_name,
-                    'avatar' => $m->avatar ? asset($m->avatar) : null,
+                    'avatar' => $m->avatar ? asset($m->avatar) : asset('default/profile.jpg'),
                 ])
             ];
 
@@ -318,7 +320,11 @@ class CourtAssignController extends Controller
         $user = auth('api')->user();
 
         $assignment = GameSlotAssignment::with('gameSlot.schedule.camp')
-            ->findOrFail($assignmentId);
+            ->find($assignmentId);
+
+        if (!$assignment) {
+            return $this->error([], 'Assignment not found.', 404);
+        }
 
         // Authorization check
         if ($assignment->gameSlot->schedule->camp->director_id !== $user->id) {
@@ -343,6 +349,78 @@ class CourtAssignController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error('Failed to remove assignment: ' . $e->getMessage(), null, 500);
+        }
+    }
+
+    /**
+     * Clear all assinment for a schedule
+     */
+    public function clearScheduleAssignments($scheduleId)
+    {
+        $user = auth('api')->user();
+
+        // Step 1: Find the schedule and verify ownership
+        $schedule = Schedule::with('camp')->find($scheduleId); // assume Schedule model exists
+
+        if (!$schedule) {
+            return $this->error('Schedule not found.', null, 404);
+        }
+
+        if ($schedule->camp->director_id !== $user->id) {
+            return $this->error('Unauthorized. You can only clear assignments for your own camp.', null, 403);
+        }
+
+        // Step 2: Check if any slots exist
+        $slotCount = GameSlot::where('schedule_id', $scheduleId)->count();
+        if ($slotCount === 0) {
+            return $this->error('No game slots found for this schedule.', null, 404);
+        }
+
+        // Step 3: Count current assignments (for response)
+        $assignmentCount = GameSlotAssignment::whereHas('gameSlot', function ($q) use ($scheduleId) {
+            $q->where('schedule_id', $scheduleId);
+        })->count();
+
+        if ($assignmentCount === 0) {
+            return $this->success(
+                'No assignments to clear. All slots are already available.',
+                [
+                    'cleared_count' => 0,
+                    'schedule_id' => $scheduleId,
+                    'slot_count' => $slotCount,
+                ],
+                200
+            );
+        }
+
+        // Step 4: Clear assignments in transaction (safe delete)
+        DB::beginTransaction();
+        try {
+            // Delete all assignments for this schedule's slots
+            $deleted = GameSlotAssignment::whereHas('gameSlot', function ($q) use ($scheduleId) {
+                $q->where('schedule_id', $scheduleId);
+            })->delete();
+
+            // Optional: Reset slot statuses to 'available'
+            GameSlot::where('schedule_id', $scheduleId)
+                ->where('status', 'assigned') // only assigned ones
+                ->update(['status' => 'available']);
+
+            DB::commit();
+
+            return $this->success(
+                'All assignments cleared successfully.',
+                [
+                    'cleared_count' => $deleted,
+                    'schedule_id' => $scheduleId,
+                    'slot_count' => $slotCount,
+                    'available_slots' => $slotCount, // now all are available
+                ],
+                200
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->error('Failed to clear assignments: ' . $e->getMessage(), null, 500);
         }
     }
 
@@ -444,7 +522,7 @@ class CourtAssignController extends Controller
                     'id' => $ref->id,
                     'name' => $ref->first_name . ' ' . $ref->last_name,
                     'email' => $ref->email,
-                    'avatar' => $ref->avatar ? asset($ref->avatar) : null,
+                    'avatar' => $ref->avatar ? asset($ref->avatar) : asset('default/profile.jpg'),
                 ];
             });
 
@@ -459,23 +537,109 @@ class CourtAssignController extends Controller
     }
 
     /**
+     * Get assigned referees for a slot
+     */
+    public function getAssignedRefereesOrCrew($slotId)
+    {
+        $user = auth('api')->user();
+
+        $slot = GameSlot::with('schedule.camp')->findOrFail($slotId);
+
+        if ($slot->schedule->camp->director_id !== $user->id) {
+            return $this->error('Unauthorized.', null, 403);
+        }
+
+        $court = [
+            'court_id'   => $slot->id,
+            'court_name' => $slot->court_name ?? 'Unknown',
+        ];
+
+        // Individual assignments
+        $individualAssignments = GameSlotAssignment::with([
+            'assignable' => fn($q) => $q->select('id', 'first_name', 'last_name', 'email', 'avatar'),
+        ])
+            ->where('game_slot_id', $slotId)
+            ->where('assignment_type', 'individual')
+            ->get();
+
+        // Crew assignments (max 1 expected)
+        $crewAssignments = GameSlotAssignment::with([
+            'assignable.members.referee' => fn($q) => $q->select('id', 'first_name', 'last_name', 'email', 'avatar'),
+        ])
+            ->where('game_slot_id', $slotId)
+            ->where('assignment_type', 'crew')
+            ->get();
+
+        // Prepare referees list
+        $referees = $individualAssignments->map(function ($item) {
+            $referee = $item->assignable;
+
+            return [
+                'assignment_id' => $item->id,
+                'referee' => [
+                    'referee_id' => $referee->id,
+                    'name'       => trim("{$referee->first_name} {$referee->last_name}"),
+                    'email'      => $referee->email,
+                    'avatar'     => $referee->avatar
+                        ? asset($referee->avatar)
+                        : asset('default/profile.jpg'),
+                ],
+            ];
+        })->values();
+
+        // Prepare crew (if exists)
+        $crewData = null;
+        if ($crewAssignments->isNotEmpty()) {
+            $crewAssignment = $crewAssignments->first();
+            $crew = $crewAssignment->assignable;
+
+            $crewData = [
+                'assignment_id' => $crewAssignment->id,
+                'crew' => [
+                    'crew_id'      => $crew->id,
+                    'crew_name'    => $crew->name,
+                    'description'  => $crew->description,
+                    'member_count' => $crew->members->count(),
+                    'members'      => $crew->members->map(function ($member) {
+                        $ref = $member->referee ?? $member;
+                        return [
+                            'referee_id' => $ref->id,
+                            'name'       => trim("{$ref->first_name} {$ref->last_name}"),
+                            'email'      => $ref->email,
+                            'avatar'     => $ref->avatar
+                                ? asset($ref->avatar)
+                                : asset('default/profile.jpg'),
+                        ];
+                    })->values(),
+                ],
+            ];
+        }
+
+        // Final structured data
+        $responseData = [
+            'court'     => $court,
+            'referees'  => $referees->isNotEmpty() ? $referees : [],
+            'crew'      => $crewData,
+        ];
+
+        return $this->success(
+            'Assigned referees and crew fetched successfully.',
+            $responseData,
+            200
+        );
+    }
+
+    /**
      * Helper: Get all referees assigned to a slot
      */
     private function getSlotReferees($slotId)
     {
-        return GameSlotAssignment::where('game_slot_id', $slotId)
+        $assignments = GameSlotAssignment::with('assignable')
+            ->where('game_slot_id', $slotId)
             ->where('assignment_type', 'individual')
-            ->where('assignable_type', User::class)
-            ->with('assignable:id,first_name,last_name,email,avatar')
-            ->get()
-            ->map(function ($assignment) {
-                return [
-                    'assignment_id' => $assignment->id,
-                    'referee_id' => $assignment->assignable->id,
-                    'name' => $assignment->assignable->first_name . ' ' . $assignment->assignable->last_name,
-                    'email' => $assignment->assignable->email,
-                    'avatar' => $assignment->assignable->avatar ? asset($assignment->assignable->avatar) : null,
-                ];
-            });
+            ->where('assignable_type', User::class) // or your User model
+            ->get();
+
+        return GameSlotRefereeResource::collection($assignments);
     }
 }

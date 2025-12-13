@@ -51,7 +51,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         // CRUD Operations
         Route::post('/camp/{campId}/crew/create', [CrewManageController::class, 'createCrew']); // working
         Route::get('/camp/{campId}/crews', [CrewManageController::class, 'getCrews']); // working
-        Route::get('/crew/{crewId}', [CrewManageController::class, 'getCrewDetails']); // working
+        Route::get('/crew/{crewId}', [CrewManageController::class, 'getCrewDetails']); // working- crew details
         Route::put('/crew/{crewId}', [CrewManageController::class, 'updateCrew']); // working
         Route::delete('/crew/{crewId}', [CrewManageController::class, 'deleteCrew']); // working
 
@@ -114,22 +114,28 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
 
     Route::prefix('director/court-assign')->group(function () {
         // Individual referee assignment
-        Route::post('slot/{slotId}/assign-individual', [CourtAssignController::class, 'assignIndividualReferees']);
+        Route::post('slot/{slotId}/assign-individual', [CourtAssignController::class, 'assignIndividualReferees']); // working - assign individual referees to a slot
 
         // Crew assignment
-        Route::post('slot/{slotId}/assign-crew', [CourtAssignController::class, 'assignCrew']);
+        Route::post('slot/{slotId}/assign-crew', [CourtAssignController::class, 'assignCrew']); // working - assign crew to a slot
 
         // Auto-assign all slots
         Route::post('camp/{campId}/auto-assign', [CourtAssignController::class, 'autoAssignReferees']);
 
         // Remove assignment (crew or individual)
-        Route::delete('assignment/{assignmentId}/remove', [CourtAssignController::class, 'removeAssignment']);
+        Route::delete('assignment/{assignmentId}/remove', [CourtAssignController::class, 'removeAssignment']); // working - remove assignment by ID (crew or individual)
+
+        // Clear game slot assignments for a camp
+        Route::delete('/schedules/{scheduleId}/clear-assignments', [CourtAssignController::class, 'clearScheduleAssignments']);
 
         // Get slot assignments
         Route::get('slot/{slotId}/assignments', [CourtAssignController::class, 'getSlotAssignments']);
 
         // Get available referees
-        Route::get('camp/{campId}/available-referees', [CourtAssignController::class, 'getAvailableReferees']);
+        Route::get('camp/{campId}/available-referees', [CourtAssignController::class, 'getAvailableReferees']); // working - get all available referees for the camp and slot assignments
+
+        // Get assigned referees for a slot
+        Route::get('slot/{slotId}/assigned-referees-crew', [CourtAssignController::class, 'getAssignedRefereesOrCrew']); // working - get all assigned referees for the slot
     });
 });
 

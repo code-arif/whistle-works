@@ -31,8 +31,6 @@ return new class extends Migration
                 'slot_assignable_unique' // Short custom name
             );
         });
-
-
     }
 
     /**

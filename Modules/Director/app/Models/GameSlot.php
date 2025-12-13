@@ -37,7 +37,7 @@ class GameSlot extends Model
      */
     public function refereeAssignments(): HasMany
     {
-        return $this->hasMany(RefereeAssignment::class);
+        return $this->hasMany(GameSlotAssignment::class);
     }
 
     public function crew(): BelongsTo

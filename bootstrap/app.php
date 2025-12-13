@@ -65,6 +65,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'rental/webhook',
              'graphql',
              'api/*',
+             'https://whistle-works.netlify.app/*',
         ]);
         $middleware->api([
             StartSession::class,

@@ -24,6 +24,7 @@ class ScheduleController extends Controller
 
         $camp = Camp::where('id', $campId)
             ->where('director_id', $user->id)
+            ->withCount('checkedInReferees')
             ->first();
 
         if (!$camp) {
@@ -54,6 +55,7 @@ class ScheduleController extends Controller
                 'start_date' => $camp->start_date,
                 'end_date' => $camp->end_date,
                 'total_days' => count($dates),
+                'checked_in_referees_count' => $camp->checked_in_referees_count,
                 'dates' => $dates
             ],
             200
