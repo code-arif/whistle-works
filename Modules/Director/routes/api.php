@@ -28,11 +28,11 @@ Route::prefix('v1/camp')->group(function () {
 Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function () {
     // Camp Management
     Route::group([], function () {
-        Route::post('camp/create', [CampManageController::class, 'createCamp']); // done
-        Route::post('camp/update/{id}', [CampManageController::class, 'updateCamp']); // done
-        Route::post('camp/status/{id}', [CampManageController::class, 'updateStatus']); // done
-        Route::delete('camp/delete/{id}', [CampManageController::class, 'deleteCamp']); // done
-        Route::get('camp/details/{id}', [CampManageController::class, 'campDetails']); // done
+        Route::post('/camp/create', [CampManageController::class, 'createCamp']); // done
+        Route::post('/camp/update/{id}', [CampManageController::class, 'updateCamp']); // done
+        Route::post('/camp/status/{id}', [CampManageController::class, 'updateStatus']); // done
+        Route::delete('/camp/delete/{id}', [CampManageController::class, 'deleteCamp']); // done
+        Route::get('/camp/details/{id}', [CampManageController::class, 'campDetails']); // done
         Route::get('/director/camp/list', [CampManageController::class, 'directorCampList']); // done
     });
 

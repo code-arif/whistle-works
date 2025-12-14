@@ -1,7 +1,7 @@
-@extends('backend.app', ['title' => 'Festivals'])
+@extends('backend.app', ['title' => 'Sports Types'])
 
 @push('styles')
-<link href="{{ asset('default/datatable.css') }}" rel="stylesheet" />  
+<link href="{{ asset('default/datatable.css') }}" rel="stylesheet" />
 @endpush
 
 
@@ -123,7 +123,7 @@
                         orderable: false,
                         searchable: false
                     },
-                    
+
                     {
                         data: 'status',
                         name: 'status',
@@ -230,6 +230,6 @@
         let url = "{{ route('admin.sports-type.show', ':id') }}";
         window.location.href = url.replace(':id', id);
     }
-    
+
 </script>
 @endpush

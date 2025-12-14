@@ -37,8 +37,8 @@
 
                 {{-- user list --}}
                 <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.sports-type.*') ? 'has-link active' : '' }}"
-                        href="{{ route('admin.sports-type.index') }}">
+                    <a class="side-menu__item {{ request()->routeIs('admin.users.manage.*') ? 'has-link active' : '' }}"
+                        href="{{ route('admin.users.manage.index') }}">
                         <i class="fa-solid fa-users side-menu__icon"></i>
                         <span class="side-menu__label">User List</span>
 
@@ -101,12 +101,6 @@
                     </ul>
                 </li>
 
-                <!-- <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.template.*') ? 'has-link active' : '' }}" href="{{ route('admin.template.index') }}">
-                        <i class="fa-solid fa-synagogue side-menu__icon"></i>
-                        <span class="side-menu__label">Template</span>
-                    </a>
-                </li> -->
                 <li>
                     <h3>CMS</h3>
                 </li>
@@ -132,12 +126,7 @@
                     </a>
                 </li> --}}
 
-                <!-- <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.menu.*') ? 'has-link active' : '' }}" href="{{ route('admin.menu.index') }}">
-                        <i class="fa-solid fa-bars-staggered side-menu__icon"></i>
-                        <span class="side-menu__label">Menu</span>
-                    </a>
-                </li> -->
+
                 <!-- <li class="slide">
                     <a class="side-menu__item {{ Request::routeIs('ajax.gallery.*') ? 'has-link active' : '' }}" href="{{ route('ajax.gallery.index') }}">
                         <i class="fa-solid fa-image side-menu__icon"></i>

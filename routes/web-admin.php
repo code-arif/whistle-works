@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\Web\Backend\FaqController;
 use App\Http\Controllers\Web\Backend\ChatController;
-use App\Http\Controllers\Web\Backend\MenuController;
 use App\Http\Controllers\Web\Backend\PageController;
 use App\Http\Controllers\Web\Backend\PostController;
 use App\Http\Controllers\Web\Backend\ImageController;
@@ -13,9 +12,7 @@ use App\Http\Controllers\Web\Backend\OrderController;
 use App\Http\Controllers\Web\Backend\BookingController;
 use App\Http\Controllers\Web\Backend\ContactController;
 use App\Http\Controllers\Web\Backend\CategoryController;
-use App\Http\Controllers\Web\Backend\FestivalController;
 use App\Http\Controllers\Web\Backend\LivewireController;
-use App\Http\Controllers\Web\Backend\TemplateController;
 use App\Http\Controllers\Web\Backend\DashboardController;
 use App\Http\Controllers\Web\Backend\CMS\SliderController;
 use App\Http\Controllers\Web\Backend\SocialLinkController;
@@ -23,7 +20,6 @@ use App\Http\Controllers\Web\Backend\SubscriberController;
 use App\Http\Controllers\Web\Backend\Access\RoleController;
 use App\Http\Controllers\Web\Backend\Access\UserController;
 use App\Http\Controllers\Web\Backend\SubcategoryController;
-use App\Http\Controllers\Web\Backend\TransactionController;
 use App\Http\Controllers\Web\Backend\CMS\FeaturesController;
 use App\Http\Controllers\Web\Backend\CMS\HomePageController;
 use App\Http\Controllers\Web\Backend\ProductBrandController;
@@ -43,34 +39,37 @@ use App\Http\Controllers\Web\Backend\Settings\SignatureController;
 use App\Http\Controllers\Web\Backend\Settings\MailSettingController;
 use App\Http\Controllers\Web\Backend\SportsType\SportsTypeController;
 use App\Http\Controllers\Web\Backend\CMS\Web\PrivacyTerms\PrivacAndTermsController;
+use App\Http\Controllers\Web\Backend\User\UserManageController;
 
 Route::get("dashboard", [DashboardController::class, 'index'])->name('dashboard');
 
-/*
-* CRUD
-*/
 
-Route::controller(MenuController::class)->prefix('menu')->name('menu.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/create', 'create')->name('create');
-    Route::post('/store', 'store')->name('store');
-    Route::get('/show/{id}', 'show')->name('show');
-    Route::get('/edit/{id}', 'edit')->name('edit');
-    Route::post('/update/{id}', 'update')->name('update');
-    Route::delete('/delete/{id}', 'destroy')->name('destroy');
-    Route::get('/status/{id}', 'status')->name('status');
+/**
+ * Sports Type Management Routes
+ */
+Route::group(['prefix' => 'sports-type', 'as' => 'sports-type.'], function () {
+    Route::get('/', [SportsTypeController::class, 'index'])->name('index');
+    Route::get('/create', [SportsTypeController::class, 'create'])->name('create');
+    Route::post('/store', [SportsTypeController::class, 'store'])->name('store');
+    Route::get('/show/{id}', [SportsTypeController::class, 'show'])->name('show');
+    Route::get('/edit/{id}', [SportsTypeController::class, 'edit'])->name('edit');
+    Route::post('/update/{id}', [SportsTypeController::class, 'update'])->name('update');
+    Route::delete('/delete/{id}', [SportsTypeController::class, 'destroy'])->name('destroy');
+    Route::get('/status/{id}', [SportsTypeController::class, 'status'])->name('status');
 });
 
-Route::controller(TemplateController::class)->prefix('template')->name('template.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/create', 'create')->name('create');
-    Route::post('/store', 'store')->name('store');
-    Route::get('/show/{id}', 'show')->name('show');
-    Route::get('/edit/{id}', 'edit')->name('edit');
-    Route::post('/update/{id}', 'update')->name('update');
-    Route::delete('/delete/{id}', 'destroy')->name('destroy');
-    Route::get('/status/{id}', 'status')->name('status');
+/**
+ * User Management Routes
+ */
+Route::group(['prefix' => 'users', 'as' => 'users.manage.'], function () {
+    Route::get('/manage-list', [UserManageController::class, 'index'])->name('index');
+    Route::get('/manage-status/{id}', [UserManageController::class, 'status'])->name('status');
+    Route::get('/manage-show/{id}', [UserManageController::class, 'show'])->name('show');
+    Route::delete('/manage-delete/{id}', [UserManageController::class, 'destroy'])->name('destroy');
+
+    Route::post('/export', [UserManageController::class, 'export'])->name('export');
 });
+
 
 Route::controller(CategoryController::class)->prefix('category')->name('category.')->group(function () {
     Route::get('/', 'index')->name('index');
@@ -105,28 +104,6 @@ Route::controller(ProductBrandController::class)->prefix('brand')->name('brand.'
 });
 
 
-Route::controller(SportsTypeController::class)->prefix('sports-type')->name('sports-type.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/create', 'create')->name('create');
-    Route::post('/store', 'store')->name('store');
-    Route::get('/show/{id}', 'show')->name('show');
-    Route::get('/edit/{id}', 'edit')->name('edit');
-    Route::post('/update/{id}', 'update')->name('update');
-    Route::delete('/delete/{id}', 'destroy')->name('destroy');
-    Route::get('/status/{id}', 'status')->name('status');
-});
-
-Route::controller(OrderController::class)->prefix('order')->name('order.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/show/{id}', 'show')->name('show');
-    Route::get('/status/{id}', 'status')->name('status');
-});
-
-
-Route::controller(BookingController::class)->prefix('booking')->name('booking.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/show/{id}', 'show')->name('show');
-});
 
 Route::controller(PostController::class)->prefix('post')->name('post.')->group(function () {
     Route::get('/', 'index')->name('index');

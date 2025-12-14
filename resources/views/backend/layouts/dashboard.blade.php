@@ -3,7 +3,7 @@
 @section('content')
     <!--app-content open-->
     <div class="app-content main-content mt-0">
-        <div class="side-app">
+        <div class="side-app" style="margin-bottom:60px">
             <!-- CONTAINER -->
             <div class="main-container container-fluid">
 
@@ -283,14 +283,14 @@
                 </div>
 
                 <!-- RECENT ACTIVITIES AND TOP CREWS -->
-                <div class="row">
+                <div class="row mb-3">
                     <!-- Recent Camps -->
                     <div class="col-lg-6">
-                        <div class="card">
+                        <div class="card h-100">
                             <div class="card-header">
                                 <h4 class="card-title">Recent Camps</h4>
                             </div>
-                            <div class="card-body p-0">
+                            <div class="card-body p-3">
                                 <div class="table-responsive">
                                     <table class="table table-hover mb-0">
                                         <thead>
@@ -328,7 +328,7 @@
 
                     <!-- Top Crews by Members -->
                     <div class="col-lg-6">
-                        <div class="card">
+                        <div class="card h-100">
                             <div class="card-header">
                                 <h4 class="card-title">Top Crews</h4>
                             </div>

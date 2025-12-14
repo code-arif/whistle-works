@@ -218,7 +218,7 @@ class CampManageController extends Controller
         $camps = Camp::where('director_id', $user->id)
             ->with(['sportsType', 'checkedInReferees', 'schedule'])
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->paginate(8);
 
         if ($camps->isEmpty()) {
             return $this->error(null, 'No camps found.', 404);
@@ -229,7 +229,7 @@ class CampManageController extends Controller
                 return [
                     'camp_id'        => $camp->id,
                     'camp_name'      => $camp->camp_name,
-                    'camp_logo'      => $camp->camp_logo ? asset($camp->camp_logo) : null,
+                    'camp_logo'      => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
                     'location'       => $camp->location,
                     'sports_type'    => $camp->sportsType->sports_name ?? null,
                     'sports_type_id' => $camp->sports_type_id,

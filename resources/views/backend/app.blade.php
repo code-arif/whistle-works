@@ -47,7 +47,6 @@
         </div>
 
         @include('backend.partials._footer')
-
     </div>
     <!-- page -->
     @include('backend.partials._scripts')

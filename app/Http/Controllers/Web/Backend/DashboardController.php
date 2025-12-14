@@ -113,7 +113,7 @@ class DashboardController extends Controller
             // Recent activities
             $recentCamps = DB::table('camps')
                 ->latest('created_at')
-                ->limit(5)
+                ->limit(10)
                 ->get();
 
             $recentSchedules = DB::table('schedules')
