@@ -4,23 +4,15 @@ use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\Web\Backend\FaqController;
-use App\Http\Controllers\Web\Backend\ChatController;
-use App\Http\Controllers\Web\Backend\PageController;
-use App\Http\Controllers\Web\Backend\PostController;
-use App\Http\Controllers\Web\Backend\ImageController;
 use App\Http\Controllers\Web\Backend\ContactController;
-use App\Http\Controllers\Web\Backend\CategoryController;
 use App\Http\Controllers\Web\Backend\LivewireController;
 use App\Http\Controllers\Web\Backend\DashboardController;
 use App\Http\Controllers\Web\Backend\CMS\SliderController;
-use App\Http\Controllers\Web\Backend\SocialLinkController;
 use App\Http\Controllers\Web\Backend\SubscriberController;
 use App\Http\Controllers\Web\Backend\Access\RoleController;
 use App\Http\Controllers\Web\Backend\Access\UserController;
-use App\Http\Controllers\Web\Backend\SubcategoryController;
 use App\Http\Controllers\Web\Backend\CMS\FeaturesController;
 use App\Http\Controllers\Web\Backend\CMS\HomePageController;
-use App\Http\Controllers\Web\Backend\ProductBrandController;
 use App\Http\Controllers\Web\Backend\Settings\EnvController;
 use App\Http\Controllers\Web\Backend\Settings\LogoController;
 use App\Http\Controllers\Web\Backend\Settings\OtherController;
@@ -68,77 +60,6 @@ Route::group(['prefix' => 'users', 'as' => 'users.manage.'], function () {
     Route::post('/export', [UserManageController::class, 'export'])->name('export');
 });
 
-
-Route::controller(CategoryController::class)->prefix('category')->name('category.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/create', 'create')->name('create');
-    Route::post('/store', 'store')->name('store');
-    Route::get('/show/{id}', 'show')->name('show');
-    Route::get('/edit/{id}', 'edit')->name('edit');
-    Route::post('/update/{id}', 'update')->name('update');
-    Route::delete('/delete/{id}', 'destroy')->name('destroy');
-    Route::get('/status/{id}', 'status')->name('status');
-});
-
-Route::controller(SubcategoryController::class)->prefix('subcategory')->name('subcategory.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/create', 'create')->name('create');
-    Route::post('/store', 'store')->name('store');
-    Route::get('/show/{id}', 'show')->name('show');
-    Route::get('/edit/{id}', 'edit')->name('edit');
-    Route::post('/update/{id}', 'update')->name('update');
-    Route::delete('/delete/{id}', 'destroy')->name('destroy');
-    Route::get('/status/{id}', 'status')->name('status');
-});
-Route::controller(ProductBrandController::class)->prefix('brand')->name('brand.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/create', 'create')->name('create');
-    Route::post('/store', 'store')->name('store');
-    Route::get('/show/{id}', 'show')->name('show');
-    Route::get('/edit/{id}', 'edit')->name('edit');
-    Route::post('/update/{id}', 'update')->name('update');
-    Route::delete('/delete/{id}', 'destroy')->name('destroy');
-    Route::get('/status/{id}', 'status')->name('status');
-});
-
-
-
-Route::controller(PostController::class)->prefix('post')->name('post.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/create', 'create')->name('create');
-    Route::post('/store', 'store')->name('store');
-    Route::get('/show/{id}', 'show')->name('show');
-    Route::get('/edit/{id}', 'edit')->name('edit');
-    Route::post('/update/{id}', 'update')->name('update');
-    Route::delete('/delete/{id}', 'destroy')->name('destroy');
-    Route::get('/status/{id}', 'status')->name('status');
-});
-
-Route::controller(ImageController::class)->prefix('post/image')->name('post.image.')->group(function () {
-    Route::get('/{post_id}', 'index')->name('index');
-    Route::get('/delete/{id}', 'destroy')->name('destroy');
-});
-
-Route::controller(PageController::class)->prefix('page')->name('page.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/create', 'create')->name('create');
-    Route::post('/store', 'store')->name('store');
-    Route::get('/edit/{id}', 'edit')->name('edit');
-    Route::post('/update/{id}', 'update')->name('update');
-    Route::delete('/delete/{id}', 'destroy')->name('destroy');
-    Route::get('/status/{id}', 'status')->name('status');
-});
-
-Route::controller(SocialLinkController::class)->prefix('social')->name('social.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/create', 'create')->name('create');
-    Route::post('/store', 'store')->name('store');
-    Route::get('/edit/{id}', 'edit')->name('edit');
-    Route::post('/update/{id}', 'update')->name('update');
-    Route::delete('/delete/{id}', 'destroy')->name('destroy');
-    Route::get('/status/{id}', 'status')->name('status');
-});
-
 Route::controller(FaqController::class)->prefix('faq')->name('faq.')->group(function () {
     Route::get('/', 'index')->name('index');
     Route::get('/create', 'create')->name('create');
@@ -157,20 +78,11 @@ Route::controller(ContactController::class)->prefix('contact')->name('contact.')
     Route::get('/status/{id}', 'status')->name('status');
 });
 
-/*
-* Transaction
-*/
-
-// Route::controller(TransactionController::class)->prefix('transaction')->name('transaction.')->group(function () {
-//     Route::get('/{user_id?}', 'index')->name('index');
-//     Route::get('/show/{id}', 'show')->name('show');
-// });
 
 
 /*
 * CMS
 */
-
 Route::prefix('cms')->name('cms.')->group(function () {
     //Privacy and Terms
     Route::controller(PrivacAndTermsController::class)->prefix('privecyandterms')->name('privecyandterms.')->group(function () {
@@ -223,26 +135,11 @@ Route::prefix('cms')->name('cms.')->group(function () {
     Route::delete('/reviews/delete/{id}', [TestimonialController::class, 'destroyReview'])->name('home.testimonial.item.delete');
 });
 
-/*
-* Chating Route
-*/
-
-Route::controller(ChatController::class)->prefix('chat')->name('chat.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/list', 'list')->name('list');
-    Route::post('/send/{receiver_id}', 'send')->name('send');
-    Route::get('/conversation/{receiver_id}', 'conversation')->name('conversation');
-    Route::get('/room/{receiver_id}', 'room');
-    Route::get('/search', 'search')->name('search');
-    Route::get('/seen/all/{receiver_id}', 'seenAll');
-    Route::get('/seen/single/{chat_id}', 'seenSingle');
-});
 
 
 /*
 * Users Access Route
 */
-
 Route::resource('users', UserController::class);
 Route::controller(UserController::class)->prefix('users')->name('users.')->group(function () {
     Route::get('/status/{id}', 'status')->name('status');
