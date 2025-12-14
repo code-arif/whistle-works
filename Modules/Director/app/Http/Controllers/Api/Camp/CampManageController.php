@@ -7,7 +7,6 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Modules\Director\Models\Camp;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Env;
 use Modules\Director\Helpers\UploadFile;
 use Modules\Director\Transformers\CampResource;
 use Modules\Director\Http\Requests\CampCreateRequest;

@@ -26,10 +26,10 @@ use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
-        commands: __DIR__.'/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php',
+        web: __DIR__ . '/../routes/web.php',
+        api: __DIR__ . '/../routes/api.php',
+        commands: __DIR__ . '/../routes/console.php',
+        channels: __DIR__ . '/../routes/channels.php',
         health: '/up',
         then: function () {
             Route::middleware(['web'])->prefix('ajax')->name('ajax.')->group(base_path('routes/ajax.php'));
@@ -42,7 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         }
     )
     ->withBroadcasting(
-        __DIR__.'/../routes/channels.php',
+        __DIR__ . '/../routes/channels.php',
         ['prefix' => 'api', 'middleware' => ['auth:api']],
     )
     ->withMiddleware(function (Middleware $middleware) {
@@ -63,10 +63,15 @@ return Application::configure(basePath: dirname(__DIR__))
             'boosting/webhook',
             'checkout/webhook',
             'rental/webhook',
-             'graphql',
-             'api/*',
-             'https://whistle-works.netlify.app/*',
-             'http://localhost:5173/*',
+            'graphql',
+            'api/*',
+            'https://whistle-works.netlify.app/*',
+            'http://localhost:5173',
+            'http://localhost:5173/*',
+            'https://admin.whistleworks.org',
+            'https://admin.whistleworks.org/*',
+            'https://admin.whistleworks.org/api/',
+            'https://admin.whistleworks.org/api/*'
         ]);
         $middleware->api([
             StartSession::class,
@@ -82,7 +87,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (Throwable $e, Request $request) {
             if ($request->is('api/*')) {
                 if ($e instanceof ValidationException) {
-                    return Helper::jsonErrorResponse($e->getMessage(), 422,$e->errors());
+                    return Helper::jsonErrorResponse($e->getMessage(), 422, $e->errors());
                 }
 
                 if ($e instanceof ModelNotFoundException) {
@@ -90,16 +95,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 }
 
                 if ($e instanceof AuthenticationException) {
-                    return Helper::jsonErrorResponse( $e->getMessage(), 401);
+                    return Helper::jsonErrorResponse($e->getMessage(), 401);
                 }
                 if ($e instanceof AuthorizationException) {
-                    return Helper::jsonErrorResponse( $e->getMessage(), 403);
+                    return Helper::jsonErrorResponse($e->getMessage(), 403);
                 }
                 // Dynamically determine the status code if available
                 $statusCode = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
 
                 return Helper::jsonErrorResponse($e->getMessage(), $statusCode);
-            }else{
+            } else {
                 return null;
             }
         });
