@@ -66,6 +66,7 @@ return Application::configure(basePath: dirname(__DIR__))
              'graphql',
              'api/*',
              'https://whistle-works.netlify.app/*',
+             'http://localhost:5173/*',
         ]);
         $middleware->api([
             StartSession::class,

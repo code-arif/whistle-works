@@ -7,6 +7,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Modules\Director\Models\Camp;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Env;
 use Modules\Director\Helpers\UploadFile;
 use Modules\Director\Transformers\CampResource;
 use Modules\Director\Http\Requests\CampCreateRequest;
@@ -36,6 +37,12 @@ class CampManageController extends Controller
             return $this->error('Invalid sports type.', null, 404);
         }
 
+        // Extra price from env
+        $extraPrice = Env('CAMP_EXTRA_PRICE');
+
+        // Final price calculation
+        $finalPrice = $request->price + $extraPrice;
+
         // Create Camp
         $camp = Camp::create([
             'director_id'      => $user->id,
@@ -46,7 +53,7 @@ class CampManageController extends Controller
             'start_date'       => $request->start_date,
             'end_date'         => $request->end_date,
             'camp_details'     => $request->camp_details,
-            'price'            => $request->price,
+            'price'            => $finalPrice,
             'camp_logo'        => $campLogoPath,
             'latitude'         => $request->latitude,
             'longitude'        => $request->longitude,

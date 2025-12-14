@@ -8,8 +8,6 @@ use App\Http\Controllers\Web\Backend\ChatController;
 use App\Http\Controllers\Web\Backend\PageController;
 use App\Http\Controllers\Web\Backend\PostController;
 use App\Http\Controllers\Web\Backend\ImageController;
-use App\Http\Controllers\Web\Backend\OrderController;
-use App\Http\Controllers\Web\Backend\BookingController;
 use App\Http\Controllers\Web\Backend\ContactController;
 use App\Http\Controllers\Web\Backend\CategoryController;
 use App\Http\Controllers\Web\Backend\LivewireController;
