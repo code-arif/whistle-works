@@ -60,11 +60,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission'    => RoleOrPermissionMiddleware::class
         ]);
         $middleware->validateCsrfTokens(except: [
-            'boosting/webhook',
-            'checkout/webhook',
-            'rental/webhook',
-            'graphql',
-            'api/*',
+            'webhook/stripe',
             'https://whistle-works.netlify.app/*',
             'http://localhost:5173',
             'http://localhost:5173/*',

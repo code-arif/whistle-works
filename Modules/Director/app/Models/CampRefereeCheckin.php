@@ -2,6 +2,7 @@
 
 namespace Modules\Director\Models;
 
+use App\Models\CampPayment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,5 +24,11 @@ class CampRefereeCheckin extends Model
     public function referee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'referee_id');
+    }
+
+    // relation to payment
+    public function payment(): BelongsTo
+    {
+        return $this->belongsTo(CampPayment::class);
     }
 }

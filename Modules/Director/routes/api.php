@@ -8,6 +8,7 @@ use Modules\Director\Http\Controllers\Api\Camp\NoAuthCampController;
 use Modules\Director\Http\Controllers\Api\Crew\CrewManageController;
 use Modules\Director\Http\Controllers\Api\Court\CourtManageController;
 use Modules\Director\Http\Controllers\Api\Schedule\ScheduleController;
+use Modules\Director\Http\Controllers\Api\Payment\CampPaymentController;
 use Modules\Director\Http\Controllers\Api\CourtAssign\CourtAssignController;
 use Modules\Director\Http\Controllers\Api\Schedule\RefereeCheckinController;
 
@@ -109,9 +110,25 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
 // ==========================================
 // REFEREE ROUTES (Auth Required)
 // ==========================================
+// Route::middleware(['auth:api', 'role:referee'])->prefix('v1')->group(function () {
+//     Route::group(['prefix' => 'referee'], function () {
+//         Route::post('/camp/{campId}/checkin', [RefereeCheckinController::class, 'checkin']);
+//         Route::get('/camp/my-checkins', [RefereeCheckinController::class, 'getMyCheckins']);
+//     });
+// });
+
+
+// Referee Routes - Protected by auth:api and role:referee
 Route::middleware(['auth:api', 'role:referee'])->prefix('v1')->group(function () {
     Route::group(['prefix' => 'referee'], function () {
+
+        // ONE-CLICK CHECK-IN (handles payment automatically)
         Route::post('/camp/{campId}/checkin', [RefereeCheckinController::class, 'checkin']);
+
+        // Complete check-in after payment (called from frontend after Stripe redirect) // testing
+        Route::post('/camp/complete-checkin', [RefereeCheckinController::class, 'completeCheckin']);
+
+        // Get my check-ins
         Route::get('/camp/my-checkins', [RefereeCheckinController::class, 'getMyCheckins']);
     });
 });
