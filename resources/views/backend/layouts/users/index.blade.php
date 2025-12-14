@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="app-content main-content mt-0">
-        <div class="side-app">
+        <div class="side-app" style="margin-bottom: 50px">
             <div class="main-container container-fluid">
 
                 <!-- PAGE-HEADER -->

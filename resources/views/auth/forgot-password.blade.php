@@ -2,11 +2,6 @@
 
 @section('content')
 <!-- CONTAINER OPEN -->
-<div class="col col-login mx-auto text-center">
-    <a href="index.html" class="text-center">
-        <img src="{{ asset($settings->logo ?? 'default/logo.svg') }}" class="header-brand-img" alt="">
-    </a>
-</div>
 <div class="container-login100">
     <div class="wrap-login100 p-0">
         <div class="card-body" style="position: relative;">
