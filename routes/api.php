@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\Frontend\SubscriberController;
 use App\Http\Controllers\Api\Frontend\SocialLinksController;
 use App\Http\Controllers\Api\Frontend\CMS\HomePageController;
+use App\Http\Controllers\Api\Frontend\Evaluator\EvaluatorController;
 use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
 use App\Http\Controllers\Api\Frontend\Review\ReviewController;
 use App\Http\Controllers\Api\Frontend\Users\UsersListController;
@@ -44,20 +45,28 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
         Route::get('/my-evaluations', [RefereeEvaluationController::class, 'getMyEvaluations']); // working - get my evaluations (edit required for permission director)
         Route::get('/camp/{campId}', [RefereeEvaluationController::class, 'getEvaluationsByCamp']); // working - get evaluations by camp
         Route::get('/details/{evaluationId}', [RefereeEvaluationController::class, 'show']); // working - get evaluation details
+
+        // Get referee statistics
+        Route::get('/{refereeId}/stats', [RefereeEvaluationController::class, 'getRefereeStats']);
     });
 });
 
+Route::middleware(['auth:api', 'role:referee'])->group(function () {
+    // Get my evaluations (for logged-in referee)
+    Route::get('/referee/my-evaluations', [RefereeEvaluationController::class, 'getRefereeEvaluations']); // working - get my evaluations
+});
 
-// // Referee Routes - View their own evaluations
-// Route::prefix('referee')->group(function () {
+/*
+|--------------------------------------------------------------------------
+| Evaluator API Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:api', 'role:evaluator'])->group(function () {
+    Route::prefix('/evaluator')->group(function () {
+        Route::get('/active-camps', [EvaluatorController::class, 'getActiveCamps']);
+    });
+});
 
-//     // Get my evaluations (for logged-in referee)
-//     Route::get('/my-evaluations', [RefereeEvaluationController::class, 'getRefereeEvaluations'])
-//         ->middleware('role:referee');
-
-//     // Get referee statistics
-//     Route::get('/{refereeId}/stats', [RefereeEvaluationController::class, 'getRefereeStats']);
-// });
 
 //page
 Route::get('/page/home', [HomeController::class, 'index']);
@@ -68,9 +77,6 @@ Route::get('/settings', [SettingsController::class, 'index']);
 Route::get('/faq', [FaqController::class, 'index']);
 
 Route::post('subscriber/store', [SubscriberController::class, 'store'])->name('api.subscriber.store');
-
-
-
 
 
 // Sinle chatting system

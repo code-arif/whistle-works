@@ -135,30 +135,6 @@ class RefereeEvaluationController extends Controller
     }
 
     /**
-     * Get all evaluations for a specific referee (for referee's own view)
-     */
-    public function getRefereeEvaluations(Request $request)
-    {
-        $user = auth('api')->user();
-
-        // Only referees can access their own evaluations
-        if (!$user->hasRole('referee')) {
-            return $this->error('This endpoint is only for referees.', null, 403);
-        }
-
-        $evaluations = RefereeEvaluation::with(['evaluator', 'camp', 'gameSlot'])
-            ->forReferee($user->id)
-            ->submitted()
-            ->orderBy('submitted_at', 'desc')
-            ->paginate($request->get('per_page', 15));
-
-        return $this->success(
-            'Evaluations retrieved successfully.',
-            RefereeEvaluationResource::collection($evaluations)->response()->getData(true)
-        );
-    }
-
-    /**
      * Get evaluations by camp (for directors/evaluators)
      */
     public function getEvaluationsByCamp(Request $request, $campId)
@@ -280,6 +256,40 @@ class RefereeEvaluationController extends Controller
 
         return $this->success('Evaluation deleted successfully.', null);
     }
+
+
+    /**
+     * Get all evaluations for a specific referee (for referee's own view)
+     */
+    public function getRefereeEvaluations(Request $request)
+    {
+        $user = auth('api')->user();
+
+        // Only referees can access their own evaluations
+        if (!$user->hasRole('referee')) {
+            return $this->error('This endpoint is only for referees.', null, 403);
+        }
+
+        $evaluations = RefereeEvaluation::with(['evaluator', 'camp', 'gameSlot'])
+            ->forReferee($user->id)
+            ->submitted()
+            ->orderBy('submitted_at', 'desc')
+            ->paginate($request->get('per_page', 15));
+
+        return $this->success(
+            'Evaluations retrieved successfully.',
+            [
+                'evaluations' => RefereeEvaluationResource::collection($evaluations),
+                'pagination' => [
+                    'total'        => $evaluations->total(),
+                    'per_page'     => $evaluations->perPage(),
+                    'current_page' => $evaluations->currentPage(),
+                    'last_page'    => $evaluations->lastPage(),
+                ],
+            ]
+        );
+    }
+
 
     /**
      * Get referee statistics (average scores, count, etc.)

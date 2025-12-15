@@ -75,12 +75,12 @@ class ScheduleController extends Controller
             ->first();
 
         if (!$camp) {
-            return $this->error('Camp not found.', null, 404);
+            return $this->error( [], 'Camp not found.', 404);
         }
 
         // Check if schedule already exists
         if ($camp->schedule()->exists()) {
-            return $this->error('Schedule already exists for this camp. Delete existing schedule first.', null, 400);
+            return $this->error( [],'Schedule already exists for this camp. Delete existing schedule first.', 400);
         }
 
         // Validate dates are within camp range
@@ -90,7 +90,7 @@ class ScheduleController extends Controller
             $campEnd = Carbon::parse($camp->end_date);
 
             if ($rangeDate->lt($campStart) || $rangeDate->gt($campEnd)) {
-                return $this->error("Date {$range['date']} is outside camp date range.", null, 400);
+                return $this->error([], "Date {$range['date']} is outside camp date range.", 400);
             }
         }
 
