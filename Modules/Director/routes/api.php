@@ -110,14 +110,6 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
 // ==========================================
 // REFEREE ROUTES (Auth Required)
 // ==========================================
-// Route::middleware(['auth:api', 'role:referee'])->prefix('v1')->group(function () {
-//     Route::group(['prefix' => 'referee'], function () {
-//         Route::post('/camp/{campId}/checkin', [RefereeCheckinController::class, 'checkin']);
-//         Route::get('/camp/my-checkins', [RefereeCheckinController::class, 'getMyCheckins']);
-//     });
-// });
-
-
 // Referee Routes - Protected by auth:api and role:referee
 Route::middleware(['auth:api', 'role:referee'])->prefix('v1')->group(function () {
     Route::group(['prefix' => 'referee'], function () {

@@ -1,9 +1,8 @@
 <?php
 
-use App\Models\BoostingPayment;
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ChatController;
-use App\Http\Controllers\Api\FriendsController;
 use App\Http\Controllers\Api\Auth\UserController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
@@ -11,33 +10,54 @@ use App\Http\Controllers\Api\Frontend\FaqController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\FirebaseTokenController;
-use App\Http\Controllers\Api\FriendRequestController;
 use App\Http\Controllers\Api\Frontend\HomeController;
-use App\Http\Controllers\Api\Frontend\PageController;
-use App\Http\Controllers\Api\Frontend\PostController;
 use App\Http\Controllers\Api\Frontend\ImageController;
 use App\Http\Controllers\Api\Auth\SocialLoginController;
-use App\Http\Controllers\Api\Frontend\categoryController;
 use App\Http\Controllers\Api\Frontend\SettingsController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\Frontend\SubscriberController;
 use App\Http\Controllers\Api\Frontend\SocialLinksController;
-use App\Http\Controllers\Api\Frontend\SubcategoryController;
+use App\Http\Controllers\Api\Frontend\CMS\HomePageController;
 use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
 use App\Http\Controllers\Api\Frontend\Review\ReviewController;
 use App\Http\Controllers\Api\Frontend\Users\UsersListController;
-use App\Http\Controllers\Api\Frontend\Wishlist\WishlistController;
-use App\Http\Controllers\Api\Frontend\AddTocart\AddToCartController;
-use App\Http\Controllers\Api\Frontend\CMS\HomePageController;
-use App\Http\Controllers\Api\Gateway\Stripe\StripeOnBoardingController;
-use App\Http\Controllers\Api\Frontend\FestiveAlbum\FestiveAlbumController;
-
+use App\Http\Controllers\Api\Frontend\RefereeEvaluationController;
 
 
 // health check
 Route::get('/health-check', function () {
     return "All Right... 👍";
 });
+
+
+/*
+|--------------------------------------------------------------------------
+| Referee Evaluation API Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function () {
+
+    Route::prefix('referee/evaluation')->group(function () {
+        Route::post('/store', [RefereeEvaluationController::class, 'store']); // working - store evaluation
+        Route::post('/update/{id}', [RefereeEvaluationController::class, 'update']); // working - update evaluation
+        Route::delete('/destroy/{id}', [RefereeEvaluationController::class, 'destroy']); // working - delete evaluation
+        Route::get('/my-evaluations', [RefereeEvaluationController::class, 'getMyEvaluations']); // working - get my evaluations (edit required for permission director)
+        Route::get('/camp/{campId}', [RefereeEvaluationController::class, 'getEvaluationsByCamp']); // working - get evaluations by camp
+        Route::get('/details/{evaluationId}', [RefereeEvaluationController::class, 'show']); // working - get evaluation details
+    });
+});
+
+
+// // Referee Routes - View their own evaluations
+// Route::prefix('referee')->group(function () {
+
+//     // Get my evaluations (for logged-in referee)
+//     Route::get('/my-evaluations', [RefereeEvaluationController::class, 'getRefereeEvaluations'])
+//         ->middleware('role:referee');
+
+//     // Get referee statistics
+//     Route::get('/{refereeId}/stats', [RefereeEvaluationController::class, 'getRefereeStats']);
+// });
 
 //page
 Route::get('/page/home', [HomeController::class, 'index']);
@@ -49,26 +69,9 @@ Route::get('/faq', [FaqController::class, 'index']);
 
 Route::post('subscriber/store', [SubscriberController::class, 'store'])->name('api.subscriber.store');
 
-/*
-# Post
-*/
 
 
-// Friend request system
-Route::middleware('auth:api')->prefix('/friends')->group(function () {
-    Route::get('/people-you-may-know', [FriendRequestController::class, 'index']);
-    Route::post('/send-request', [FriendRequestController::class, 'sendRequest']); // working: send friend request
-    Route::post('/cancel-request', [FriendRequestController::class, 'cancelRequest']); // working: cancle friend request
-    Route::post('/accept-request', [FriendRequestController::class, 'acceptRequest']); // working: accept friend request
-    Route::post('/decline-request', [FriendRequestController::class, 'declineRequest']); // working: decline friend request
-    Route::get('/requests', [FriendRequestController::class, 'getRequests']); // working: all incoming requests
-    Route::get('/requests/sent/list', [FriendRequestController::class, 'getSentRequests']); // working all send friend request
 
-
-    Route::get('/list', [FriendsController::class, 'friendList']); // all firend list all auth user
-
-    Route::get('/users/{user}/', [FriendsController::class, 'userFriendList']); // Get another user's friend list
-});
 
 // Sinle chatting system
 Route::middleware(['auth:api'])->controller(ChatController::class)->prefix('auth/chat')->group(function () {
@@ -91,11 +94,6 @@ Route::middleware(['auth:api'])->controller(ImageController::class)->prefix('aut
 });
 
 
-// wishlist
-Route::middleware(['auth:api'])->controller(WishlistController::class)->group(function () {
-    Route::post('/wishlist/{artist_id}', 'wishlist');
-    Route::get('/get-wishlist', 'getWishlistItems');
-});
 
 /*
 # Auth Route

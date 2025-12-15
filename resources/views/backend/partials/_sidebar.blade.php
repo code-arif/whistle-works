@@ -44,46 +44,6 @@
 
                     </a>
                 </li>
-
-                <!-- <li>
-                    <h3>Components</h3>
-                </li> -->
-                <!-- <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.contact.*') ? 'has-link active' : '' }}" href="{{ route('admin.contact.index') }}">
-                        <i class="fa-solid fa-address-card side-menu__icon"></i>
-                        <span class="side-menu__label">Contact</span>
-                    </a>
-                </li> -->
-                <!-- <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('acmin.subscriber.*') ? 'has-link active' : '' }}" href="{{ route('admin.subscriber.index') }}">
-                        <i class="fa-solid fa-people-group side-menu__icon"></i>
-                        <span class="side-menu__label">Subscriber</span>
-                    </a>
-                </li> -->
-                <!-- <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.chat.*') ? 'has-link active' : '' }}" href="{{ route('admin.chat.index') }}">
-                        <i class="fa-brands fa-rocketchat side-menu__icon"></i>
-                        <span class="side-menu__label">Chat</span>
-                    </a>
-                </li> -->
-                <!-- <li class="sliden {{ env('ACCESS') === false ? 'd-none' : '' }}">
-                    <a class="side-menu__item {{ request()->routeIs('admin.users.*') ? 'has-link active' : '' }}" data-bs-toggle="slide" href="#">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32">
-                            <rect width="416" height="416" rx="48" ry="48" />
-                            <path d="m192 256 128 0" />
-                        </svg>
-                        <span class="side-menu__label">User Access</span><i class="angle fa fa-angle-right"></i>
-                    </a>
-
-                    <ul class="slide-menu">
-                        <li><a href="{{ route('admin.users.index') }}" class="slide-item">User</a></li>
-                        <li><a href="{{ route('admin.roles.index') }}" class="slide-item">Roll</a></li>
-                        <li><a href="{{ route('admin.permissions.index') }}" class="slide-item">Permission</a></li>
-                    </ul>
-                </li> -->
-
-
-
                 <li class="slide">
                     <a class="side-menu__item {{ request()->routeIs('admin.setting.*') ? 'has-link active' : '' }}"
                         data-bs-toggle="slide" href="#">
@@ -104,35 +64,15 @@
                 <li>
                     <h3>CMS</h3>
                 </li>
-                <!-- <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.page.*') ? 'has-link active' : '' }}" href="{{ route('admin.page.index') }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="side-menu__icon" viewBox="0 0 16 16">
-                            <path d="M15 14l-5-5-5 5v-3l10 -10z" />
-                        </svg>
-                        <span class="side-menu__label">Dynamic Page</span>
-                    </a>
-                </li> -->
-                <li class="slide">
+
+                {{-- <li class="slide">
                     <a class="side-menu__item {{ request()->routeIs('admin.social.*') ? 'has-link active' : '' }}"
                         href="{{ route('admin.social.index') }}">
                         <i class="fa-solid fa-link side-menu__icon"></i>
                         <span class="side-menu__label">Social Link</span>
                     </a>
-                </li>
-                {{-- <li class="slide">
-                    <a class="side-menu__item {{  request()->routeIs('admin.faq.*') ? 'has-link active' : '' }}" href="{{ route('admin.faq.index') }}">
-                        <i class="fa-solid fa-clipboard-question side-menu__icon"></i>
-                        <span class="side-menu__label">FAQ</span>
-                    </a>
                 </li> --}}
 
-
-                <!-- <li class="slide">
-                    <a class="side-menu__item {{ Request::routeIs('ajax.gallery.*') ? 'has-link active' : '' }}" href="{{ route('ajax.gallery.index') }}">
-                        <i class="fa-solid fa-image side-menu__icon"></i>
-                        <span class="side-menu__label">Image Gallery</span>
-                    </a>
-                </li> -->
                 <li class="slide">
                     <a class="side-menu__item {{ request()->routeIs('admin.setting.*') ? 'has-link active' : '' }}"
                         data-bs-toggle="slide" href="#">
@@ -183,19 +123,8 @@
                                 Settings</a></li>
                         <li><a href="{{ route('admin.setting.firebase.index') }}" class="slide-item">Firebase
                                 Settings</a></li>
-                        <!-- <li><a href="{{ route('admin.setting.social.index') }}" class="slide-item">Social Settings</a></li> -->
-                        <!-- <li><a href="{{ route('admin.setting.google.map.index') }}" class="slide-item">Google Map Settings</a></li> -->
-                        <!-- <li><a href="{{ route('admin.setting.captcha.index') }}" class="slide-item">Captcha Settings</a></li> -->
-                        <!-- <li><a href="{{ route('admin.setting.signature.index') }}" class="slide-item">Signature Settings</a></li> -->
-                        <!-- <li><a href="{{ route('admin.setting.other.index') }}" class="slide-item">Other Settings</a></li> -->
                     </ul>
                 </li>
-                <!-- <li class="slide">
-                    <a class="side-menu__item {{ Request::routeIs('admin.livewire.crud.*') ? 'has-link active' : '' }}" href="{{ route('admin.livewire.crud.index') }}">
-                        <i class="fa-solid fa-image side-menu__icon"></i>
-                        <span class="side-menu__label">Livewire</span>
-                    </a>
-                </li> -->
             </ul>
             <div class="slide-right" id="slide-right"><svg xmlns="http://www.w3.org/2000/svg" fill="#7b8191"
                     width="24" height="24" viewBox="0 0 24 24">

@@ -131,11 +131,6 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasOne(Profile::class);
     }
 
-    public function transactions()
-    {
-        return $this->hasMany(Transaction::class);
-    }
-
     public function referee()
     {
         return $this->belongsTo(User::class, 'referee_id');
