@@ -122,5 +122,11 @@ Route::middleware(['auth:api', 'role:referee'])->prefix('v1')->group(function ()
 
         // Get my check-ins
         Route::get('/camp/my-checkins', [RefereeCheckinController::class, 'getMyCheckins']);
+
+        // Get previous/past camps only (ended camps)
+        Route::get('/camp/previous-camps', [RefereeCheckinController::class, 'getPreviousCamps']);
+
+        // Get active camps (ongoing + upcoming)
+        Route::get('/camp/active-camps', [RefereeCheckinController::class, 'getActiveCamps']);
     });
 });

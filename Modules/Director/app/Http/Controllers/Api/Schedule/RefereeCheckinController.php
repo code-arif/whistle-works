@@ -228,4 +228,137 @@ class RefereeCheckinController extends Controller
             200
         );
     }
+
+    /**
+     * Get previous/past camps (ended camps only)
+     */
+    public function getPreviousCamps(Request $request)
+    {
+        $referee = auth('api')->user();
+        $today = now()->toDateString();
+
+        $checkins = CampRefereeCheckin::where('referee_id', $referee->id)
+            ->with([
+                'camp:id,camp_name,location,start_date,end_date,camp_logo,price,sports_type_name',
+                'camp.sportsType:id,sports_name,icon',
+                'payment:id,amount,paid_at'
+            ])
+            ->whereHas('camp', function ($query) use ($today) {
+                $query->where('end_date', '<', $today);
+            })
+            ->latest('checked_in_at')
+            ->paginate($request->get('per_page', 15));
+
+        $formatted = $checkins->map(function ($checkin) {
+            return [
+                'checkin_id' => $checkin->id,
+                'camp' => [
+                    'id' => $checkin->camp->id,
+                    'camp_name' => $checkin->camp->camp_name,
+                    'location' => $checkin->camp->location,
+                    'camp_logo' => $checkin->camp->camp_logo ? asset($checkin->camp->camp_logo) : asset('default/no_image.webp'),
+                    'start_date' => $checkin->camp->start_date,
+                    'end_date' => $checkin->camp->end_date,
+                    'price' => $checkin->camp->price,
+                    'sports_type' => $checkin->camp->sportsType ? [
+                        'id' => $checkin->camp->sportsType->id,
+                        'name' => $checkin->camp->sportsType->sports_name,
+                        'icon' => $checkin->camp->sportsType->icon ? asset($checkin->camp->sportsType->icon) : asset('default/no_image.webp')
+                    ] : null,
+                    'status' => 'completed', // Past camp
+                ],
+                'payment' => $checkin->payment ? [
+                    'amount' => $checkin->payment->amount,
+                    'paid_at' => $checkin->payment->paid_at->format('Y-m-d H:i:s')
+                ] : null,
+                'checked_in_at' => $checkin->checked_in_at->format('Y-m-d H:i:s')
+            ];
+        });
+
+        return $this->success(
+            'Previous camps fetched successfully.',
+            [
+                'previous_camps' => $formatted,
+                'pagination' => [
+                    'total' => $checkins->total(),
+                    'per_page' => $checkins->perPage(),
+                    'current_page' => $checkins->currentPage(),
+                    'last_page' => $checkins->lastPage(),
+                ],
+            ],
+            200
+        );
+    }
+
+    /**
+     * Get ongoing/upcoming camps (active camps)
+     */
+    public function getActiveCamps(Request $request)
+    {
+        $referee = auth('api')->user();
+        $today = now()->toDateString();
+
+        $checkins = CampRefereeCheckin::where('referee_id', $referee->id)
+            ->with([
+                'camp:id,camp_name,location,start_date,end_date,camp_logo,price,sports_type_name',
+                'camp.sportsType:id,sports_name,icon',
+                'payment:id,amount,paid_at'
+            ])
+            ->whereHas('camp', function ($query) use ($today) {
+                $query->where('end_date', '>=', $today);
+            })
+            ->latest('checked_in_at')
+            ->paginate($request->get('per_page', 15));
+
+        $formatted = $checkins->map(function ($checkin) use ($today) {
+            $camp = $checkin->camp;
+
+            // Determine status
+            if ($camp->start_date > $today) {
+                $status = 'upcoming';
+            } elseif ($camp->start_date <= $today && $camp->end_date >= $today) {
+                $status = 'ongoing';
+            } else {
+                $status = 'completed';
+            }
+
+            return [
+                'checkin_id' => $checkin->id,
+                'camp' => [
+                    'id' => $camp->id,
+                    'camp_name' => $camp->camp_name,
+                    'location' => $camp->location,
+                    'camp_logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
+                    'start_date' => $camp->start_date,
+                    'end_date' => $camp->end_date,
+                    'price' => $camp->price,
+                    'sports_type' => $camp->sportsType ? [
+                        'id' => $camp->sportsType->id,
+                        'name' => $camp->sportsType->sports_name,
+                        'icon' => $camp->sportsType->icon ? asset($camp->sportsType->icon) : asset('default/no_image.webp')
+                    ] : null,
+                    'status' => $status,
+                ],
+                'payment' => $checkin->payment ? [
+                    'amount' => $checkin->payment->amount,
+                    'paid_at' => $checkin->payment->paid_at->format('Y-m-d H:i:s')
+                ] : null,
+                'checked_in_at' => $checkin->checked_in_at->format('Y-m-d H:i:s')
+            ];
+        });
+
+        return $this->success(
+            'Active camps fetched successfully.',
+            [
+                'active_camps' => $formatted,
+                'pagination' => [
+                    'total' => $checkins->total(),
+                    'per_page' => $checkins->perPage(),
+                    'current_page' => $checkins->currentPage(),
+                    'last_page' => $checkins->lastPage(),
+                ],
+            ],
+            200
+        );
+    }
 }

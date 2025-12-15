@@ -4,10 +4,13 @@ namespace Modules\Director\Models;
 
 use App\Models\User;
 use App\Models\SportsType;
+use App\Models\RefereeEvaluation;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Camp extends Model
 {
@@ -90,5 +93,23 @@ class Camp extends Model
     public function getDurationAttribute(): int
     {
         return $this->start_date->diffInDays($this->end_date) + 1;
+    }
+
+
+    // Get all evaluators who evaluated referees in this camp
+    public function evaluations()
+    {
+        return $this->hasMany(RefereeEvaluation::class, 'camp_id');
+    }
+
+    // Get unique evaluators who evaluated in this camp
+    public function getEvaluatorsAttribute()
+    {
+        return User::whereIn('id', function ($query) {
+            $query->select('evaluator_id')
+                ->from('referee_evaluations')
+                ->where('camp_id', $this->id)
+                ->distinct();
+        })->get();
     }
 }

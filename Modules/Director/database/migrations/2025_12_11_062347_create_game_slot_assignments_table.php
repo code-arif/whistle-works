@@ -11,7 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // migration: create_game_slot_assignments_table
         Schema::create('game_slot_assignments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('game_slot_id')->constrained('game_slots')->onDelete('cascade');

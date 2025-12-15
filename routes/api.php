@@ -20,10 +20,11 @@ use App\Http\Controllers\Api\Frontend\SocialLinksController;
 use App\Http\Controllers\Api\Frontend\CMS\HomePageController;
 use App\Http\Controllers\Api\Frontend\Evaluator\EvaluatorController;
 use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
+use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
 use App\Http\Controllers\Api\Frontend\Review\ReviewController;
 use App\Http\Controllers\Api\Frontend\Users\UsersListController;
 use App\Http\Controllers\Api\Frontend\RefereeEvaluationController;
-
+use App\Http\Controllers\Api\Frontend\Roster\RosterController;
 
 // health check
 Route::get('/health-check', function () {
@@ -49,11 +50,31 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
         // Get referee statistics
         Route::get('/{refereeId}/stats', [RefereeEvaluationController::class, 'getRefereeStats']);
     });
+
+    // Roster - Get all information of a camp
+    Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetails']);
 });
 
+
+/*
+|--------------------------------------------------------------------------
+| Referee API Routes
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth:api', 'role:referee'])->group(function () {
     // Get my evaluations (for logged-in referee)
     Route::get('/referee/my-evaluations', [RefereeEvaluationController::class, 'getRefereeEvaluations']); // working - get my evaluations
+
+    Route::prefix('referee')->group(function () {
+        // Get all game slots where referee is assigned
+        Route::get('/my-assigned-slots', [RefereeAssignmentController::class, 'getMyAssignedSlots']);
+
+        // Get specific game slot details with all assigned referees
+        Route::get('/game-slot/{gameSlotId}', [RefereeAssignmentController::class, 'getGameSlotDetails']);
+
+        // Get upcoming game slots only
+        Route::get('/upcoming-slots', [RefereeAssignmentController::class, 'getUpcomingSlots']);
+    });
 });
 
 /*

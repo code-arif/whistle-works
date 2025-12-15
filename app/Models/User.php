@@ -135,4 +135,11 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->belongsTo(User::class, 'referee_id');
     }
+
+    // User Model
+
+    public function evaluatorEvaluations()
+    {
+        return $this->hasMany(RefereeEvaluation::class, 'evaluator_id');
+    }
 }

@@ -26,6 +26,11 @@ class GameSlotAssignment extends Model
         'assigned_at',
     ];
 
+    protected $casts = [
+        'is_auto_assigned' => 'boolean',
+        'assigned_at' => 'datetime',
+    ];
+
     // Relation: Assignment belongs to a GameSlot
     public function gameSlot(): BelongsTo
     {
