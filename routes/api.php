@@ -1,36 +1,68 @@
 <?php
 
-
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\Auth\UserController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
-use App\Http\Controllers\Api\Frontend\FaqController;
-use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\FirebaseTokenController;
-use App\Http\Controllers\Api\Frontend\HomeController;
-use App\Http\Controllers\Api\Frontend\ImageController;
 use App\Http\Controllers\Api\Auth\SocialLoginController;
+use App\Http\Controllers\Api\Frontend\ContactController;
 use App\Http\Controllers\Api\Frontend\SettingsController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
-use App\Http\Controllers\Api\Frontend\SubscriberController;
-use App\Http\Controllers\Api\Frontend\SocialLinksController;
 use App\Http\Controllers\Api\Frontend\CMS\HomePageController;
-use App\Http\Controllers\Api\Frontend\Evaluator\EvaluatorController;
 use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
-use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
-use App\Http\Controllers\Api\Frontend\Review\ReviewController;
-use App\Http\Controllers\Api\Frontend\Users\UsersListController;
-use App\Http\Controllers\Api\Frontend\RefereeEvaluationController;
 use App\Http\Controllers\Api\Frontend\Roster\RosterController;
+use App\Http\Controllers\Api\Frontend\RefereeEvaluationController;
+use App\Http\Controllers\Api\Frontend\Evaluator\EvaluatorController;
+use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
 
 // health check
 Route::get('/health-check', function () {
     return "All Right... 👍";
 });
 
+
+/*
+|--------------------------------------------------------------------------
+| User Authentication Routes
+|--------------------------------------------------------------------------
+*/
+Route::group(['middleware' => 'guest:api'], function ($router) {
+    //register
+    Route::post('/register', [RegisterController::class, 'register']); // done
+    Route::post('/verify-email', [RegisterController::class, 'VerifyEmail']); // done
+    Route::post('/resend-otp', [RegisterController::class, 'ResendOtp']); // done
+    Route::post('/verify-otp', [RegisterController::class, 'VerifyEmail']); // working
+
+    //login
+    Route::post('/login', [LoginController::class, 'login'])->name('api.login'); // done
+
+    //forgot password
+    Route::post('/forgot-password', [ResetPasswordController::class, 'forgotPassword']); // done
+    Route::post('/forgot-password/resend-otp', [ResetPasswordController::class, 'resendOtp']); // done
+    Route::post('/otp-token', [ResetPasswordController::class, 'MakeOtpToken']); // done
+    Route::post('/reset-password', [ResetPasswordController::class, 'ResetPassword']); // done
+
+    //social login
+    Route::post('/social-login', [SocialLoginController::class, 'SocialLogin']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| User Profile and After Auth Route
+|--------------------------------------------------------------------------
+*/
+Route::group(['middleware' => ['auth:api', 'api-otp']], function ($router) {
+    Route::get('/refresh-token', [LoginController::class, 'refreshToken']);
+    Route::post('/logout', [LogoutController::class, 'logout']); // done
+    Route::get('/user-details', [UserController::class, 'me']); // done
+    Route::post('/update-profile', [UserController::class, 'updateProfile']); // done
+    Route::post('/update-avatar', [UserController::class, 'updateAvatar']); // done
+    Route::delete('/delete-profile', [UserController::class, 'destroy']); // done
+    Route::post('/change-password', [UserController::class, 'changePassword']); // done
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -54,7 +86,6 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
     // Roster - Get all information of a camp
     Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetails']);
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -88,19 +119,24 @@ Route::middleware(['auth:api', 'role:evaluator'])->group(function () {
     });
 });
 
+// contact from submit
+Route::post('/contact-form', [ContactController::class, 'submitContact']);
 
-//page
-Route::get('/page/home', [HomeController::class, 'index']);
+// get home page cms data
+Route::get('/cms/home', [HomePageController::class, 'home']);
 
+// get privacy policy data
+Route::get('/privacy-policy', [PrivecyPolicyController::class, 'index']);
 
-Route::get('/social/links', [SocialLinksController::class, 'index']);
+// get setting data
 Route::get('/settings', [SettingsController::class, 'index']);
-Route::get('/faq', [FaqController::class, 'index']);
-
-Route::post('subscriber/store', [SubscriberController::class, 'store'])->name('api.subscriber.store');
 
 
-// Sinle chatting system
+/*
+|--------------------------------------------------------------------------
+| Sinle chatting Routes
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth:api'])->controller(ChatController::class)->prefix('auth/chat')->group(function () {
     Route::get('/list', 'list'); // working
     Route::post('/send/{receiver_id}', 'send'); // working
@@ -113,51 +149,6 @@ Route::middleware(['auth:api'])->controller(ChatController::class)->prefix('auth
     Route::delete('/delete/chat/messages', 'deleteMessages'); // working
 });
 
-
-Route::middleware(['auth:api'])->controller(ImageController::class)->prefix('auth/post/image')->group(function () {
-    Route::get('/', 'index');
-    Route::post('/store', 'store');
-    Route::get('/delete/{id}', 'destroy');
-});
-
-
-
-/*
-# Auth Route
-*/
-Route::group(['middleware' => 'guest:api'], function ($router) {
-    //register
-    Route::post('/register', [RegisterController::class, 'register']); // done
-    Route::post('/verify-email', [RegisterController::class, 'VerifyEmail']); // done
-    Route::post('/resend-otp', [RegisterController::class, 'ResendOtp']); // done
-    Route::post('/verify-otp', [RegisterController::class, 'VerifyEmail']); // working
-
-    //login
-    Route::post('/login', [LoginController::class, 'login'])->name('api.login'); // done
-
-    //forgot password
-    Route::post('/forgot-password', [ResetPasswordController::class, 'forgotPassword']); // done
-    Route::post('/forgot-password/resend-otp', [ResetPasswordController::class, 'resendOtp']); // done
-    Route::post('/otp-token', [ResetPasswordController::class, 'MakeOtpToken']); // done
-    Route::post('/reset-password', [ResetPasswordController::class, 'ResetPassword']); // done
-
-    //social login
-    Route::post('/social-login', [SocialLoginController::class, 'SocialLogin']);
-});
-
-Route::group(['middleware' => ['auth:api', 'api-otp']], function ($router) {
-    Route::get('/refresh-token', [LoginController::class, 'refreshToken']);
-    Route::post('/logout', [LogoutController::class, 'logout']); // done
-    Route::get('/user-details', [UserController::class, 'me']); // done
-    Route::post('/update-profile', [UserController::class, 'updateProfile']); // done
-    Route::post('/update-avatar', [UserController::class, 'updateAvatar']); // done
-    Route::delete('/delete-profile', [UserController::class, 'destroy']); // done
-    Route::post('/change-password', [UserController::class, 'changePassword']); // done
-});
-
-// get faqs
-Route::get('/faq', [FaqController::class, 'index']);
-
 /*
 # Firebase Notification Route
 */
@@ -167,55 +158,3 @@ Route::middleware(['auth:api'])->controller(FirebaseTokenController::class)->pre
     Route::post("token/get", "getToken");
     Route::post("token/delete", "deleteToken");
 });
-
-/*
-# In App Notification Route
-*/
-
-Route::middleware(['auth:api'])->controller(NotificationController::class)->prefix('notify')->group(function () {
-    Route::get('test', 'test');
-    Route::get('/', 'index');
-    Route::get('status/read/all', 'readAll');
-    Route::get('status/read/{id}', 'readSingle');
-});
-
-/*
-# Chat Route
-*/
-
-Route::middleware(['auth:api'])->controller(ChatController::class)->prefix('auth/chat')->group(function () {
-    Route::get('/list', 'list');
-    Route::post('/send/{receiver_id}', 'send');
-    Route::get('/conversation/{receiver_id}', 'conversation');
-    Route::get('/room/{receiver_id}', 'room');
-    Route::get('/search', 'search');
-    Route::get('/seen/all/{receiver_id}', 'seenAll');
-    Route::get('/seen/single/{chat_id}', 'seenSingle');
-});
-Route::prefix('cms')->name('cms.')->group(function () {
-    Route::get('home', [HomeController::class, 'index'])->name('home');
-    Route::get('how-it-works', [HomeController::class, 'howItWorks'])->name('how_it_works');
-    Route::get('/how-it-works/details/{slug}', [HomeController::class, 'howItWorksDetails']);
-});
-
-Route::get('/privacy-policy', [PrivecyPolicyController::class, 'index']);
-
-// dynamic page
-Route::post('/subscribe', [SubscriberController::class, 'subscribe']);
-
-Route::controller(UsersListController::class)->group(function () {
-    Route::get('/user/search', 'search');
-    Route::get('/seller-details/{slug}', 'userDetails');
-});
-
-
-Route::middleware(['auth:api'])->controller(ReviewController::class)->group(function () {
-    Route::post('/review', 'review');
-    Route::post('/review-comment', 'commentOnReview');
-
-    Route::post('/review-like/{reviewId}', 'likeReview');
-    Route::post('/comment-like/{commentId}', 'likeComment');
-});
-
-//cms get api
-Route::get('/cms/home', [HomePageController::class, 'home']);

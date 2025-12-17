@@ -52,7 +52,6 @@
     @include('backend.partials._scripts')
 
     @livewireScripts
-
 </body>
 
 </html>

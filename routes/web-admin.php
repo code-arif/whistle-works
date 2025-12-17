@@ -251,5 +251,3 @@ Route::get('/optimize', function () {
     Redis::flushAll();
     return redirect()->back()->with('t-success', 'Message sent successfully');
 })->name('optimize');
-
-// Route::post('/boosting/webhook', [\App\Http\Controllers\Api\Frontend\Boosting\BoostingWebhookController::class, 'handleStripeWebhook'])->name('boosting.webhook');

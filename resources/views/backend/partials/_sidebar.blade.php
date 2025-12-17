@@ -53,8 +53,8 @@
                     </a>
 
                     <ul class="slide-menu">
-                        <li><a href="{{ route('admin.cms.privecyandterms.terms') }}" class="slide-item">Terms &
-                                Condition</a></li>
+                        {{-- <li><a href="{{ route('admin.cms.privecyandterms.terms') }}" class="slide-item">Terms &
+                                Condition</a></li> --}}
                         <li><a href="{{ route('admin.cms.privecyandterms.privacy') }}" class="slide-item">Privacy
                                 Policy</a></li>
 
@@ -64,14 +64,6 @@
                 <li>
                     <h3>CMS</h3>
                 </li>
-
-                {{-- <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.social.*') ? 'has-link active' : '' }}"
-                        href="{{ route('admin.social.index') }}">
-                        <i class="fa-solid fa-link side-menu__icon"></i>
-                        <span class="side-menu__label">Social Link</span>
-                    </a>
-                </li> --}}
 
                 <li class="slide">
                     <a class="side-menu__item {{ request()->routeIs('admin.setting.*') ? 'has-link active' : '' }}"

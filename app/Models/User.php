@@ -9,6 +9,7 @@ use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Director\Models\CampRefereeCheckin;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
@@ -137,9 +138,20 @@ class User extends Authenticatable implements JWTSubject
     }
 
     // User Model
-
     public function evaluatorEvaluations()
     {
         return $this->hasMany(RefereeEvaluation::class, 'evaluator_id');
+    }
+
+    // camp checkin referee
+    public function refereeCheckins()
+    {
+        return $this->hasMany(CampRefereeCheckin::class, 'referee_id');
+    }
+
+    // referee evaluation
+    public function evaluations()
+    {
+        return $this->hasMany(RefereeEvaluation::class, 'referee_id');
     }
 }

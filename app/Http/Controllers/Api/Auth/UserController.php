@@ -42,26 +42,53 @@ class UserController extends Controller
             return $this->error('User not found', 404);
         }
 
+        // Base response
         $response = [
-            'id' => $user->id,
+            'id'         => $user->id,
             'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'username' => $user->username,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'address' => $user->address,
-            'biography' => $user->biography,
-            'avatar' => $user->avatar
+            'last_name'  => $user->last_name,
+            'username'   => $user->username,
+            'email'      => $user->email,
+            'phone'      => $user->phone,
+            'address'    => $user->address,
+            'biography'  => $user->biography,
+            'avatar'     => $user->avatar
                 ? asset($user->avatar)
                 : asset('default/profile.jpg'),
-            'slug' => $user->slug,
-            'role' => $user->role,
+            'slug'       => $user->slug,
+            'role'       => $user->role,
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at,
         ];
 
-        return $this->success('User details fetched successfully', $response, 200, );
+        // Extra data only for referee
+        if ($user->role === 'referee') {
+
+            $avgScore10 = $user->evaluations()
+                ->where('status', 'submitted')
+                ->whereNotNull('average_score')
+                ->avg('average_score'); // 1–10 scale
+
+            $rating5 = $avgScore10
+                ? round($avgScore10 / 2, 1) // convert to 5 scale
+                : 0;
+
+            $response['referee'] = [
+                'checkin_camp' => $user->refereeCheckins()->count(),
+                'total_game'   => $user->evaluations()
+                    ->where('status', 'submitted')
+                    ->count(),
+                'rating'       => $rating5,
+            ];
+        }
+
+        return $this->success(
+            'User details fetched successfully',
+            $response,
+            200
+        );
     }
+
 
     /**
      * Update User Profile
