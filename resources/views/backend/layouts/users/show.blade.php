@@ -394,23 +394,6 @@
                                             @endif
                                         </div>
                                     </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="text-muted">Balance</label>
-                                        <div class="mt-1 fw-semibold fs-18 text-success">
-                                            ${{ number_format($user->balance ?? 0, 2) }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="text-muted">Subscription Status</label>
-                                        <div class="mt-1">
-                                            @if ($user->stripe_subscription_id)
-                                                <span class="badge bg-success">Active Subscription</span>
-                                                <br><small class="text-muted">{{ $user->stripe_subscription_id }}</small>
-                                            @else
-                                                <span class="badge bg-secondary">No Subscription</span>
-                                            @endif
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>

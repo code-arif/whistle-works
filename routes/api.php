@@ -141,10 +141,12 @@ Route::middleware(['auth:api'])->group(function () {
     // Making announcement only for director
     Route::post('/director/announcements', [AnnouncementController::class, 'store'])
         ->middleware('role:director');
+    Route::delete('/announcements/delete/{id}', [AnnouncementController::class, 'destroy'])->middleware('role:director');
 
     // Announcement gat route for referee and evaluator
-    Route::get('/announcement/my-announcements', [AnnouncementController::class, 'myAnnouncements'])->middleware('role:referee|evaluator,api');
-    Route::patch('/announcements/{id}/read', [AnnouncementController::class, 'markAsRead'])->middleware('role:referee|evaluator,api');
+    Route::get('/announcement/my-announcements', [AnnouncementController::class, 'myAnnouncements'])->middleware('role:referee|evaluator|director,api');
+    Route::patch('/announcements/{id}/read', [AnnouncementController::class, 'markAsRead'])->middleware('role:referee|evaluator|director,api');
+    Route::patch('/announcements/mark-all-read', [AnnouncementController::class, 'markAllAsRead'])->middleware('role:referee|evaluator|director,api');
 });
 
 /*

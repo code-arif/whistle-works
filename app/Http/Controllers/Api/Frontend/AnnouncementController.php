@@ -79,21 +79,22 @@ class AnnouncementController extends Controller
             $query->where('user_id', auth('api')->id());
         })
             ->with(['creator' => function ($query) {
-                $query->select('id',); // অথবা 'name', 'email' যা দরকার
+                $query->select('id',);
             }])
             ->latest()
             ->paginate($request->input('per_page', 10));
 
-        return response()->json([
-            'success' => true,
-            'data' => $announcements->items(),
+        $response = [
+            'announcements' => $announcements->items(),
             'pagination' => [
                 'total' => $announcements->total(),
                 'per_page' => $announcements->perPage(),
                 'current_page' => $announcements->currentPage(),
                 'last_page' => $announcements->lastPage(),
             ]
-        ]);
+        ];
+
+        return $this->success('Announcement retrieved successfully !', $response, 200);
     }
 
     /**
@@ -112,6 +113,40 @@ class AnnouncementController extends Controller
             ]);
         }
 
-        return response()->json(['message' => 'Marked as read']);
+        return $this->success('Marked as read', [], 200);
+    }
+
+    // Bulk mark as read - user er sob unread announcements read kore dibe
+    public function markAllAsRead()
+    {
+        $userId = auth('api')->id();
+
+        $updated = AnnouncementRecipient::where('user_id', $userId)
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now()
+            ]);
+
+        return $this->success('All announcements marked as read', $updated, 201);
+    }
+
+    // Delete announcement - only creator/director can delete
+    public function destroy($id)
+    {
+        $announcement = Announcement::find($id);
+
+        if (!$announcement) {
+            return $this->error([], 'Announcement not found', 404);
+        }
+
+        // Check if user is creator or has director role
+        if ($announcement->created_by !== auth('api')->id() && !auth('api')->user()->hasRole('director')) {
+            return $this->error([], 'Unauthorized to delete this announcement', 403);
+        }
+
+        $announcement->delete(); // soft delete
+
+        return $this->success('Announcement deleted successfully', [], 200);
     }
 }

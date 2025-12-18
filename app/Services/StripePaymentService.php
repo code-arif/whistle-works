@@ -8,9 +8,7 @@ use Modules\Director\Models\Camp;
 use App\Models\User;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
-use Stripe\PaymentIntent;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class StripePaymentService
 {
@@ -55,7 +53,7 @@ class StripePaymentService
         }
 
         // Check for cancelled/failed attempts within cooldown period
-        $cooldownMinutes = config('payment.retry_cooldown', 5);
+        $cooldownMinutes = config('payment.retry_cooldown', 1);
         $recentFailedAttempt = CampPaymentAttempt::where('camp_id', $camp->id)
             ->where('referee_id', $referee->id)
             ->whereIn('status', ['cancelled', 'failed'])
@@ -102,9 +100,10 @@ class StripePaymentService
                 ->where('expires_at', '<', now())
                 ->update(['status' => 'failed']);
 
-            $sessionExpiry = (int) config('payment.session_expiry', 30);
+            // Stripe requires minimum 30 minutes
+            $stripeSessionExpiry = 30; // Stripe minimum
+            $retryWindow = (int) config('payment.retry_cooldown', 2); // Your custom retry window
 
-            // Prepare description
             $description = "Location: {$camp->location}";
             if ($camp->start_date && $camp->end_date) {
                 $description .= " | {$camp->start_date} to {$camp->end_date}";
@@ -121,7 +120,7 @@ class StripePaymentService
                             'description' => $description,
                             'images' => $camp->camp_logo ? [url($camp->camp_logo)] : []
                         ],
-                        'unit_amount' => (int)($camp->price * 100), // Convert to cents
+                        'unit_amount' => (int)($camp->price * 100),
                     ],
                     'quantity' => 1,
                 ]],
@@ -135,17 +134,17 @@ class StripePaymentService
                     'referee_email' => $referee->email
                 ],
                 'customer_email' => $referee->email,
-                'expires_at' => now()->addMinutes($sessionExpiry)->timestamp
+                'expires_at' => now()->addMinutes($stripeSessionExpiry)->timestamp // 30 min minimum
             ]);
 
-            // Create payment attempt record
+            // Create payment attempt with YOUR custom expiry (2 min)
             $attempt = CampPaymentAttempt::create([
                 'camp_id' => $camp->id,
                 'referee_id' => $referee->id,
                 'stripe_session_id' => $session->id,
                 'amount' => $camp->price,
                 'status' => 'pending',
-                'expires_at' => now()->addMinutes($sessionExpiry)
+                'expires_at' => now()->addMinutes($retryWindow) // Your custom: 2 minutes
             ]);
 
             DB::commit();
@@ -269,7 +268,7 @@ class StripePaymentService
         return [
             'success' => true,
             'attempt' => $attempt,
-            'can_retry_at' => now()->addMinutes(config('payment.retry_cooldown', 5))
+            'can_retry_at' => now()->addMinutes(config('payment.retry_cooldown', 1))
         ];
     }
 

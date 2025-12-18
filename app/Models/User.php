@@ -57,9 +57,6 @@ class User extends Authenticatable implements JWTSubject
 
         'stripe_customer_id',
         'stripe_account_id',
-        'balance',
-        'stripe_subscription_id',
-        'plan_id',
 
         'status'
     ];
@@ -74,11 +71,6 @@ class User extends Authenticatable implements JWTSubject
         'password',
         'remember_token',
     ];
-
-    protected $appends = [
-        'balance'
-    ];
-
     /**
      * Get the attributes that should be cast.
      *
@@ -107,13 +99,6 @@ class User extends Authenticatable implements JWTSubject
 
         // Return only the path for web requests
         return $value;
-    }
-
-    public function getBalanceAttribute()
-    {
-        $increment = $this->transactions()->where('type', 'increment')->sum('amount');
-        $decrement = $this->transactions()->where('type', 'decrement')->sum('amount');
-        return $increment - $decrement;
     }
 
     public function getRoleAttribute()

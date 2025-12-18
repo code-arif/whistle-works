@@ -105,7 +105,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
 /**
  * globar camp details
  */
-Route::get('/camp/details/{id}', [CampManageController::class, 'campDetails'])->middleware('auth:api', 'role:director|referee|evaluator'); // global route
+Route::get('v1/camp/details/{id}', [CampManageController::class, 'campDetails'])->middleware('auth:api', 'role:director|referee|evaluator,api');
 
 // ==========================================
 // REFEREE ROUTES (Auth Required)
