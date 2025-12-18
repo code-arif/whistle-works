@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Auth\SocialLoginController;
 use App\Http\Controllers\Api\Frontend\ContactController;
 use App\Http\Controllers\Api\Frontend\SettingsController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
+use App\Http\Controllers\Api\Frontend\AnnouncementController;
 use App\Http\Controllers\Api\Frontend\CMS\HomePageController;
 use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
 use App\Http\Controllers\Api\Frontend\Roster\RosterController;
@@ -131,6 +132,20 @@ Route::get('/privacy-policy', [PrivecyPolicyController::class, 'index']);
 // get setting data
 Route::get('/settings', [SettingsController::class, 'index']);
 
+/*
+|--------------------------------------------------------------------------
+| Announcement making route
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:api'])->group(function () {
+    // Making announcement only for director
+    Route::post('/director/announcements', [AnnouncementController::class, 'store'])
+        ->middleware('role:director');
+
+    // Announcement gat route for referee and evaluator
+    Route::get('/announcement/my-announcements', [AnnouncementController::class, 'myAnnouncements'])->middleware('role:referee|evaluator,api');
+    Route::patch('/announcements/{id}/read', [AnnouncementController::class, 'markAsRead'])->middleware('role:referee|evaluator,api');
+});
 
 /*
 |--------------------------------------------------------------------------

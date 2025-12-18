@@ -29,7 +29,6 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::post('/camp/update/{id}', [CampManageController::class, 'updateCamp']); // done
         Route::post('/camp/status/{id}', [CampManageController::class, 'updateStatus']); // done
         Route::delete('/camp/delete/{id}', [CampManageController::class, 'deleteCamp']); // done
-        Route::get('/camp/details/{id}', [CampManageController::class, 'campDetails']); // done
         Route::get('/director/camp/list', [CampManageController::class, 'directorCampList']); // done
     });
 
@@ -102,6 +101,11 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::patch('slot/{slotId}/toggle-block', [CourtAssignController::class, 'toggleBlockSlot']); // working
     });
 });
+
+/**
+ * globar camp details 
+ */
+Route::get('/camp/details/{id}', [CampManageController::class, 'campDetails'])->middleware('auth:api', 'role:director|referee|evaluator'); // done
 
 // ==========================================
 // REFEREE ROUTES (Auth Required)
