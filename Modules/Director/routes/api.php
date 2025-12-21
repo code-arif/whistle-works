@@ -63,9 +63,6 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         // Game Slots
         Route::get('camp/{campId}/schedule/game-slots', [ScheduleController::class, 'getGameSlots']); // working
 
-        // Game slots management
-        Route::get('camp/{campId}/schedule/game-slots', [ScheduleController::class, 'getGameSlots']); // working
-
         // Schedule Actions
         Route::post('camp/{campId}/schedule/publish', [ScheduleController::class, 'publishSchedule']); // working
         Route::post('camp/{campId}/schedule/clear', [ScheduleController::class, 'clearSchedule']);
@@ -99,6 +96,8 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
 
         // Court Block/Unblock
         Route::patch('slot/{slotId}/toggle-block', [CourtAssignController::class, 'toggleBlockSlot']); // working
+
+        Route::get('slot/{slotId}/available-referees-with-time-check', [CourtAssignController::class, 'getAvailableRefereesForSlot']);
     });
 });
 
@@ -110,23 +109,28 @@ Route::get('v1/camp/details/{id}', [CampManageController::class, 'campDetails'])
 // ==========================================
 // REFEREE ROUTES (Auth Required)
 // ==========================================
-// Referee Routes - Protected by auth:api and role:referee
 Route::middleware(['auth:api', 'role:referee'])->prefix('v1')->group(function () {
     Route::group(['prefix' => 'referee'], function () {
 
-        // ONE-CLICK CHECK-IN (handles payment automatically)
-        Route::post('/camp/{campId}/checkin', [RefereeCheckinController::class, 'checkin']);
+        // Register for camp (Payment = Registration)
+        Route::post('/camp/{campId}/register', [RefereeCheckinController::class, 'registerForCamp']); // working
 
-        // Complete check-in after payment (called from frontend after Stripe redirect) // testing
-        Route::post('/camp/complete-checkin', [RefereeCheckinController::class, 'completeCheckin']);
+        // Handle payment success callback (auto-registration)
+        Route::post('/camp/payment-success', [RefereeCheckinController::class, 'handlePaymentSuccess']); // working
 
-        // Get my check-ins
-        Route::get('/camp/my-checkins', [RefereeCheckinController::class, 'getMyCheckins']);
+        // Check-in to camp (physical attendance)
+        Route::post('/camp/{campId}/checkin', [RefereeCheckinController::class, 'checkIn']); // working
 
-        // Get previous/past camps only (ended camps)
+        // Get my registrations
+        Route::get('/camp/my-registrations', [RefereeCheckinController::class, 'getMyRegistrations']); // working
+
+        // Get my checkins camp list
+        Route::get('/camp/my-checkins', [RefereeCheckinController::class, 'getMyCheckins']); // working
+
+        // Get active camps
+        Route::get('/camp/active-camps', [RefereeCheckinController::class, 'getActiveCamps']); // working
+
+        // Get previous camps
         Route::get('/camp/previous-camps', [RefereeCheckinController::class, 'getPreviousCamps']);
-
-        // Get active camps (ongoing + upcoming)
-        Route::get('/camp/active-camps', [RefereeCheckinController::class, 'getActiveCamps']);
     });
 });

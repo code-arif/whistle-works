@@ -3,10 +3,12 @@
 namespace Modules\Director\Http\Controllers\Api\CourtAssign;
 
 use App\Models\User;
+use Carbon\Carbon;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Exception;
 use Modules\Director\Models\{
     Camp,
     GameSlot,
@@ -62,6 +64,7 @@ class CourtAssignController extends Controller
 
         $assignedCount = 0;
         $errors = [];
+        $conflicts = [];
 
         DB::beginTransaction();
         try {
@@ -87,7 +90,38 @@ class CourtAssignController extends Controller
                     ->exists();
 
                 if ($alreadyAssigned) {
-                    $errors[] = "Referee ID {$refereeId} is already assigned.";
+                    $errors[] = "Referee ID {$refereeId} is already assigned to this slot.";
+                    continue;
+                }
+
+                // Check for time conflicts
+                $hasConflict = GameSlotAssignment::hasTimeConflict(
+                    $refereeId,
+                    User::class,
+                    $slot
+                );
+
+                if ($hasConflict) {
+                    $conflictingSlots = GameSlotAssignment::getConflictingSlots(
+                        $refereeId,
+                        User::class,
+                        $slot
+                    );
+
+                    $conflictDetails = $conflictingSlots->map(function ($assignment) {
+                        $conflictSlot = $assignment->gameSlot;
+                        return [
+                            'court' => $conflictSlot->court_name,
+                            'time' => Carbon::parse($conflictSlot->start_time)->format('h:i A') . ' - ' .
+                                Carbon::parse($conflictSlot->end_time)->format('h:i A'),
+                        ];
+                    });
+
+                    $conflicts[] = [
+                        'referee_id' => $refereeId,
+                        'reason' => 'Time conflict with other assignments',
+                        'conflicting_slots' => $conflictDetails
+                    ];
                     continue;
                 }
 
@@ -118,11 +152,12 @@ class CourtAssignController extends Controller
                 [
                     'assigned_count' => $assignedCount,
                     'assigned_referees' => $assignedReferees,
-                    'errors' => $errors
+                    'errors' => $errors,
+                    'time_conflicts' => $conflicts,
                 ],
                 201
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return $this->error('Failed to assign referees: ' . $e->getMessage(), null, 500);
         }
@@ -153,20 +188,35 @@ class CourtAssignController extends Controller
             return $this->error('Crew does not belong to this camp.', null, 400);
         }
 
-        // Check if crew is already assigned to another slot in same time
-        $conflictingSlot = GameSlotAssignment::where('assignable_type', Crew::class)
-            ->where('assignable_id', $crew->id)
-            ->whereHas('gameSlot', function ($q) use ($slot) {
-                $q->where('game_date', $slot->game_date)
-                    ->where(function ($query) use ($slot) {
-                        $query->whereBetween('start_time', [$slot->start_time, $slot->end_time])
-                            ->orWhereBetween('end_time', [$slot->start_time, $slot->end_time]);
-                    });
-            })
-            ->exists();
+        // Use the new time conflict check
+        $hasConflict = GameSlotAssignment::hasTimeConflict(
+            $crew->id,
+            Crew::class,
+            $slot
+        );
 
-        if ($conflictingSlot) {
-            return $this->error('This crew is already assigned to another slot at the same time.', null, 400);
+        if ($hasConflict) {
+            $conflictingSlots = GameSlotAssignment::getConflictingSlots(
+                $crew->id,
+                Crew::class,
+                $slot
+            );
+
+            $conflictDetails = $conflictingSlots->map(function ($assignment) {
+                $conflictSlot = $assignment->gameSlot;
+                return [
+                    'court' => $conflictSlot->court_name,
+                    'date' => $conflictSlot->game_date,
+                    'time' => Carbon::parse($conflictSlot->start_time)->format('h:i A') . ' - ' .
+                        Carbon::parse($conflictSlot->end_time)->format('h:i A'),
+                ];
+            })->toArray();
+
+            return $this->error(
+                'This crew has time conflicts with other assignments.',
+                ['conflicting_slots' => $conflictDetails],
+                400
+            );
         }
 
         DB::beginTransaction();
@@ -205,15 +255,16 @@ class CourtAssignController extends Controller
                 ['crew' => $crewData],
                 201
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return $this->error('Failed to assign crew: ' . $e->getMessage(), null, 500);
         }
     }
 
+
     /**
      * Auto-assign available referees to all slots
-     * Assigns 3 random referees per slot
+     * With time conflict checking
      */
     public function autoAssignReferees($campId)
     {
@@ -227,12 +278,12 @@ class CourtAssignController extends Controller
             return $this->error('Camp not found.', null, 404);
         }
 
-        // Get available slots
+        // Get available slots (not blocked, no crew assignments)
         $availableSlots = GameSlot::whereHas('schedule', function ($q) use ($campId) {
             $q->where('camp_id', $campId);
         })
             ->where('is_block', false)
-            ->whereDoesntHave('assignments', function ($q) {
+            ->whereDoesntHave('slotAssignments', function ($q) {
                 $q->where('assignment_type', 'crew');
             })
             ->orderBy('game_date')
@@ -244,80 +295,156 @@ class CourtAssignController extends Controller
         }
 
         // Get checked-in referees
-        $checkedInRefereeIds = CampRefereeCheckin::where('camp_id', $campId)
-            ->pluck('referee_id')
-            ->shuffle()
-            ->toArray();
+        $checkedInReferees = User::whereIn('id', function ($query) use ($campId) {
+            $query->select('referee_id')
+                ->from('camp_referee_checkins')
+                ->where('camp_id', $campId);
+        })->get();
 
-        if (empty($checkedInRefereeIds)) {
+        if ($checkedInReferees->isEmpty()) {
             return $this->error('No checked-in referees available.', null, 404);
         }
 
-        $totalReferees = count($checkedInRefereeIds);
-        $totalSlots = $availableSlots->count();
-        $maxPerSlot = 3;
-
-        // Clear previous individual assignments (recommended for true auto-assign)
+        // Clear previous auto-assignments
         DB::transaction(function () use ($availableSlots) {
             GameSlotAssignment::whereIn('game_slot_id', $availableSlots->pluck('id'))
                 ->where('assignment_type', 'individual')
+                ->where('is_auto_assigned', true)
                 ->delete();
-
-            // Reset status
-            GameSlot::whereIn('id', $availableSlots->pluck('id'))
-                ->update(['status' => 'available']);
         });
 
         $assignmentsCreated = 0;
-        $slotsAssigned = 0; // slots with at least 1 referee
-
-        // Referee queue - will cycle
-        $refereeQueue = $checkedInRefereeIds;
+        $slotsAssigned = 0;
+        $conflictCount = 0;
+        $maxPerSlot = 3;
 
         foreach ($availableSlots as $slot) {
-            $currentCount = 0; // how many assigned in this slot
+            $assignedToThisSlot = 0;
 
-            while ($currentCount < $maxPerSlot && !empty($refereeQueue)) {
-                $refereeId = array_shift($refereeQueue);
+            // Try to assign up to 3 referees per slot
+            foreach ($checkedInReferees->shuffle() as $referee) {
+                if ($assignedToThisSlot >= $maxPerSlot) {
+                    break;
+                }
 
+                // Check if already assigned to this slot
+                $alreadyAssigned = GameSlotAssignment::where('game_slot_id', $slot->id)
+                    ->where('assignable_type', User::class)
+                    ->where('assignable_id', $referee->id)
+                    ->exists();
+
+                if ($alreadyAssigned) {
+                    continue;
+                }
+
+                // Check for time conflicts
+                $hasConflict = GameSlotAssignment::hasTimeConflict(
+                    $referee->id,
+                    User::class,
+                    $slot
+                );
+
+                if ($hasConflict) {
+                    $conflictCount++;
+                    continue; // Skip this referee for this slot
+                }
+
+                // Assign referee
                 GameSlotAssignment::create([
                     'game_slot_id'     => $slot->id,
                     'assignable_type'  => User::class,
-                    'assignable_id'    => $refereeId,
+                    'assignable_id'    => $referee->id,
                     'assignment_type'  => 'individual',
                     'is_auto_assigned' => true,
                     'assigned_at'      => now(),
                 ]);
 
                 $assignmentsCreated++;
-                $currentCount++;
-
-                // Put back in queue for reuse
-                $refereeQueue[] = $refereeId;
+                $assignedToThisSlot++;
             }
 
-            if ($currentCount > 0) {
+            if ($assignedToThisSlot > 0) {
                 $slotsAssigned++;
                 $slot->update(['status' => 'assigned']);
             }
-
-            // Optional: Stop early if referees are too few and slots are too many
-            // Example: if referees < slots, don't over-assign
-            // But if you want maximum coverage, keep going
         }
 
-        // Final stats
         $stats = [
-            'total_slots'               => $totalSlots,
+            'total_slots'               => $availableSlots->count(),
             'slots_assigned'            => $slotsAssigned,
             'total_referee_assignments' => $assignmentsCreated,
-            'total_checked_in_referees' => $totalReferees,
-            'average_per_referee'       => $totalReferees > 0 ? round($assignmentsCreated / $totalReferees, 2) : 0,
+            'total_checked_in_referees' => $checkedInReferees->count(),
+            'time_conflicts_avoided'    => $conflictCount,
+            'average_per_slot'          => $slotsAssigned > 0 ? round($assignmentsCreated / $slotsAssigned, 2) : 0,
         ];
 
         return $this->success(
-            'Auto-assignment completed successfully with balanced distribution.',
+            'Auto-assignment completed with time conflict checking.',
             $stats,
+            200
+        );
+    }
+
+    /**
+     * Get available referees for a specific slot (considering time conflicts)
+     */
+    public function getAvailableRefereesForSlot($slotId)
+    {
+        $user = auth('api')->user();
+        $slot = GameSlot::with('schedule.camp')->findOrFail($slotId);
+
+        if ($slot->schedule->camp->director_id !== $user->id) {
+            return $this->error('Unauthorized.', null, 403);
+        }
+
+        // Get all checked-in referees
+        $allReferees = User::whereIn('id', function ($query) use ($slot) {
+            $query->select('referee_id')
+                ->from('camp_referee_checkins')
+                ->where('camp_id', $slot->schedule->camp_id);
+        })->get();
+
+        // Filter out referees with time conflicts
+        $availableReferees = $allReferees->filter(function ($referee) use ($slot) {
+            return !GameSlotAssignment::hasTimeConflict(
+                $referee->id,
+                User::class,
+                $slot
+            );
+        });
+
+        // Get already assigned referees to this slot
+        $assignedRefereeIds = GameSlotAssignment::where('game_slot_id', $slotId)
+            ->where('assignment_type', 'individual')
+            ->where('assignable_type', User::class)
+            ->pluck('assignable_id')
+            ->toArray();
+
+        $response = [
+            'slot_info' => [
+                'slot_id' => $slot->id,
+                'court_name' => $slot->court_name,
+                'date' => $slot->game_date,
+                'start_time' => Carbon::parse($slot->start_time)->format('h:i A'),
+                'end_time' => Carbon::parse($slot->end_time)->format('h:i A'),
+            ],
+            'total_checked_in' => $allReferees->count(),
+            'available_count' => $availableReferees->count(),
+            'already_assigned' => count($assignedRefereeIds),
+            'available_referees' => $availableReferees->map(function ($referee) use ($assignedRefereeIds) {
+                return [
+                    'id' => $referee->id,
+                    'name' => trim("{$referee->first_name} {$referee->last_name}"),
+                    'email' => $referee->email,
+                    'avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
+                    'is_assigned_to_this_slot' => in_array($referee->id, $assignedRefereeIds),
+                ];
+            })->values(),
+        ];
+
+        return $this->success(
+            'Available referees fetched successfully.',
+            $response,
             200
         );
     }

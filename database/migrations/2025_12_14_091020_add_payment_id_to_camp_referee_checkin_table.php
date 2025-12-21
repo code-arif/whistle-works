@@ -14,6 +14,10 @@ return new class extends Migration
         // Add payment_id to camp_referee_checkins table
         Schema::table('camp_referee_checkins', function (Blueprint $table) {
             $table->foreignId('payment_id')->nullable()->constrained('camp_payments')->onDelete('set null');
+             // Add new columns
+            $table->enum('registration_status', ['registered', 'checked_in'])->default('registered')->after('referee_id');
+            $table->timestamp('registered_at')->nullable()->after('registration_status');
+            $table->timestamp('checked_in_at')->nullable()->change();
         });
     }
 
@@ -25,6 +29,7 @@ return new class extends Migration
         Schema::table('camp_referee_checkins', function (Blueprint $table) {
             $table->dropForeign(['payment_id']);
             $table->dropColumn('payment_id');
+            $table->dropColumn(['registration_status', 'registered_at']);
         });
     }
 };

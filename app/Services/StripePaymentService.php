@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
-use App\Models\CampPayment;
-use App\Models\CampPaymentAttempt;
-use Modules\Director\Models\Camp;
-use App\Models\User;
+use Exception;
 use Stripe\Stripe;
+use App\Models\User;
+use App\Models\CampPayment;
 use Stripe\Checkout\Session;
+use Modules\Director\Models\Camp;
+use App\Models\CampPaymentAttempt;
 use Illuminate\Support\Facades\DB;
 
 class StripePaymentService
@@ -156,7 +157,7 @@ class StripePaymentService
                 'attempt_id' => $attempt->id,
                 'expires_at' => $attempt->expires_at
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return [
                 'success' => false,
@@ -237,7 +238,7 @@ class StripePaymentService
                 'payment' => $payment,
                 'camp_id' => $attempt->camp_id
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return [
                 'success' => false,

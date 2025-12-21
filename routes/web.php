@@ -4,13 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\Frontend\HomeController;
 use App\Http\Controllers\Api\Auth\SocialLoginController;
-use App\Http\Controllers\Web\Frontend\ContactController;
 use App\Http\Controllers\Web\Frontend\AffiliateController;
 use App\Http\Controllers\Web\Frontend\SubscriberController;
-use App\Http\Controllers\Api\Frontend\Product\ProductController;
 use App\Http\Controllers\Api\Gateway\Stripe\StripeWebHookController;
-use App\Http\Controllers\Api\Gateway\Stripe\StripeOnBoardingController;
-use App\Http\Controllers\Api\Frontend\RentedPayment\RentedPaymentController;
 
 Route::get('/',[HomeController::class, 'index'])->name('home');
 
@@ -24,8 +20,6 @@ Route::get('social-login/{provider}',[SocialLoginController::class,'RedirectToPr
 Route::get('social-login/{provider}/callback',[SocialLoginController::class, 'HandleProviderCallback']);
 
 Route::post('subscriber/store',[SubscriberController::class, 'store'])->name('subscriber.data.store');
-
-Route::post('contact/store',[ContactController::class, 'store'])->name('contact.store');
 
 
 

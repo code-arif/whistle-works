@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\Gateway\Stripe;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\CampPaymentAttempt;
-use App\Models\CampPayment;
 use Illuminate\Support\Facades\Log;
 use Stripe\Webhook;
 use Stripe\Exception\SignatureVerificationException;
@@ -19,7 +18,7 @@ class StripeWebhookController extends Controller
     {
         $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
-        $webhookSecret = config('services.stripe.webhook_secret');
+        $webhookSecret = config('services.stripe.webhook');
 
         try {
             $event = Webhook::constructEvent($payload, $sigHeader, $webhookSecret);
