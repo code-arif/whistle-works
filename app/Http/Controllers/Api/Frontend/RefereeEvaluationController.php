@@ -347,7 +347,7 @@ class RefereeEvaluationController extends Controller
     /**
      * Get all checked-in referees for a camp
      */
-    public function getAllCheckedInReferees($campId)
+    public function getAllRegisteredInReferees($campId)
     {
         $user = auth('api')->user();
 
@@ -365,7 +365,7 @@ class RefereeEvaluationController extends Controller
             ->with('referee')
             ->paginate($perPage);
 
-        return $this->success('Checked-in referees fetched successfully.', [
+        return $this->success('Registered referees fetched successfully.', [
             'total' => $checkedInReferees->total(),
             'referees' => CheckedInRefereeResource::collection($checkedInReferees),
             'pagination' => [

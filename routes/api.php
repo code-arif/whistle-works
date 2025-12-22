@@ -83,7 +83,7 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
         // Get referee statistics
         Route::get('/{refereeId}/stats', [RefereeEvaluationController::class, 'getRefereeStats']);
 
-        Route::get('/camp/{campId}/all-checked-in-referees', [RefereeEvaluationController::class, 'getAllCheckedInReferees']);
+        Route::get('/camp/{campId}/all-registered-in-referees', [RefereeEvaluationController::class, 'getAllRegisteredInReferees']); // change the route name;
     });
 
     // Roster - Get all information of a camp
