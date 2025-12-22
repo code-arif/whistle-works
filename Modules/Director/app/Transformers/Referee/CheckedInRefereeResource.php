@@ -14,6 +14,7 @@ class CheckedInRefereeResource extends JsonResource
     {
         return [
             'id'     => $this->id,
+            'referee_id' =>$this->referee->id,
             'name'   => $this->referee->first_name . ' ' . $this->referee->last_name,
             'email'  => $this->referee->email,
             'phone'  => $this->referee->phone,

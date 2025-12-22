@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RefereeEvaluationRequest;
 use Modules\Director\Models\CampRefereeCheckin;
 use App\Http\Resources\RefereeEvaluationResource;
+use Modules\Director\Transformers\Referee\CheckedInRefereeResource;
 
 class RefereeEvaluationController extends Controller
 {
@@ -341,5 +342,38 @@ class RefereeEvaluationController extends Controller
         ];
 
         return $this->success('Referee statistics retrieved successfully.', $stats);
+    }
+
+    /**
+     * Get all checked-in referees for a camp
+     */
+    public function getAllCheckedInReferees($campId)
+    {
+        $user = auth('api')->user();
+
+        // Verify camp ownership
+        $camp = Camp::where('id', $campId)->first();
+
+        if (!$camp) {
+            return $this->error('Camp not found.', null, 404);
+        }
+
+        $perPage = request()->get('per_page', 15); // default 15
+
+        $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
+            ->where('registration_status', 'registered')
+            ->with('referee')
+            ->paginate($perPage);
+
+        return $this->success('Checked-in referees fetched successfully.', [
+            'total' => $checkedInReferees->total(),
+            'referees' => CheckedInRefereeResource::collection($checkedInReferees),
+            'pagination' => [
+                'total'         => $checkedInReferees->total(),
+                'per_page'      => $checkedInReferees->perPage(),
+                'current_page'  => $checkedInReferees->currentPage(),
+                'last_page'     => $checkedInReferees->lastPage(),
+            ],
+        ], 200);
     }
 }
