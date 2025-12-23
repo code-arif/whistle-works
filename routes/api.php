@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
 use App\Http\Controllers\Api\Frontend\Roster\RosterController;
 use App\Http\Controllers\Api\Frontend\RefereeEvaluationController;
 use App\Http\Controllers\Api\Frontend\Evaluator\EvaluatorController;
+use App\Http\Controllers\Api\Frontend\Evaluator\GameOverviewController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
 
 // health check
@@ -88,6 +89,9 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
 
     // Roster - Get all information of a camp
     Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetails']);
+
+    // Game overview
+    Route::get('/evaluator/{campId}/game-overview', [GameOverviewController::class,'gameOverview']);
 });
 
 /*
