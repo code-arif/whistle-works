@@ -27,24 +27,24 @@ class RefereeEvaluationController extends Controller
 
         // Check if user is evaluator or director
         if (!$user->hasAnyRole(['evaluator', 'director'])) {
-            return $this->error('Only evaluators and directors can create evaluations.', null, 403);
+            return $this->error([], 'Only evaluators and directors can create evaluations.', 403);
         }
 
         // Check if referee exists and has checked in to the camp
         $referee = User::find($validated['referee_id']);
         if (!$referee || !$referee->hasRole('referee')) {
-            return $this->error('Invalid referee selected.', null, 404);
+            return $this->error([], 'Invalid referee selected.', 404);
         }
 
         // Prevent self-evaluation
         if ($referee->id === $user->id) {
-            return $this->error('You cannot evaluate yourself.', null, 403);
+            return $this->error([], 'You cannot evaluate yourself.', 403);
         }
 
         // Check if camp exists
         $camp = Camp::find($validated['camp_id']);
         if (!$camp) {
-            return $this->error('Camp not found.', null, 404);
+            return $this->error([], 'Camp not found.', 404);
         }
 
         // Verify referee has checked in to this camp
@@ -53,7 +53,7 @@ class RefereeEvaluationController extends Controller
             ->first();
 
         if (!$checkin) {
-            return $this->error('Referee has not checked in to this camp.', null, 400);
+            return $this->error([], 'Referee has not checked in to this camp.', 400);
         }
 
         // Check for duplicate evaluation
@@ -64,7 +64,7 @@ class RefereeEvaluationController extends Controller
             ->first();
 
         if ($existingEvaluation) {
-            return $this->error('You have already evaluated this referee for this camp.', null, 409);
+            return $this->error([], 'You have already evaluated this referee for this camp.', 409);
         }
 
         // Create evaluation
@@ -102,12 +102,12 @@ class RefereeEvaluationController extends Controller
 
         $evaluation = RefereeEvaluation::find($id);
         if (!$evaluation) {
-            return $this->error('Evaluation not found.', null, 404);
+            return $this->error([], 'Evaluation not found.', 404);
         }
 
         // Check permission to edit
         if (!$evaluation->canBeEditedBy($user)) {
-            return $this->error('You do not have permission to edit this evaluation.', null, 403);
+            return $this->error([], 'You do not have permission to edit this evaluation.', 403);
         }
 
         $validated = $request->validated();
@@ -149,7 +149,7 @@ class RefereeEvaluationController extends Controller
 
         $camp = Camp::find($campId);
         if (!$camp) {
-            return $this->error('Camp not found.', null, 404);
+            return $this->error([], 'Camp not found.', 404);
         }
 
         $query = RefereeEvaluation::with(['referee', 'evaluator', 'gameSlot'])
@@ -191,7 +191,7 @@ class RefereeEvaluationController extends Controller
         $user = auth('api')->user();
 
         if (!$user->hasAnyRole(['evaluator', 'director'])) {
-            return $this->error('Only evaluators and directors can access this.', null, 403);
+            return $this->error([], 'Only evaluators and directors can access this.', 403);
         }
 
         $evaluations = RefereeEvaluation::with(['referee', 'camp', 'gameSlot'])
@@ -223,12 +223,12 @@ class RefereeEvaluationController extends Controller
         $evaluation = RefereeEvaluation::with(['referee', 'evaluator', 'camp', 'gameSlot'])->find($id);
 
         if (!$evaluation) {
-            return $this->error('Evaluation not found.', null, 404);
+            return $this->error([], 'Evaluation not found.', 404);
         }
 
         // Check if user can view this evaluation
         if (!$evaluation->canBeViewedBy($user)) {
-            return $this->error('You do not have permission to view this evaluation.', null, 403);
+            return $this->error([], 'You do not have permission to view this evaluation.', 403);
         }
 
         return $this->success(
@@ -246,16 +246,16 @@ class RefereeEvaluationController extends Controller
 
         $evaluation = RefereeEvaluation::find($id);
         if (!$evaluation) {
-            return $this->error('Evaluation not found.', null, 404);
+            return $this->error([], 'Evaluation not found.', 404);
         }
 
         if (!$evaluation->canBeEditedBy($user)) {
-            return $this->error('You do not have permission to delete this evaluation.', null, 403);
+            return $this->error([], 'You do not have permission to delete this evaluation.', 403);
         }
 
         $evaluation->delete();
 
-        return $this->success('Evaluation deleted successfully.', null);
+        return $this->success('Evaluation deleted successfully.', [], 200);
     }
 
 
@@ -268,7 +268,7 @@ class RefereeEvaluationController extends Controller
 
         // Only referees can access their own evaluations
         if (!$user->hasRole('referee')) {
-            return $this->error('This endpoint is only for referees.', null, 403);
+            return $this->error([], 'This endpoint is only for referees.', 403);
         }
 
         $evaluations = RefereeEvaluation::with(['evaluator', 'camp', 'gameSlot'])
@@ -361,7 +361,6 @@ class RefereeEvaluationController extends Controller
         $perPage = request()->get('per_page', 15); // default 15
 
         $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
-            ->where('registration_status', 'registered')
             ->with('referee')
             ->paginate($perPage);
 

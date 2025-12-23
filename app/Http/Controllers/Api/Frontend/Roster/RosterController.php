@@ -22,9 +22,9 @@ class RosterController extends Controller
                 'sportsType',
                 'director',
                 'schedule.locations',
-                'schedule.gameSlots.slotAssignments.assignable', // Load assignable (referee/crew)
+                'schedule.gameSlots.slotAssignments.assignable',
                 'checkedInReferees',
-                'evaluations.evaluator' // Load evaluations with evaluator
+                'evaluations.evaluator'
             ])
             ->first();
 
@@ -50,17 +50,17 @@ class RosterController extends Controller
                     'email' => $camp->director->email,
                 ],
                 'schedule' => [
-                    'locations' => $camp->schedule->locations->map(function ($location) {
+                    'locations' => $camp->schedule?->locations->map(function ($location) {
                         return [
                             'id' => $location->id,
                             'name' => $location->location_name,
                             'latitude' => $location->latitude,
                             'longitude' => $location->longitude
                         ];
-                    }),
+                    }) ?? collect(),
                     'game_courts' => [
-                        'court_count' => $camp->schedule->gameSlots->count(),
-                        'game_court' => $camp->schedule->gameSlots->map(function ($gameSlot) {
+                        'court_count' => $camp->schedule?->gameSlots->count() ?? 0,
+                        'game_court' => $camp->schedule?->gameSlots->map(function ($gameSlot) {
                             return [
                                 'id' => $gameSlot->id,
                                 'game_date' => $gameSlot->game_date,
@@ -96,7 +96,7 @@ class RosterController extends Controller
                                     }
                                 }),
                             ];
-                        }),
+                        }) ?? collect(),
                     ]
                 ],
                 'referees' => [
@@ -107,6 +107,7 @@ class RosterController extends Controller
                             'name' => $referee->referee->first_name . ' ' . $referee->referee->last_name,
                             'avatar' => $referee->referee->avatar ? asset('' . $referee->referee->avatar) : asset('default/profile.jpg'),
                             'email' => $referee->referee->email,
+                            'status' => $referee->registration_status,
                         ];
                     }),
                 ],

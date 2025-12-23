@@ -91,7 +91,7 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
     Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetails']);
 
     // Game overview
-    Route::get('/evaluator/{campId}/game-overview', [GameOverviewController::class,'gameOverview']);
+    Route::get('/evaluator/{campId}/game-overview', [GameOverviewController::class,'gameOverview']); 
 });
 
 /*

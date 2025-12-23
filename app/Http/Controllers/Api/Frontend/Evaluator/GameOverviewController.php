@@ -33,15 +33,15 @@ class GameOverviewController extends Controller
                 'camp_name' => $camp->camp_name,
                 'location' => $camp->location,
                 'schedule' => [
-                    'locations' => $camp->schedule->locations->map(function ($location) {
+                    'locations' => $camp->schedule?->locations->map(function ($location) {
                         return [
                             'id' => $location->id,
                             'name' => $location->location_name,
-                        ];
-                    }),
+                        ] ?? null;
+                    }) ?? collect(),
                     'game_courts' => [
-                        'court_count' => $camp->schedule->gameSlots->count(),
-                        'game_court' => $camp->schedule->gameSlots->map(function ($gameSlot) {
+                        'court_count' => $camp->schedule?->gameSlots->count(),
+                        'game_court' => $camp->schedule?->gameSlots->map(function ($gameSlot) {
                             return [
                                 'id' => $gameSlot->id,
                                 'court_name' => $gameSlot->court_name,
@@ -67,7 +67,7 @@ class GameOverviewController extends Controller
                                     }
                                 }),
                             ];
-                        }),
+                        }) ?? collect(),
                     ]
                 ],
             ]

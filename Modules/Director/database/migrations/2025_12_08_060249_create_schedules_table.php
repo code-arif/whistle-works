@@ -32,9 +32,9 @@ return new class extends Migration
         Schema::create('schedule_time_ranges', function (Blueprint $table) {
             $table->id();
             $table->foreignId('schedule_id')->constrained()->onDelete('cascade');
-            $table->date('date');
-            $table->time('start_time');
-            $table->time('end_time');
+            $table->date('date')->nullable();
+            $table->time('start_time')->nullable();
+            $table->time('end_time')->nullable();
             $table->timestamps();
         });
     }
