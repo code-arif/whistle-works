@@ -439,7 +439,9 @@ class CourtAssignController extends Controller
                     'avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
                     'is_assigned_to_this_slot' => in_array($referee->id, $assignedRefereeIds),
                 ];
-            })->values(),
+            })
+                ->sortByDesc('is_assigned_to_this_slot')
+                ->values(),
         ];
 
         return $this->success(
