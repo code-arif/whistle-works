@@ -165,7 +165,7 @@ class RefereeEvaluationController extends Controller
             $query->where('status', $request->status);
         }
 
-        $evaluations = $query->orderBy('created_at', 'desc')
+        $evaluations = $query->orderByDesc('average_score')
             ->paginate($request->get('per_page', 15));
 
         return $this->success(

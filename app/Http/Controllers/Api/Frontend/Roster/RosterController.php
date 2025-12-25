@@ -58,70 +58,63 @@ class RosterController extends Controller
                             'longitude' => $location->longitude
                         ];
                     }) ?? collect(),
-                    'game_courts' => [
-                        'court_count' => $camp->schedule?->gameSlots->count() ?? 0,
-                        'game_court' => $camp->schedule?->gameSlots->map(function ($gameSlot) {
-                            return [
-                                'id' => $gameSlot->id,
-                                'game_date' => $gameSlot->game_date,
-                                'start_time' => $gameSlot->start_time,
-                                'end_time' => $gameSlot->end_time,
-                                'court_name' => $gameSlot->court_name,
-                                'status' => $gameSlot->status,
-                                'is_block' => $gameSlot->is_block,
+                    'game_courts' => $camp->schedule?->gameSlots->map(function ($gameSlot) {
+                        return [
+                            'id' => $gameSlot->id,
+                            'game_date' => $gameSlot->game_date,
+                            'start_time' => $gameSlot->start_time,
+                            'end_time' => $gameSlot->end_time,
+                            'court_name' => $gameSlot->court_name,
+                            'status' => $gameSlot->status,
+                            'is_block' => $gameSlot->is_block,
 
-                                // Slot Assignments (Referees/Crew)
-                                'assignments' => $gameSlot->slotAssignments->map(function ($assignment) {
-                                    // Check if it's crew or individual
-                                    if ($assignment->assignment_type === 'crew') {
-                                        return [
-                                            'type' => 'crew',
-                                            'crew_id' => $assignment->assignable_id,
-                                            'crew_name' => $assignment->assignable->crew_name ?? 'N/A',
-                                            'position' => $assignment->position,
-                                            'is_auto_assigned' => $assignment->is_auto_assigned,
-                                        ];
-                                    } else {
-                                        // Individual referee
-                                        $referee = $assignment->assignable; // This is User model
-                                        return [
-                                            'type' => 'individual',
-                                            'referee_id' => $referee->id,
-                                            'name' => $referee->first_name . ' ' . $referee->last_name,
-                                            'avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
-                                            'email' => $referee->email,
-                                            'position' => $assignment->position,
-                                            'is_auto_assigned' => $assignment->is_auto_assigned,
-                                        ];
-                                    }
-                                }),
-                            ];
-                        }) ?? collect(),
-                    ]
-                ],
-                'referees' => [
-                    'checked_in' => $camp->checkedInReferees->count(),
-                    'referees' => $camp->checkedInReferees->map(function ($referee) {
-                        return [
-                            'id' => $referee->referee->id,
-                            'name' => $referee->referee->first_name . ' ' . $referee->referee->last_name,
-                            'avatar' => $referee->referee->avatar ? asset('' . $referee->referee->avatar) : asset('default/profile.jpg'),
-                            'email' => $referee->referee->email,
-                            'status' => $referee->registration_status,
+                            // Slot Assignments (Referees/Crew)
+                            'assignments' => $gameSlot->slotAssignments->map(function ($assignment) {
+                                // Check if it's crew or individual
+                                if ($assignment->assignment_type === 'crew') {
+                                    return [
+                                        'type' => 'crew',
+                                        'crew_id' => $assignment->assignable_id,
+                                        'crew_name' => $assignment->assignable->crew_name ?? 'N/A',
+                                        'position' => $assignment->position,
+                                        'is_auto_assigned' => $assignment->is_auto_assigned,
+                                    ];
+                                } else {
+                                    // Individual referee
+                                    $referee = $assignment->assignable; // This is User model
+                                    return [
+                                        'type' => 'individual',
+                                        'referee_id' => $referee->id,
+                                        'name' => $referee->first_name . ' ' . $referee->last_name,
+                                        'avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
+                                        'email' => $referee->email,
+                                        'position' => $assignment->position,
+                                        'is_auto_assigned' => $assignment->is_auto_assigned,
+                                    ];
+                                }
+                            }),
                         ];
-                    }),
+                    }) ?? collect(),
                 ],
-                'evaluators' => [
-                    'total' => $camp->evaluations->pluck('evaluator_id')->unique()->count(),
-                    'evaluators' => $camp->evaluations->pluck('evaluator')->unique('id')->map(function ($evaluator) {
-                        return [
-                            'id' => $evaluator->id,
-                            'name' => $evaluator->first_name . ' ' . $evaluator->last_name,
-                            'avatar' => $evaluator->avatar ? asset($evaluator->avatar) : asset('default/profile.jpg'),
-                            'email' => $evaluator->email,
-                        ];
-                    })->values(),
-                ],
+                'referees' => $camp->checkedInReferees->map(function ($referee) {
+                    return [
+                        'id' => $referee->referee->id,
+                        'name' => $referee->referee->first_name . ' ' . $referee->referee->last_name,
+                        'avatar' => $referee->referee->avatar ? asset('' . $referee->referee->avatar) : asset('default/profile.jpg'),
+                        'email' => $referee->referee->email,
+                        'status' => $referee->registration_status,
+                    ];
+                }),
+                'evaluators' => $camp->evaluations->pluck('evaluator')->unique('id')->map(function ($evaluator) {
+                    return [
+                        'id' => $evaluator->id,
+                        'name' => $evaluator->first_name . ' ' . $evaluator->last_name,
+                        'avatar' => $evaluator->avatar ? asset($evaluator->avatar) : asset('default/profile.jpg'),
+                        'email' => $evaluator->email,
+                        'phone' => $evaluator->phone ?? null,
+                        'address' => $evaluator->address ?? null,
+                    ];
+                })->values(),
             ]
         ];
 

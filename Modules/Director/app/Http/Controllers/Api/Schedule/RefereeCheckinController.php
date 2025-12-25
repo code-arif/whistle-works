@@ -337,7 +337,6 @@ class RefereeCheckinController extends Controller
 
         $registrations = CampRefereeCheckin::where('referee_id', $referee->id)
             ->where('registration_status', 'registered')
-            ->whereNotNull('registration_status')
             ->with([
                 'camp:id,camp_name,location,start_date,end_date,camp_logo,price,sports_type_name',
                 'camp.sportsType:id,sports_name,icon',
