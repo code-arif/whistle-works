@@ -38,11 +38,11 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::post('/camp/{campId}/crew/create', [CrewManageController::class, 'createCrew']); // working
         Route::get('/camp/{campId}/crews', [CrewManageController::class, 'getCrews']); // working
         Route::get('/crew/{crewId}', [CrewManageController::class, 'getCrewDetails']); // working- crew details
-        Route::put('/crew/{crewId}', [CrewManageController::class, 'updateCrew']); // working
+        Route::post('/crew/update/{crewId}', [CrewManageController::class, 'updateCrew']); // working
         Route::delete('/crew/{crewId}', [CrewManageController::class, 'deleteCrew']); // working
 
         // Member Management
-        Route::post('/crew/{crewId}/add-members', [CrewManageController::class, 'addMembers']);
+        // Route::post('/crew/{crewId}/add-members', [CrewManageController::class, 'addMembers']);
         Route::delete('/crew/{crewId}/remove-members', [CrewManageController::class, 'removeMembers']);
 
         // Available Referees

@@ -75,12 +75,12 @@ class ScheduleController extends Controller
             ->first();
 
         if (!$camp) {
-            return $this->error( [], 'Camp not found.', 404);
+            return $this->error([], 'Camp not found.', 404);
         }
 
         // Check if schedule already exists
         if ($camp->schedule()->exists()) {
-            return $this->error( [],'Schedule already exists for this camp. Delete existing schedule first.', 400);
+            return $this->error([], 'Schedule already exists for this camp. Delete existing schedule first.', 400);
         }
 
         // Validate dates are within camp range
@@ -298,7 +298,12 @@ class ScheduleController extends Controller
                             } else {
                                 return [
                                     'type' => 'individual',
+                                    'assgnment_id' =>$assignment?->id,
+                                    'referee_id' => $assignment?->assignable?->id,
                                     'referee_name' => ($assignment->assignable->first_name ?? '') . ' ' . ($assignment->assignable->last_name ?? ''),
+                                    'avatar' => $assignment?->assignable?->avatar
+                                        ? asset('/' . $assignment?->assignable?->avatar)
+                                        : asset('default/profile.jpg'),
                                 ];
                             }
                         })

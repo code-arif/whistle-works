@@ -28,7 +28,7 @@ class CampPaymentAndCheckinSeeder extends Seeder
             // per camp 10–15 referees
             $selectedReferees = collect($refereeIds)
                 ->shuffle()
-                ->take(rand(10, 15));
+                ->take(rand(30, 60));
 
             foreach ($selectedReferees as $refereeId) {
 

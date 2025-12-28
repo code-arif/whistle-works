@@ -113,7 +113,7 @@ class UserSeeder extends Seeder
         /* =======================
          * Evaluators (20)
          * ======================= */
-        for ($i = 1; $i <= 20; $i++) {
+        for ($i = 1; $i <= 40; $i++) {
             $users[] = [
                 'id' => $id,
                 'first_name' => "Evaluator{$i}",
@@ -142,7 +142,7 @@ class UserSeeder extends Seeder
         /* =======================
          * Referees (20)
          * ======================= */
-        for ($i = 1; $i <= 20; $i++) {
+        for ($i = 1; $i <= 50; $i++) {
             $users[] = [
                 'id' => $id,
                 'first_name' => "Referee{$i}",

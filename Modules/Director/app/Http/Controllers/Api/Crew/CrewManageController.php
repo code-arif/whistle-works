@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Modules\Director\Transformers\Referee\AvailableRefereeResource;
 use Modules\Director\Transformers\Referee\CheckedInRefereeResource;
@@ -15,8 +16,9 @@ class CrewManageController extends Controller
 {
     use ApiResponse;
 
+
     /**
-     * Create a new crew
+     * Create a new crew (with optional members)
      */
     public function createCrew(Request $request, $campId)
     {
@@ -24,8 +26,10 @@ class CrewManageController extends Controller
 
         // Validate
         $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:500'
+            'name'        => 'required|string|max:255',
+            'description' => 'nullable|string|max:500',
+            'referee_ids' => 'nullable|array|max:6', // max 6 members
+            'referee_ids.*' => 'exists:users,id'
         ]);
 
         // Verify camp ownership
@@ -46,22 +50,95 @@ class CrewManageController extends Controller
             return $this->error('Crew with this name already exists in this camp.', null, 400);
         }
 
-        // Create crew
-        $crew = Crew::create([
-            'camp_id' => $campId,
-            'name' => $request->name,
-            'description' => $request->description,
-            'status' => 'active'
-        ]);
+        DB::beginTransaction();
+        try {
+            // Create crew
+            $crew = Crew::create([
+                'camp_id'     => $campId,
+                'name'        => $request->name,
+                'description' => $request->description,
+                'status'      => 'active'
+            ]);
 
-        return $this->success(
-            'Crew created successfully.',
-            [
-                'crew' => $crew,
-                'member_count' => 0
-            ],
-            201
-        );
+            $added = [];
+            $skipped = [];
+
+            // If referee_ids provided, add them
+            if ($request->has('referee_ids') && count($request->referee_ids) > 0) {
+                $refereeIds = $request->referee_ids;
+
+                foreach ($refereeIds as $refereeId) {
+                    // 1. Must be checked in
+                    $isCheckedIn = CampRefereeCheckin::where('camp_id', $campId)
+                        ->where('referee_id', $refereeId)
+                        ->exists();
+
+                    if (!$isCheckedIn) {
+                        $skipped[] = [
+                            'referee_id' => $refereeId,
+                            'reason'     => 'Not checked in to this camp'
+                        ];
+                        continue;
+                    }
+
+                    // 2. Not already in any crew in this camp
+                    $alreadyInCrew = CrewMember::whereHas('crew', function ($q) use ($campId) {
+                        $q->where('camp_id', $campId);
+                    })->where('referee_id', $refereeId)->exists();
+
+                    if ($alreadyInCrew) {
+                        $skipped[] = [
+                            'referee_id' => $refereeId,
+                            'reason'     => 'Already assigned to another crew'
+                        ];
+                        continue;
+                    }
+
+                    // Add to crew
+                    CrewMember::create([
+                        'crew_id'     => $crew->id,
+                        'referee_id'  => $refereeId,
+                        'joined_at'   => now()
+                    ]);
+
+                    $added[] = $refereeId;
+                }
+            }
+
+            // Reload crew with members
+            $crew->load(['members' => function ($q) {
+                $q->with('referee:id,first_name,last_name,email');
+            }]);
+
+            DB::commit();
+
+            return $this->success(
+                'Crew created successfully.',
+                [
+                    'crew' => [
+                        'id'            => $crew->id,
+                        'name'          => $crew->name,
+                        'description'   => $crew->description,
+                        'member_count'  => $crew->members->count(),
+                        'members' => $crew->members->map(function ($member) {
+                            return [
+                                'id' => $member->id,
+                                'name' => $member->first_name . ' ' . $member->last_name,
+                                'email' => $member->email,
+                                'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                                'joined_at' => $member->pivot->joined_at
+                            ];
+                        })
+                    ],
+                    'added_members'   => $added,
+                    'skipped_members' => $skipped
+                ],
+                201
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->error('Failed to create crew: ' . $e->getMessage(), null, 500);
+        }
     }
 
     /**
@@ -98,7 +175,9 @@ class CrewManageController extends Controller
                     return [
                         'id' => $member->id,
                         'name' => $member->first_name . ' ' . $member->last_name,
-                        'email' => $member->email
+                        'email' => $member->email,
+                        'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                        'joined_at' => $member->pivot->joined_at
                     ];
                 }),
                 'created_at' => $crew->created_at->format('Y-m-d H:i:s')
@@ -324,16 +403,18 @@ class CrewManageController extends Controller
 
 
     /**
-     * Update crew details
+     * Update crew details and/or sync members
      */
     public function updateCrew(Request $request, $crewId)
     {
         $user = auth('api')->user();
 
         $request->validate([
-            'name' => 'sometimes|string|max:255',
+            'name'        => 'string|max:255',
             'description' => 'nullable|string|max:500',
-            'status' => 'sometimes|in:active,inactive'
+            'status'      => 'sometimes|in:active,inactive',
+            'referee_ids' => 'nullable|array|max:5',
+            'referee_ids.*' => 'exists:users,id'
         ]);
 
         $crew = Crew::with('camp')->find($crewId);
@@ -347,36 +428,136 @@ class CrewManageController extends Controller
             return $this->error('Unauthorized.', null, 403);
         }
 
-        // Check for duplicate name if updating name
-        if ($request->filled('name') && $request->name !== $crew->name) {
-            $exists = Crew::where('camp_id', $crew->camp_id)
-                ->where('name', $request->name)
-                ->where('id', '!=', $crewId)
-                ->exists();
+        DB::beginTransaction();
+        try {
+            // Update basic fields
+            if ($request->filled('name') && $request->name !== $crew->name) {
+                $exists = Crew::where('camp_id', $crew->camp_id)
+                    ->where('name', $request->name)
+                    ->where('id', '!=', $crewId)
+                    ->exists();
 
-            if ($exists) {
-                return $this->error('Crew with this name already exists in this camp.', null, 400);
+                if ($exists) {
+                    return $this->error('Crew with this name already exists in this camp.', null, 400);
+                }
+                $crew->name = $request->name;
             }
-        }
 
-        // Update fields
-        if ($request->filled('name')) {
-            $crew->name = $request->name;
-        }
-        if ($request->has('description')) {
-            $crew->description = $request->description;
-        }
-        if ($request->filled('status')) {
-            $crew->status = $request->status;
-        }
+            if ($request->has('description')) {
+                $crew->description = $request->description;
+            }
 
-        $crew->save();
+            if ($request->filled('status')) {
+                $crew->status = $request->status;
+            }
 
-        return $this->success(
-            'Crew updated successfully.',
-            $crew,
-            200
-        );
+            $added   = [];
+            $skipped = [];
+            $removed = [];
+
+            // Member sync if referee_ids provided
+            if ($request->has('referee_ids')) {
+                $newRefereeIds = $request->referee_ids ?? [];
+
+                // Current members
+                $currentMemberIds = CrewMember::where('crew_id', $crewId)
+                    ->pluck('referee_id')
+                    ->toArray();
+
+                // Remove old members not in new list
+                $toRemove = array_diff($currentMemberIds, $newRefereeIds);
+                if (!empty($toRemove)) {
+                    CrewMember::where('crew_id', $crewId)
+                        ->whereIn('referee_id', $toRemove)
+                        ->delete();
+                    $removed = array_values($toRemove);
+                }
+
+                // Add new members
+                foreach ($newRefereeIds as $refereeId) {
+                    if (in_array($refereeId, $currentMemberIds)) {
+                        continue; // already in crew
+                    }
+
+                    // Check-in validation
+                    $checkedIn = CampRefereeCheckin::where('camp_id', $crew->camp_id)
+                        ->where('referee_id', $refereeId)
+                        ->exists();
+
+                    if (!$checkedIn) {
+                        $skipped[] = ['referee_id' => $refereeId, 'reason' => 'Not checked in'];
+                        continue;
+                    }
+
+                    // Not in other crew
+                    $inOtherCrew = CrewMember::whereHas('crew', function ($q) use ($crew) {
+                        $q->where('camp_id', $crew->camp_id)->where('id', '!=', $crew->id);
+                    })->where('referee_id', $refereeId)->exists();
+
+                    if ($inOtherCrew) {
+                        $skipped[] = ['referee_id' => $refereeId, 'reason' => 'Already in another crew'];
+                        continue;
+                    }
+
+                    CrewMember::create([
+                        'crew_id'    => $crew->id,
+                        'referee_id' => $refereeId,
+                        'joined_at'  => now()
+                    ]);
+
+                    $added[] = $refereeId;
+                }
+            }
+
+            $crew->save();
+
+            // Reload crew with members and their referees safely
+            $crew->load(['members' => function ($query) {
+                $query->with(['referee' => function ($q) {
+                    $q->select('id', 'first_name', 'last_name', 'email');
+                }]);
+            }]);
+
+            DB::commit();
+
+            // Safe mapping with null checks
+            $membersData = $crew->members->map(function ($member) {
+                if (!$member->referee) {
+                    // Rare case: referee deleted but crew_member row remains
+                    return null;
+                }
+                return [
+                    'id'        => $member->referee->id,
+                    'name'      => $member->referee->first_name . ' ' . $member->referee->last_name,
+                    'email'     => $member->referee->email,
+                    'joined_at' => $member->joined_at->format('Y-m-d H:i:s')
+                ];
+            })->filter()->values(); // remove nulls
+
+            return $this->success(
+                'Crew updated successfully.',
+                [
+                    'crew' => [
+                        'id'           => $crew->id,
+                        'name'         => $crew->name,
+                        'description'  => $crew->description ?? null,
+                        'status'       => $crew->status,
+                        'member_count' => $membersData->count(),
+                        'members'      => $membersData
+                    ],
+                    'members_sync' => [
+                        'added'   => $added,
+                        'removed' => $removed,
+                        'skipped' => $skipped
+                    ]
+                ],
+                200
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Crew update failed: ' . $e->getMessage() . ' | Line: ' . $e->getLine());
+            return $this->error('Failed to update crew: ' . $e->getMessage(), null, 500);
+        }
     }
 
     /**
@@ -600,7 +781,7 @@ class CrewManageController extends Controller
             ->with('referee')
             ->paginate($perPage);
 
-            // return $checkedInReferees;exit();
+        // return $checkedInReferees;exit();
 
         return $this->success('Checked-in referees fetched successfully.', [
             'total' => $checkedInReferees->total(),
