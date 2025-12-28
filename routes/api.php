@@ -13,12 +13,14 @@ use App\Http\Controllers\Api\Frontend\SettingsController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\Frontend\AnnouncementController;
 use App\Http\Controllers\Api\Frontend\CMS\HomePageController;
+use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegisterManageForDirectorController;
 use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
 use App\Http\Controllers\Api\Frontend\Roster\RosterController;
 use App\Http\Controllers\Api\Frontend\RefereeEvaluationController;
 use App\Http\Controllers\Api\Frontend\Evaluator\EvaluatorController;
 use App\Http\Controllers\Api\Frontend\Evaluator\GameOverviewController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
+use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegistrationController;
 
 // health check
 Route::get('/health-check', function () {
@@ -91,7 +93,7 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
     Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetails']);
 
     // Game overview
-    Route::get('/evaluator/{campId}/game-overview', [GameOverviewController::class,'gameOverview']); 
+    Route::get('/evaluator/{campId}/game-overview', [GameOverviewController::class, 'gameOverview']);
 });
 
 /*
@@ -105,7 +107,7 @@ Route::middleware(['auth:api', 'role:referee'])->group(function () {
 
     Route::prefix('referee')->group(function () {
         // Get all game slots where referee is assigned
-        Route::get('/my-assigned-slots', [RefereeAssignmentController::class, 'getMyAssignedSlots']);
+        Route::get('/my-assigned-slots', [RefereeAssignmentController::class, 'getMyAssignedSlots']); // done
 
         // Get specific game slot details with all assigned referees
         Route::get('/game-slot/{gameSlotId}', [RefereeAssignmentController::class, 'getGameSlotDetails']);
@@ -123,6 +125,30 @@ Route::middleware(['auth:api', 'role:referee'])->group(function () {
 Route::middleware(['auth:api', 'role:evaluator'])->group(function () {
     Route::prefix('/evaluator')->group(function () {
         Route::get('/active-camps', [EvaluatorController::class, 'getActiveCamps']);
+    });
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| EVALUATOR REGISTRATION ROUTES
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:api', 'role:evaluator,api'])->group(function () {
+    // Evaluator registers for camps
+    Route::prefix('evaluator/camp-registration')->group(function () {
+        Route::post('/register', [CampEvaluatorRegistrationController::class, 'register']); // done
+        Route::get('/my-registrations', [CampEvaluatorRegistrationController::class, 'myRegistrations']); //done
+        Route::delete('/cancel/{registrationId}', [CampEvaluatorRegistrationController::class, 'cancel']); // done
+    });
+});
+
+// Director manages evaluator registrations
+Route::middleware(['auth:api', 'role:director,api'])->group(function () {
+    Route::prefix('director/evaluator-registrations')->group(function () {
+        Route::get('/camp/{campId}', [CampEvaluatorRegisterManageForDirectorController::class, 'getCampRegistrations']); //done
+        Route::post('/approve/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'approve']); // done
+        Route::post('/reject/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'reject']); // done
     });
 });
 
