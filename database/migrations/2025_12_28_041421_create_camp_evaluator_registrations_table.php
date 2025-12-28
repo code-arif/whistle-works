@@ -22,6 +22,7 @@ return new class extends Migration
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('rejected_at')->nullable();
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null'); // Director who approved
+            $table->boolean('can_view_own_evaluations')->default(true);
             $table->timestamps();
 
             // Prevent duplicate registrations

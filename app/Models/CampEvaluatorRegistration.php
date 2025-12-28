@@ -18,6 +18,7 @@ class CampEvaluatorRegistration extends Model
         'approved_at',
         'rejected_at',
         'approved_by',
+        'can_view_own_evaluations',
     ];
 
     protected $casts = [
@@ -105,5 +106,25 @@ class CampEvaluatorRegistration extends Model
         ]);
 
         return true;
+    }
+
+    /**
+     * Toggle visibility permission
+     */
+    public function toggleVisibility(): bool
+    {
+        $this->update([
+            'can_view_own_evaluations' => !$this->can_view_own_evaluations,
+        ]);
+
+        return $this->can_view_own_evaluations;
+    }
+
+    /**
+     * Check if evaluator can view their evaluations
+     */
+    public function canViewEvaluations(): bool
+    {
+        return $this->status === 'approved' && $this->can_view_own_evaluations;
     }
 }

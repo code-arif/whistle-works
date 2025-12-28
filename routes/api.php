@@ -84,9 +84,10 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
         Route::get('/details/{evaluationId}', [RefereeEvaluationController::class, 'show']); // working - get evaluation details
 
         // Get referee statistics
-        Route::get('/{refereeId}/stats', [RefereeEvaluationController::class, 'getRefereeStats']);
+        Route::get('/{refereeId}/stats', [RefereeEvaluationController::class, 'getRefereeStats']); // done
 
-        Route::get('/camp/{campId}/all-registered-in-referees', [RefereeEvaluationController::class, 'getAllRegisteredInReferees']); // change the route name;
+        // Get all registered referee
+        Route::get('/camp/{campId}/all-registered-in-referees', [RefereeEvaluationController::class, 'getAllRegisteredInReferees']); // done
     });
 
     // Roster - Get all information of a camp
@@ -149,6 +150,7 @@ Route::middleware(['auth:api', 'role:director,api'])->group(function () {
         Route::get('/camp/{campId}', [CampEvaluatorRegisterManageForDirectorController::class, 'getCampRegistrations']); //done
         Route::post('/approve/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'approve']); // done
         Route::post('/reject/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'reject']); // done
+        Route::post('/toggle-visibility/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'toggleEvaluatorVisibility']);
     });
 });
 

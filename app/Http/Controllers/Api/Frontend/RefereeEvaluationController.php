@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\RefereeEvaluation;
 use Modules\Director\Models\Camp;
 use App\Http\Controllers\Controller;
+use App\Models\CampEvaluatorRegistration;
 use App\Http\Requests\RefereeEvaluationRequest;
 use Modules\Director\Models\CampRefereeCheckin;
 use App\Http\Resources\RefereeEvaluationResource;
@@ -30,6 +31,21 @@ class RefereeEvaluationController extends Controller
             return $this->error([], 'Only evaluators and directors can create evaluations.', 403);
         }
 
+        // Check if camp exists
+        $camp = Camp::find($validated['camp_id']);
+        if (!$camp) {
+            return $this->error([], 'Camp not found.', 404);
+        }
+
+        // **NEW: Check if evaluator is registered and approved for this camp**
+        if (!RefereeEvaluation::canEvaluateInCamp($user, $camp->id)) {
+            if ($user->hasRole('director')) {
+                return $this->error([], 'You can only evaluate referees in your own camps.', 403);
+            } else {
+                return $this->error([], 'You must be registered and approved for this camp to evaluate referees.', 403);
+            }
+        }
+
         // Check if referee exists and has checked in to the camp
         $referee = User::find($validated['referee_id']);
         if (!$referee || !$referee->hasRole('referee')) {
@@ -41,15 +57,10 @@ class RefereeEvaluationController extends Controller
             return $this->error([], 'You cannot evaluate yourself.', 403);
         }
 
-        // Check if camp exists
-        $camp = Camp::find($validated['camp_id']);
-        if (!$camp) {
-            return $this->error([], 'Camp not found.', 404);
-        }
-
         // Verify referee has checked in to this camp
         $checkin = CampRefereeCheckin::where('camp_id', $camp->id)
             ->where('referee_id', $referee->id)
+            ->where('registration_status', 'registered')
             ->first();
 
         if (!$checkin) {
@@ -64,7 +75,7 @@ class RefereeEvaluationController extends Controller
             ->first();
 
         if ($existingEvaluation) {
-            return $this->error([], 'You have already evaluated this referee for this camp.', 409);
+            return $this->error([], 'You have already evaluated this referee for this camp/game slot.', 409);
         }
 
         // Create evaluation
@@ -92,6 +103,7 @@ class RefereeEvaluationController extends Controller
             201
         );
     }
+
 
     /**
      * Update an existing evaluation
@@ -135,6 +147,7 @@ class RefereeEvaluationController extends Controller
         );
     }
 
+
     /**
      * Get evaluations by camp (for directors/evaluators)
      */
@@ -152,6 +165,27 @@ class RefereeEvaluationController extends Controller
             return $this->error([], 'Camp not found.', 404);
         }
 
+        // **NEW: Check access permission**
+        if ($user->hasRole('director') && $camp->director_id !== $user->id) {
+            return $this->error([], 'You can only view evaluations from your own camps.', 403);
+        }
+
+        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
+            $registration = CampEvaluatorRegistration::where('camp_id', $campId)
+                ->where('evaluator_id', $user->id)
+                ->where('status', 'approved')
+                ->first();
+
+            if (!$registration) {
+                return $this->error([], 'You must be registered and approved for this camp.', 403);
+            }
+
+            // **NEW: Check if evaluator has permission to view evaluations**
+            if (!$registration->can_view_own_evaluations) {
+                return $this->error([], 'You do not have permission to view evaluations for this camp. Contact the director.', 403);
+            }
+        }
+
         $query = RefereeEvaluation::with(['referee', 'evaluator', 'gameSlot'])
             ->forCamp($campId);
 
@@ -163,6 +197,11 @@ class RefereeEvaluationController extends Controller
         // Filter by status
         if ($request->has('status')) {
             $query->where('status', $request->status);
+        }
+
+        // **NEW: Evaluators can only see their own evaluations**
+        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
+            $query->where('evaluator_id', $user->id);
         }
 
         $evaluations = $query->orderByDesc('average_score')
@@ -194,9 +233,50 @@ class RefereeEvaluationController extends Controller
             return $this->error([], 'Only evaluators and directors can access this.', 403);
         }
 
-        $evaluations = RefereeEvaluation::with(['referee', 'camp', 'gameSlot'])
-            ->byEvaluator($user->id)
-            ->orderBy('created_at', 'desc')
+        // **NEW: Check if evaluator has permission to view their evaluations**
+        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
+            // Get camp_id from request if filtering by specific camp
+            if ($request->has('camp_id')) {
+                $registration = CampEvaluatorRegistration::where('camp_id', $request->camp_id)
+                    ->where('evaluator_id', $user->id)
+                    ->where('status', 'approved')
+                    ->first();
+
+                if (!$registration || !$registration->can_view_own_evaluations) {
+                    return $this->error([], 'You do not have permission to view evaluations for this camp. Contact the director.', 403);
+                }
+            } else {
+                // Check if evaluator has ANY camp where they can view evaluations
+                $hasPermission = CampEvaluatorRegistration::where('evaluator_id', $user->id)
+                    ->where('status', 'approved')
+                    ->where('can_view_own_evaluations', true)
+                    ->exists();
+
+                if (!$hasPermission) {
+                    return $this->error([], 'You do not have permission to view any evaluations. Contact camp directors.', 403);
+                }
+            }
+        }
+
+        $query = RefereeEvaluation::with(['referee', 'camp', 'gameSlot'])
+            ->byEvaluator($user->id);
+
+        // Filter by camp if provided
+        if ($request->has('camp_id')) {
+            $query->where('camp_id', $request->camp_id);
+        }
+
+        // **NEW: For evaluators, only show evaluations from camps where they have permission**
+        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
+            $allowedCamps = CampEvaluatorRegistration::where('evaluator_id', $user->id)
+                ->where('status', 'approved')
+                ->where('can_view_own_evaluations', true)
+                ->pluck('camp_id');
+
+            $query->whereIn('camp_id', $allowedCamps);
+        }
+
+        $evaluations = $query->orderBy('created_at', 'desc')
             ->paginate($request->get('per_page', 15));
 
         return $this->success(
@@ -212,6 +292,7 @@ class RefereeEvaluationController extends Controller
             ]
         );
     }
+
 
     /**
      * Get a single evaluation by ID
@@ -344,23 +425,33 @@ class RefereeEvaluationController extends Controller
         return $this->success('Referee statistics retrieved successfully.', $stats);
     }
 
+
     /**
-     * Get all checked-in referees for a camp
+     * Get all checked-in referees for a camp that the evaluator can evaluate
      */
     public function getAllRegisteredInReferees($campId)
     {
         $user = auth('api')->user();
 
-        // Verify camp ownership
-        $camp = Camp::where('id', $campId)->first();
-
+        // Check if camp exists
+        $camp = Camp::find($campId);
         if (!$camp) {
             return $this->error('Camp not found.', null, 404);
         }
 
-        $perPage = request()->get('per_page', 15); // default 15
+        // **NEW: Check if user can evaluate in this camp**
+        if (!RefereeEvaluation::canEvaluateInCamp($user, $campId)) {
+            if ($user->hasRole('director')) {
+                return $this->error([], 'You can only view referees from your own camps.', 403);
+            } else {
+                return $this->error([], 'You must be registered and approved for this camp.', 403);
+            }
+        }
+
+        $perPage = request()->get('per_page', 15);
 
         $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
+            ->where('registration_status', 'registered')
             ->with('referee')
             ->paginate($perPage);
 

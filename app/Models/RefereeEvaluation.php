@@ -35,6 +35,7 @@ class RefereeEvaluation extends Model
     protected $casts = [
         'submitted_at' => 'datetime',
         'total_score' => 'decimal:2',
+        'average_score' => 'decimal:2',
     ];
 
     protected $hidden = [
@@ -108,37 +109,66 @@ class RefereeEvaluation extends Model
         return $query->where('evaluator_id', $evaluatorId);
     }
 
-    // Helper method
+    public function scopeDraft($query)
+    {
+        return $query->where('status', 'draft');
+    }
+
+    // Permission methods
+    public function canBeEditedBy(User $user): bool
+    {
+        // Director can edit any evaluation in their camps
+        if ($user->hasRole('director')) {
+            $camp = $this->camp;
+            return $camp && $camp->director_id === $user->id;
+        }
+
+        // Evaluator can edit their own evaluations
+        if ($user->hasRole('evaluator')) {
+            return $this->evaluator_id === $user->id;
+        }
+
+        return false;
+    }
+
     public function canBeViewedBy(User $user): bool
     {
-        // Referee can view their own evaluations
-        if ($user->id === $this->referee_id) {
+        // Referee can view their own submitted evaluations
+        if ($user->hasRole('referee') && $this->referee_id === $user->id && $this->status === 'submitted') {
             return true;
         }
 
-        // Evaluator who created it can view
-        if ($user->id === $this->evaluator_id) {
-            return true;
-        }
-
-        // Directors can view all evaluations
+        // Director can view evaluations in their camps
         if ($user->hasRole('director')) {
+            $camp = $this->camp;
+            return $camp && $camp->director_id === $user->id;
+        }
+
+        // Evaluator can view their own evaluations
+        if ($user->hasRole('evaluator') && $this->evaluator_id === $user->id) {
             return true;
         }
 
         return false;
     }
 
-    public function canBeEditedBy(User $user): bool
+    /**
+     * Check if evaluator is registered and approved for this camp
+     */
+    public static function canEvaluateInCamp(User $evaluator, $campId): bool
     {
-        // Only evaluator who created it can edit
-        if ($user->id === $this->evaluator_id) {
-            return true;
+        // Directors can always evaluate in their own camps
+        if ($evaluator->hasRole('director')) {
+            $camp = Camp::find($campId);
+            return $camp && $camp->director_id === $evaluator->id;
         }
 
-        // Directors can edit all evaluations
-        if ($user->hasRole('director')) {
-            return true;
+        // Evaluators must be registered and approved
+        if ($evaluator->hasRole('evaluator')) {
+            return CampEvaluatorRegistration::where('camp_id', $campId)
+                ->where('evaluator_id', $evaluator->id)
+                ->where('status', 'approved')
+                ->exists();
         }
 
         return false;

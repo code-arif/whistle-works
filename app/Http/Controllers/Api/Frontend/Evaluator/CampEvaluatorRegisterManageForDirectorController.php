@@ -149,4 +149,44 @@ class CampEvaluatorRegisterManageForDirectorController extends Controller
             200
         );
     }
+
+    /**
+     * Director toggles evaluator's permission to view their own evaluations
+     */
+    public function toggleEvaluatorVisibility(Request $request, $registrationId)
+    {
+        $user = auth('api')->user();
+
+        if (!$user->hasRole('director')) {
+            return $this->error([], 'Only directors can toggle evaluator permissions.', 403);
+        }
+
+        $registration = CampEvaluatorRegistration::with('camp')->find($registrationId);
+
+        if (!$registration) {
+            return $this->error([], 'Registration not found.', 404);
+        }
+
+        // Verify camp ownership
+        if ($registration->camp->director_id !== $user->id) {
+            return $this->error([], 'Unauthorized to modify this registration.', 403);
+        }
+
+        // Only approved evaluators can have their visibility toggled
+        if ($registration->status !== 'approved') {
+            return $this->error([], 'Only approved evaluators can have their permissions modified.', 400);
+        }
+
+        $newStatus = $registration->toggleVisibility();
+
+        return $this->success(
+            $newStatus
+                ? 'Evaluator can now view their evaluations.'
+                : 'Evaluator visibility disabled.',
+            [
+                'registration' => $registration->fresh()->load(['evaluator', 'camp']),
+                'can_view_evaluations' => $newStatus,
+            ]
+        );
+    }
 }
