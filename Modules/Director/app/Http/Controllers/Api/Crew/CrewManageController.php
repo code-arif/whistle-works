@@ -225,8 +225,9 @@ class CrewManageController extends Controller
                 'members' => $crew->members->map(function ($member) {
                     return [
                         'id' => $member->id,
-                        'name' => $member->name,
+                        'name' => $member->first_name . ' ' . $member->last_name ?? null,
                         'email' => $member->email,
+                        'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
                         'joined_at' => $member->pivot->joined_at
                     ];
                 }),
@@ -243,109 +244,109 @@ class CrewManageController extends Controller
     /**
      * Add referees to crew
      */
-    public function addMembers(Request $request, $crewId)
-    {
-        $user = auth('api')->user();
+    // public function addMembers(Request $request, $crewId)
+    // {
+    //     $user = auth('api')->user();
 
-        $request->validate([
-            'referee_ids' => 'required|array|min:1|max:5',
-            'referee_ids.*' => 'exists:users,id'
-        ]);
+    //     $request->validate([
+    //         'referee_ids' => 'required|array|min:1|max:5',
+    //         'referee_ids.*' => 'exists:users,id'
+    //     ]);
 
-        $crew = Crew::with('camp', 'members')->find($crewId);
+    //     $crew = Crew::with('camp', 'members')->find($crewId);
 
-        if (!$crew) {
-            return $this->error('Crew not found.', null, 404);
-        }
+    //     if (!$crew) {
+    //         return $this->error('Crew not found.', null, 404);
+    //     }
 
-        // Verify ownership
-        if ($crew->camp->director_id !== $user->id) {
-            return $this->error('Unauthorized.', null, 403);
-        }
+    //     // Verify ownership
+    //     if ($crew->camp->director_id !== $user->id) {
+    //         return $this->error('Unauthorized.', null, 403);
+    //     }
 
-        $refereeIds = $request->referee_ids;
+    //     $refereeIds = $request->referee_ids;
 
-        // --- Capacity Check ---
-        if ($crew->members->count() + count($refereeIds) > 5) {
-            return $this->error(
-                [
-                    'current_members' => $crew->members->count(),
-                    'trying_to_add' => count($refereeIds)
-                ],
-                'Crew can have max 5 members.',
-                400
-            );
-        }
+    //     // --- Capacity Check ---
+    //     if ($crew->members->count() + count($refereeIds) > 5) {
+    //         return $this->error(
+    //             [
+    //                 'current_members' => $crew->members->count(),
+    //                 'trying_to_add' => count($refereeIds)
+    //             ],
+    //             'Crew can have max 5 members.',
+    //             400
+    //         );
+    //     }
 
-        $added = [];
-        $skipped = [];
+    //     $added = [];
+    //     $skipped = [];
 
-        foreach ($refereeIds as $refereeId) {
+    //     foreach ($refereeIds as $refereeId) {
 
-            // Check if checked in
-            $isCheckedIn = CampRefereeCheckin::where('camp_id', $crew->camp_id)
-                ->where('referee_id', $refereeId)
-                ->exists();
+    //         // Check if checked in
+    //         $isCheckedIn = CampRefereeCheckin::where('camp_id', $crew->camp_id)
+    //             ->where('referee_id', $refereeId)
+    //             ->exists();
 
-            if (!$isCheckedIn) {
-                $skipped[] = [
-                    'referee_id' => $refereeId,
-                    'reason' => 'Not checked in'
-                ];
-                continue;
-            }
+    //         if (!$isCheckedIn) {
+    //             $skipped[] = [
+    //                 'referee_id' => $refereeId,
+    //                 'reason' => 'Not checked in'
+    //             ];
+    //             continue;
+    //         }
 
-            // Check if already in ANY crew for this camp
-            $existing = CrewMember::whereHas('crew', function ($q) use ($crew) {
-                $q->where('camp_id', $crew->camp_id);
-            })
-                ->where('referee_id', $refereeId)
-                ->first();
+    //         // Check if already in ANY crew for this camp
+    //         $existing = CrewMember::whereHas('crew', function ($q) use ($crew) {
+    //             $q->where('camp_id', $crew->camp_id);
+    //         })
+    //             ->where('referee_id', $refereeId)
+    //             ->first();
 
-            if ($existing) {
-                $skipped[] = [
-                    'referee_id' => $refereeId,
-                    'reason' => 'Already in another crew'
-                ];
-                continue;
-            }
+    //         if ($existing) {
+    //             $skipped[] = [
+    //                 'referee_id' => $refereeId,
+    //                 'reason' => 'Already in another crew'
+    //             ];
+    //             continue;
+    //         }
 
-            // Add to crew
-            $crew_member = CrewMember::create([
-                'crew_id' => $crewId,
-                'referee_id' => $refereeId,
-                'joined_at' => now()
-            ]);
+    //         // Add to crew
+    //         $crew_member = CrewMember::create([
+    //             'crew_id' => $crewId,
+    //             'referee_id' => $refereeId,
+    //             'joined_at' => now()
+    //         ]);
 
-            $added[] = $refereeId;
-        }
+    //         $added[] = $refereeId;
+    //     }
 
-        $crew->load(['members' => function ($q) {
-            $q->with('referee:id,first_name,last_name,email');
-        }]);
+    //     $crew->load(['members' => function ($q) {
+    //         $q->with('referee:id,first_name,last_name,email');
+    //     }]);
 
-        return $this->success(
-            'Members processed.',
-            [
-                'crew' => [
-                    'id' => $crew->id,
-                    'name' => $crew->name,
-                    'member_count' => $crew->members->count(),
-                    'members' => $crew->members->map(function ($member) {
-                        return [
-                            'id' => $member->id,
-                            'name' => $member->first_name . ' ' . $member->last_name,
-                            'email' => $member->email,
-                            'joined_at' => $member->pivot->joined_at
-                        ];
-                    })
-                ],
-                'added' => $added,
-                'skipped' => $skipped
-            ],
-            201
-        );
-    }
+    //     return $this->success(
+    //         'Members processed.',
+    //         [
+    //             'crew' => [
+    //                 'id' => $crew->id,
+    //                 'name' => $crew->name,
+    //                 'member_count' => $crew->members->count(),
+    //                 'members' => $crew->members->map(function ($member) {
+    //                     return [
+    //                         'id' => $member->id,
+    //                         'name' => $member->first_name . ' ' . $member->last_name,
+    //                         'email' => $member->email,
+    //                         'joined_at' => $member->pivot->joined_at
+    //                     ];
+    //                 })
+    //             ],
+    //             'added' => $added,
+    //             'skipped' => $skipped
+    //         ],
+    //         201
+    //     );
+    // }
 
 
     /**

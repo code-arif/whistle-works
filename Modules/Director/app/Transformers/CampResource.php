@@ -9,6 +9,11 @@ class CampResource extends JsonResource
 {
     public function toArray($request)
     {
+        $checkin = null;
+        if (auth('api')->check() && auth('api')->user()->hasRole('referee')) {
+            $checkin = $this->checkedInReferees->first();
+        }
+
         return [
             'id'                => $this->id,
             'camp_name'         => $this->camp_name,
@@ -31,6 +36,16 @@ class CampResource extends JsonResource
                 'sports_name'   => $this->sportsType->sports_name ?? null,
                 'icon'          => $this->sportsType && $this->sportsType->icon ? asset($this->sportsType->icon) : null,
             ],
+            $this->mergeWhen(
+                auth('api')->check() && auth('api')->user()->hasRole('referee'),
+                function () use ($checkin) {
+                    return [
+                        'referee_registration_status' => optional($checkin)->registration_status,
+                        'registered_at'               => optional($checkin)->registered_at,
+                        'checked_in_at'               => optional($checkin)->checked_in_at,
+                    ];
+                }
+            ),
         ];
     }
 

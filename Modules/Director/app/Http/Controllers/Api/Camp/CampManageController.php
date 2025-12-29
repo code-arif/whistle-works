@@ -168,8 +168,13 @@ class CampManageController extends Controller
     {
         $user = auth('api')->user();
 
-        // Find camp by ID (any user can see — or restrict if needed)
-        $camp = Camp::where('id', $id)->with('sportsType')->first();
+        $camp = Camp::with(['sportsType'])
+            ->when($user->hasRole('referee'), function ($query) use ($user) {
+                $query->with(['checkedInReferees' => function ($q) use ($user) {
+                    $q->where('referee_id', $user->id);
+                }]);
+            })
+            ->find($id);
 
         if (!$camp) {
             return $this->error(null, 'Camp not found.', 404);
@@ -181,6 +186,7 @@ class CampManageController extends Controller
             200
         );
     }
+
 
     /**
      * Delete camp

@@ -60,10 +60,11 @@ class CourtAssignController extends Controller
             ->where('assignment_type', 'individual')
             ->count();
 
-        $availableSlots = 3 - $currentAssignments;
+        $maxReferees = $slot->schedule->max_referees_per_slot; // Use dynamic limit
+        $availableSlots = $maxReferees - $currentAssignments;
 
         if ($availableSlots <= 0) {
-            return $this->error('This slot already has maximum 3 referees.', null, 400);
+            return $this->error("This slot already has maximum {$maxReferees} referees.", null, 400);
         }
 
         $assignedCount = 0;
@@ -98,7 +99,13 @@ class CourtAssignController extends Controller
                     continue;
                 }
 
-                // Check for time conflicts
+                // NEW: Check if referee needs rest (played in previous slot)
+                if (GameSlotAssignment::needsRest($refereeId, User::class, $slot)) {
+                    $errors[] = "Referee ID {$refereeId} needs rest. They played in the previous time slot.";
+                    continue;
+                }
+
+                // Check for time conflicts (overlapping games)
                 $hasConflict = GameSlotAssignment::hasTimeConflict(
                     $refereeId,
                     User::class,
@@ -320,7 +327,7 @@ class CourtAssignController extends Controller
         $assignmentsCreated = 0;
         $slotsAssigned = 0;
         $conflictCount = 0;
-        $maxPerSlot = 3;
+        $maxPerSlot = $availableSlots->schedule->max_referees_per_slot;
 
         foreach ($availableSlots as $slot) {
             $assignedToThisSlot = 0;
@@ -339,6 +346,10 @@ class CourtAssignController extends Controller
 
                 if ($alreadyAssigned) {
                     continue;
+                }
+
+                if (GameSlotAssignment::needsRest($referee->id, User::class, $slot)) {
+                    continue; // Skip - referee needs rest
                 }
 
                 // Check for time conflicts
@@ -395,10 +406,14 @@ class CourtAssignController extends Controller
     public function getAvailableRefereesForSlot($slotId)
     {
         $user = auth('api')->user();
-        $slot = GameSlot::with('schedule.camp')->findOrFail($slotId);
+        $slot = GameSlot::with('schedule.camp')->find($slotId);
+
+        if (!$slot) {
+            return $this->error([], 'Game court not found!', 404);
+        }
 
         if ($slot->schedule->camp->director_id !== $user->id) {
-            return $this->error('Unauthorized.', null, 403);
+            return $this->error([], 'Unauthorized.', 403);
         }
 
         // Get all checked-in referees
@@ -408,13 +423,21 @@ class CourtAssignController extends Controller
                 ->where('camp_id', $slot->schedule->camp_id);
         })->get();
 
-        // Filter out referees with time conflicts
+        // Filter: no time conflicts + no recent game (rest needed)
         $availableReferees = $allReferees->filter(function ($referee) use ($slot) {
-            return !GameSlotAssignment::hasTimeConflict(
+            $hasConflict = GameSlotAssignment::hasTimeConflict(
                 $referee->id,
                 User::class,
                 $slot
             );
+
+            $needsRest = GameSlotAssignment::needsRest(
+                $referee->id,
+                User::class,
+                $slot
+            );
+
+            return !$hasConflict && !$needsRest;
         });
 
         // Get already assigned referees to this slot

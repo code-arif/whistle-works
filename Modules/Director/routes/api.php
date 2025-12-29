@@ -40,7 +40,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::get('/camp/{campId}/crews', [CrewManageController::class, 'getCrews']); // working
         Route::get('/crew/{crewId}', [CrewManageController::class, 'getCrewDetails']); // working- crew details
         Route::post('/crew/update/{crewId}', [CrewManageController::class, 'updateCrew']); // working
-        Route::delete('/crew/{crewId}', [CrewManageController::class, 'deleteCrew']); // working
+        Route::delete('/crew/delete/{crewId}', [CrewManageController::class, 'deleteCrew']); // working
 
         // Member Management
         // Route::post('/crew/{crewId}/add-members', [CrewManageController::class, 'addMembers']);
