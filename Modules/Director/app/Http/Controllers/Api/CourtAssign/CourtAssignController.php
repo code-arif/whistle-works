@@ -423,6 +423,8 @@ class CourtAssignController extends Controller
                 ->where('camp_id', $slot->schedule->camp_id);
         })->get();
 
+
+
         // Filter: no time conflicts + no recent game (rest needed)
         $availableReferees = $allReferees->filter(function ($referee) use ($slot) {
             $hasConflict = GameSlotAssignment::hasTimeConflict(

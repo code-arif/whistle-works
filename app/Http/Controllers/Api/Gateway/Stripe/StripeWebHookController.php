@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Api\Gateway\Stripe;
 
+use Exception;
+use Stripe\Webhook;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\CampPaymentAttempt;
 use Illuminate\Support\Facades\Log;
-use Stripe\Webhook;
+use App\Models\{CampPayment, CampPaymentAttempt};
+use Illuminate\Support\Facades\DB;
+use Modules\Director\Models\CampRefereeCheckin;
 use Stripe\Exception\SignatureVerificationException;
 
 class StripeWebhookController extends Controller
@@ -57,27 +60,131 @@ class StripeWebhookController extends Controller
 
     /**
      * Handle successful checkout session
+     * This automatically processes payment and creates registration
      */
     protected function handleCheckoutSessionCompleted($session)
     {
-        $attempt = CampPaymentAttempt::where('stripe_session_id', $session->id)->first();
+        DB::beginTransaction();
 
-        if (!$attempt) {
-            Log::warning('Stripe Webhook: Payment attempt not found', ['session_id' => $session->id]);
-            return;
+        try {
+            // Find payment attempt
+            $attempt = CampPaymentAttempt::where('stripe_session_id', $session->id)->first();
+
+            if (!$attempt) {
+                Log::warning('Stripe Webhook: Payment attempt not found', [
+                    'session_id' => $session->id
+                ]);
+                return;
+            }
+
+            // Check if already processed
+            if ($attempt->status === 'completed') {
+                Log::info('Stripe Webhook: Payment already processed', [
+                    'session_id' => $session->id,
+                    'attempt_id' => $attempt->id
+                ]);
+                DB::commit();
+                return;
+            }
+
+            // Verify payment status
+            if ($session->payment_status !== 'paid') {
+                Log::warning('Stripe Webhook: Payment not completed', [
+                    'session_id' => $session->id,
+                    'payment_status' => $session->payment_status
+                ]);
+                DB::commit();
+                return;
+            }
+
+            // Check if payment record already exists
+            $existingPayment = CampPayment::where('stripe_session_id', $session->id)
+                ->where('status', 'succeeded')
+                ->first();
+
+            if ($existingPayment) {
+                Log::info('Stripe Webhook: Payment record already exists', [
+                    'payment_id' => $existingPayment->id
+                ]);
+
+                // Update attempt status
+                $attempt->update([
+                    'status' => 'completed',
+                    'completed_at' => now()
+                ]);
+
+                DB::commit();
+                return;
+            }
+
+            // Create payment record
+            $payment = CampPayment::create([
+                'camp_id' => $attempt->camp_id,
+                'referee_id' => $attempt->referee_id,
+                'payment_attempt_id' => $attempt->id,
+                'stripe_payment_intent_id' => $session->payment_intent,
+                'stripe_session_id' => $session->id,
+                'amount' => $attempt->amount,
+                'currency' => strtolower($session->currency ?? 'usd'),
+                'status' => 'succeeded',
+                'paid_at' => now(),
+                'metadata' => [
+                    'payment_method' => $session->payment_method_types[0] ?? null,
+                    'customer_email' => $session->customer_email ?? $session->customer_details->email ?? null
+                ]
+            ]);
+
+            // Update attempt status
+            $attempt->update([
+                'status' => 'completed',
+                'completed_at' => now()
+            ]);
+
+            // Check if registration already exists
+            $existingRegistration = CampRefereeCheckin::where('camp_id', $attempt->camp_id)
+                ->where('referee_id', $attempt->referee_id)
+                ->first();
+
+            if (!$existingRegistration) {
+                // Create automatic registration after successful payment
+                $registration = CampRefereeCheckin::create([
+                    'camp_id' => $attempt->camp_id,
+                    'referee_id' => $attempt->referee_id,
+                    'registration_status' => 'registered',
+                    'registered_at' => $payment->paid_at,
+                    'checked_in_at' => null,
+                ]);
+
+                Log::info('Stripe Webhook: Payment and registration completed', [
+                    'payment_id' => $payment->id,
+                    'registration_id' => $registration->id,
+                    'camp_id' => $attempt->camp_id,
+                    'referee_id' => $attempt->referee_id,
+                    'amount' => $payment->amount
+                ]);
+            } else {
+                Log::info('Stripe Webhook: Payment completed, registration already exists', [
+                    'payment_id' => $payment->id,
+                    'registration_id' => $existingRegistration->id,
+                    'camp_id' => $attempt->camp_id,
+                    'referee_id' => $attempt->referee_id
+                ]);
+            }
+
+            DB::commit();
+
+            // Optional: Send notification email to referee
+            // event(new PaymentSuccessful($payment, $attempt->referee));
+
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            Log::error('Stripe Webhook: Failed to process checkout session', [
+                'session_id' => $session->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
         }
-
-        if ($attempt->status === 'completed') {
-            Log::info('Stripe Webhook: Payment already processed', ['session_id' => $session->id]);
-            return;
-        }
-
-        // Update will be handled by the success callback, but we can log here
-        Log::info('Stripe Webhook: Checkout session completed', [
-            'session_id' => $session->id,
-            'camp_id' => $attempt->camp_id,
-            'referee_id' => $attempt->referee_id
-        ]);
     }
 
     /**
@@ -85,16 +192,24 @@ class StripeWebhookController extends Controller
      */
     protected function handleCheckoutSessionExpired($session)
     {
-        $attempt = CampPaymentAttempt::where('stripe_session_id', $session->id)
-            ->where('status', 'pending')
-            ->first();
+        try {
+            $attempt = CampPaymentAttempt::where('stripe_session_id', $session->id)
+                ->where('status', 'pending')
+                ->first();
 
-        if ($attempt) {
-            $attempt->update(['status' => 'failed']);
+            if ($attempt) {
+                $attempt->update(['status' => 'failed']);
 
-            Log::info('Stripe Webhook: Checkout session expired', [
+                Log::info('Stripe Webhook: Checkout session expired', [
+                    'session_id' => $session->id,
+                    'camp_id' => $attempt->camp_id,
+                    'referee_id' => $attempt->referee_id
+                ]);
+            }
+        } catch (Exception $e) {
+            Log::error('Stripe Webhook: Failed to handle expired session', [
                 'session_id' => $session->id,
-                'camp_id' => $attempt->camp_id
+                'error' => $e->getMessage()
             ]);
         }
     }
@@ -106,8 +221,12 @@ class StripeWebhookController extends Controller
     {
         Log::info('Stripe Webhook: Payment intent succeeded', [
             'payment_intent_id' => $paymentIntent->id,
-            'amount' => $paymentIntent->amount / 100
+            'amount' => $paymentIntent->amount / 100,
+            'currency' => $paymentIntent->currency
         ]);
+
+        // Additional processing if needed
+        // This event fires before checkout.session.completed
     }
 
     /**
@@ -115,9 +234,22 @@ class StripeWebhookController extends Controller
      */
     protected function handlePaymentIntentFailed($paymentIntent)
     {
-        Log::warning('Stripe Webhook: Payment intent failed', [
-            'payment_intent_id' => $paymentIntent->id,
-            'error' => $paymentIntent->last_payment_error->message ?? 'Unknown error'
-        ]);
+        try {
+            Log::warning('Stripe Webhook: Payment intent failed', [
+                'payment_intent_id' => $paymentIntent->id,
+                'amount' => $paymentIntent->amount / 100,
+                'error' => $paymentIntent->last_payment_error->message ?? 'Unknown error',
+                'error_code' => $paymentIntent->last_payment_error->code ?? null
+            ]);
+
+            // Optional: Update payment attempt if we can find it
+            // Note: We might not have the session_id at this point
+            // You could store payment_intent_id in attempts table for better tracking
+        } catch (Exception $e) {
+            Log::error('Stripe Webhook: Failed to handle payment failure', [
+                'payment_intent_id' => $paymentIntent->id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }
