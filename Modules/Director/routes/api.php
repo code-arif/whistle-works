@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Director\Http\Controllers\Api\Camp\CampManageController;
 use Modules\Director\Http\Controllers\Api\Camp\NoAuthCampController;
+use Modules\Director\Http\Controllers\Api\Court\CourtManageController;
 use Modules\Director\Http\Controllers\Api\Crew\CrewManageController;
 use Modules\Director\Http\Controllers\Api\Schedule\ScheduleController;
 use Modules\Director\Http\Controllers\Api\CourtAssign\CourtAssignController;
@@ -53,19 +54,19 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
     // Schedule Management
     Route::group([], function () {
         // Get camp date range before creating schedule
-        Route::get('camp/{campId}/date-range', [ScheduleController::class, 'getCampDateRange']);
+        Route::get('camp/{campId}/date-range', [ScheduleController::class, 'getCampDateRange']); // done
 
         // Create & View Schedule
-        Route::post('camp/{campId}/schedule/create', [ScheduleController::class, 'createSchedule']); // working
-        Route::get('camp/{campId}/schedule', [ScheduleController::class, 'getSchedule']); // working
-        Route::delete('camp/{campId}/schedule', [ScheduleController::class, 'deleteSchedule']); // pending
+        Route::post('camp/{campId}/schedule/create', [ScheduleController::class, 'createSchedule']); // done
+        Route::get('camp/{campId}/schedule', [ScheduleController::class, 'getSchedule']); // done
+        Route::delete('camp/{campId}/schedule', [ScheduleController::class, 'deleteSchedule']); // done
 
         // Game Slots
-        Route::get('camp/{campId}/schedule/game-slots', [ScheduleController::class, 'getGameSlots']); // working
+        Route::get('camp/{campId}/schedule/game-slots', [ScheduleController::class, 'getGameSlots']); // done
 
         // Schedule Actions
-        Route::post('camp/{campId}/schedule/publish', [ScheduleController::class, 'publishSchedule']); // working
-        Route::post('camp/{campId}/schedule/clear', [ScheduleController::class, 'clearSchedule']);
+        Route::post('camp/{campId}/schedule/publish', [ScheduleController::class, 'publishSchedule']); // done
+        Route::post('camp/{campId}/schedule/clear', [ScheduleController::class, 'clearSchedule']); // done
     });
 
     // Court Assignment Management
@@ -94,11 +95,13 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         // Get assigned referees for a slot
         Route::get('slot/{slotId}/assigned-referees-crew', [CourtAssignController::class, 'getAssignedRefereesOrCrew']); // working - get all assigned referees for the slot
 
-        // Court Block/Unblock
-        Route::patch('slot/{slotId}/toggle-block', [CourtAssignController::class, 'toggleBlockSlot']); // working
-
         Route::get('slot/{slotId}/available-referees-with-time-check', [CourtAssignController::class, 'getAvailableRefereesForSlot']);
     });
+
+    // Court mange routes
+    Route::patch('slot/{slotId}/toggle-block', [CourtManageController::class, 'toggleBlockSlot']); // done - Court Block/Unblock
+    Route::patch('slot/{slotId}/update-court-name', [CourtManageController::class, 'updateCourtName']);  // Change specific court name
+    Route::post('schedule/{scheduleId}/bulk-toggle-block', [CourtManageController::class, 'bulkToggleBlockByTime']);
 });
 
 /**

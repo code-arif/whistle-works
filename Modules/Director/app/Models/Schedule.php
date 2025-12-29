@@ -5,11 +5,15 @@ namespace Modules\Director\Models;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Schedule extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'camp_id',
+        'game_duration',
+        'max_referees_per_slot',
+        'status'
+    ];
 
     public function camp()
     {
@@ -31,4 +35,3 @@ class Schedule extends Model
         return $this->hasMany(GameSlot::class);
     }
 }
-

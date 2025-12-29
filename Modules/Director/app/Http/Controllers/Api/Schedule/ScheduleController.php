@@ -100,6 +100,7 @@ class ScheduleController extends Controller
             $schedule = Schedule::create([
                 'camp_id' => $camp->id,
                 'game_duration' => $request->game_duration,
+                'max_referees_per_slot' => $request->max_referees_per_slot,
                 'status' => 'draft'
             ]);
 
@@ -273,6 +274,12 @@ class ScheduleController extends Controller
             ->orderBy('court_number')
             ->get();
 
+        $scheduleFormat = [
+            'schedule_id' => $schedule->id,
+            "max_referees_per_slot" => $schedule->max_referees_per_slot,
+            "status" => $schedule->status,
+        ];
+
         // Group by time
         $timeSlots = $gameSlots->groupBy('start_time')->map(function ($slots, $time) {
             return [
@@ -298,7 +305,7 @@ class ScheduleController extends Controller
                             } else {
                                 return [
                                     'type' => 'individual',
-                                    'assgnment_id' =>$assignment?->id,
+                                    'assgnment_id' => $assignment?->id,
                                     'referee_id' => $assignment?->assignable?->id,
                                     'referee_name' => ($assignment->assignable->first_name ?? '') . ' ' . ($assignment->assignable->last_name ?? ''),
                                     'avatar' => $assignment?->assignable?->avatar
@@ -327,6 +334,7 @@ class ScheduleController extends Controller
         return $this->success(
             'Game slots fetched successfully.',
             [
+                'schedule' => $scheduleFormat,
                 'selected_date' => $selectedDate,
                 'selected_date_formatted' => Carbon::parse($selectedDate)->format('F d, Y'),
                 'available_dates' => $availableDates,

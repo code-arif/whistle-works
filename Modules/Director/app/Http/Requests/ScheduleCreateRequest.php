@@ -16,6 +16,7 @@ class ScheduleCreateRequest extends FormRequest
     {
         return [
             'game_duration' => 'required|integer|min:15|max:240',
+            'max_referees_per_slot' => 'required|integer|min:2|max:6',
             'time_ranges' => 'required|array|min:1',
             'time_ranges.*.date' => 'required|date|date_format:Y-m-d',
             'time_ranges.*.start_time' => 'required|date_format:H:i',
