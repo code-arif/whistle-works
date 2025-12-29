@@ -134,27 +134,20 @@ class GameSlotAssignment extends Model
     public static function needsRest($refereeId, $modelType, GameSlot $currentSlot)
     {
         $gameDuration = $currentSlot->schedule->game_duration;
-        $currentStartTime = Carbon::parse($currentSlot->game_date . ' ' . $currentSlot->start_time);
 
-        // Calculate the previous slot time window
-        $previousSlotStart = $currentStartTime->copy()->subMinutes($gameDuration);
-        $previousSlotEnd = $currentStartTime->copy();
+        // Calculate previous slot time range
+        $currentStartTime = Carbon::parse($currentSlot->start_time);
+        $previousSlotStartTime = $currentStartTime->copy()->subMinutes($gameDuration)->format('H:i:s');
+        $previousSlotEndTime = $currentStartTime->format('H:i:s');
 
         // Check if referee has assignment in the IMMEDIATELY previous slot
         $hasRecentAssignment = self::where('assignable_id', $refereeId)
             ->where('assignable_type', $modelType)
-            ->whereHas('gameSlot', function ($q) use ($currentSlot, $previousSlotStart, $previousSlotEnd) {
+            ->whereHas('gameSlot', function ($q) use ($currentSlot, $previousSlotStartTime, $previousSlotEndTime) {
                 $q->where('schedule_id', $currentSlot->schedule_id)
                     ->where('game_date', $currentSlot->game_date)
-                    ->where(function ($timeQuery) use ($previousSlotStart, $previousSlotEnd) {
-                        $timeQuery->whereBetween(
-                            DB::raw("CONCAT(game_date, ' ', start_time)"),
-                            [
-                                $previousSlotStart->format('Y-m-d H:i:s'),
-                                $previousSlotEnd->format('Y-m-d H:i:s')
-                            ]
-                        );
-                    });
+                    ->where('start_time', '>=', $previousSlotStartTime)
+                    ->where('start_time', '<', $previousSlotEndTime);
             })
             ->exists();
 
