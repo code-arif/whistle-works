@@ -4,8 +4,6 @@ namespace Modules\Director\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-// use Modules\Director\Database\Factories\ScheduleTimeRangeFactory;
 
 class ScheduleTimeRange extends Model
 {

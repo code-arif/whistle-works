@@ -34,9 +34,6 @@ return new class extends Migration
             $table->text('private_comments')->nullable(); // Only evaluator can see
             $table->text('referee_feedback')->nullable(); // Referee can see
 
-            // Recommended Level
-            $table->string('recommended_highest_level')->nullable();
-
             $table->enum('status', ['draft', 'submitted'])->default('draft');
             $table->timestamp('submitted_at')->nullable();
 

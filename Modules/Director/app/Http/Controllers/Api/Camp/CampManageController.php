@@ -187,6 +187,24 @@ class CampManageController extends Controller
         );
     }
 
+    /**
+     * No Auth camp details
+     */
+    public function noAuthCampDetails($id)
+    {
+        $camp = Camp::with(['sportsType'])->find($id);
+
+        if (!$camp) {
+            return $this->error(null, 'Camp not found.', 404);
+        }
+
+        return $this->success(
+            'Camp details fetched successfully.',
+            new CampResource($camp),
+            200
+        );
+    }
+
 
     /**
      * Delete camp

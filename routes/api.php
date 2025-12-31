@@ -76,8 +76,7 @@ Route::group(['middleware' => ['auth:api', 'api-otp']], function ($router) {
 Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function () {
 
     Route::prefix('referee/evaluation')->group(function () {
-        Route::post('/store', [RefereeEvaluationController::class, 'store']); // working - store evaluation
-        Route::post('/update/{id}', [RefereeEvaluationController::class, 'update']); // working - update evaluation
+        Route::post('/upsert', [RefereeEvaluationController::class, 'storeOrUpdate']); // working - store evaluation
         Route::delete('/destroy/{id}', [RefereeEvaluationController::class, 'destroy']); // working - delete evaluation
         Route::get('/my-evaluations', [RefereeEvaluationController::class, 'getMyEvaluations']); // working - get my evaluations (edit required for permission director)
         Route::get('/camp/{campId}', [RefereeEvaluationController::class, 'getEvaluationsByCamp']); // working - get evaluations by camp

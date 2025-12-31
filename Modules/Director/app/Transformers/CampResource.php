@@ -17,7 +17,7 @@ class CampResource extends JsonResource
         return [
             'id'                => $this->id,
             'camp_name'         => $this->camp_name,
-            'camp_logo'         => $this->camp_logo ? asset($this->camp_logo) : null,
+            'camp_logo'         => $this->camp_logo ? asset($this->camp_logo) : asset('default/no_image.webp'),
             'location'          => $this->location,
             'start_date'        => $this->start_date,
             'end_date'          => $this->end_date,
@@ -34,7 +34,7 @@ class CampResource extends JsonResource
             'sport'             => [
                 'id'            => $this->sportsType->id ?? null,
                 'sports_name'   => $this->sportsType->sports_name ?? null,
-                'icon'          => $this->sportsType && $this->sportsType->icon ? asset($this->sportsType->icon) : null,
+                'icon'          => $this->sportsType && $this->sportsType->icon ? asset($this->sportsType->icon) : asset('default/no_image.webp'),
             ],
             $this->mergeWhen(
                 auth('api')->check() && auth('api')->user()->hasRole('referee'),

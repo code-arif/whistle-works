@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RefereeEvaluationRequest extends FormRequest
 {
@@ -28,7 +29,16 @@ class RefereeEvaluationRequest extends FormRequest
 
             'private_comments' => 'nullable|string|max:5000',
             'referee_feedback' => 'nullable|string|max:5000',
-            'recommended_highest_level' => 'nullable|string|max:255',
+
+            'recommended_level' => ['nullable', Rule::in([
+                'NCAA D1',
+                'NCAA D2',
+                'NAIA',
+                'JUCO',
+                'HS',
+                'JH/ELEM'
+            ])],
+
             'status' => 'nullable|in:draft,submitted',
         ];
     }

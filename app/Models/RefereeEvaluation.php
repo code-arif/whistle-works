@@ -173,4 +173,12 @@ class RefereeEvaluation extends Model
 
         return false;
     }
+
+    /**
+     * recomanded lavel relation
+     */
+    public function recommendedLevels()
+    {
+        return $this->hasMany(RecommendedLevel::class, 'evaluation_id');
+    }
 }

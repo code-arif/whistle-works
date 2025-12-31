@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Api\Frontend;
 
+use Exception;
 use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use App\Models\RecommendedLevel;
 use App\Models\RefereeEvaluation;
 use Modules\Director\Models\Camp;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\CampEvaluatorRegistration;
 use App\Http\Requests\RefereeEvaluationRequest;
@@ -19,9 +22,9 @@ class RefereeEvaluationController extends Controller
     use ApiResponse;
 
     /**
-     * Create a new referee evaluation
+     * Create or update referee evaluation
      */
-    public function store(RefereeEvaluationRequest $request)
+    public function storeOrUpdate(RefereeEvaluationRequest $request)
     {
         $user = auth('api')->user();
         $validated = $request->validated();
@@ -37,7 +40,7 @@ class RefereeEvaluationController extends Controller
             return $this->error([], 'Camp not found.', 404);
         }
 
-        // **NEW: Check if evaluator is registered and approved for this camp**
+        // Check if evaluator is registered and approved for this camp
         if (!RefereeEvaluation::canEvaluateInCamp($user, $camp->id)) {
             if ($user->hasRole('director')) {
                 return $this->error([], 'You can only evaluate referees in your own camps.', 403);
@@ -67,84 +70,56 @@ class RefereeEvaluationController extends Controller
             return $this->error([], 'Referee has not checked in to this camp.', 400);
         }
 
-        // Check for duplicate evaluation
-        $existingEvaluation = RefereeEvaluation::where('referee_id', $validated['referee_id'])
-            ->where('evaluator_id', $user->id)
-            ->where('camp_id', $validated['camp_id'])
-            ->where('game_slot_id', $validated['game_slot_id'] ?? null)
-            ->first();
+        DB::beginTransaction();
+        try {
+            // Find existing evaluation or create new one
+            $evaluation = RefereeEvaluation::updateOrCreate(
+                [
+                    'referee_id' => $validated['referee_id'],
+                    'evaluator_id' => $user->id,
+                    'camp_id' => $validated['camp_id'],
+                    'game_slot_id' => $validated['game_slot_id'] ?? null,
+                ],
+                [
+                    'call_accuracy' => $validated['call_accuracy'] ?? null,
+                    'communication_skills' => $validated['communication_skills'] ?? null,
+                    'consistency_of_calls' => $validated['consistency_of_calls'] ?? null,
+                    'court_position_mechanics' => $validated['court_position_mechanics'] ?? null,
+                    'fitness_mobility' => $validated['fitness_mobility'] ?? null,
+                    'game_awareness' => $validated['game_awareness'] ?? null,
+                    'private_comments' => $validated['private_comments'] ?? null,
+                    'referee_feedback' => $validated['referee_feedback'] ?? null,
+                    'status' => $validated['status'] ?? 'draft',
+                    'submitted_at' => ($validated['status'] ?? 'draft') === 'submitted' ? now() : null,
+                ]
+            );
 
-        if ($existingEvaluation) {
-            return $this->error([], 'You have already evaluated this referee for this camp/game slot.', 409);
+            // Handle single recommended level
+            if (isset($validated['recommended_level'])) {
+                // Delete old level and insert new one
+                $evaluation->recommendedLevels()->delete();
+
+                RecommendedLevel::create([
+                    'evaluation_id' => $evaluation->id,
+                    'level' => $validated['recommended_level'],
+                ]);
+            }
+
+            DB::commit();
+
+            $message = $evaluation->wasRecentlyCreated
+                ? 'Evaluation created successfully.'
+                : 'Evaluation updated successfully.';
+
+            return $this->success(
+                $message,
+                new RefereeEvaluationResource($evaluation->load(['referee', 'evaluator', 'camp', 'gameSlot', 'recommendedLevels'])),
+                $evaluation->wasRecentlyCreated ? 201 : 200
+            );
+        } catch (Exception $e) {
+            DB::rollBack();
+            return $this->error([], 'Failed to save evaluation: ' . $e->getMessage(), 500);
         }
-
-        // Create evaluation
-        $evaluation = RefereeEvaluation::create([
-            'referee_id' => $validated['referee_id'],
-            'evaluator_id' => $user->id,
-            'camp_id' => $validated['camp_id'],
-            'game_slot_id' => $validated['game_slot_id'] ?? null,
-            'call_accuracy' => $validated['call_accuracy'] ?? null,
-            'communication_skills' => $validated['communication_skills'] ?? null,
-            'consistency_of_calls' => $validated['consistency_of_calls'] ?? null,
-            'court_position_mechanics' => $validated['court_position_mechanics'] ?? null,
-            'fitness_mobility' => $validated['fitness_mobility'] ?? null,
-            'game_awareness' => $validated['game_awareness'] ?? null,
-            'private_comments' => $validated['private_comments'] ?? null,
-            'referee_feedback' => $validated['referee_feedback'] ?? null,
-            'recommended_highest_level' => $validated['recommended_highest_level'] ?? null,
-            'status' => $validated['status'] ?? 'draft',
-            'submitted_at' => ($validated['status'] ?? 'draft') === 'submitted' ? now() : null,
-        ]);
-
-        return $this->success(
-            'Evaluation created successfully.',
-            new RefereeEvaluationResource($evaluation->load(['referee', 'evaluator', 'camp', 'gameSlot'])),
-            201
-        );
-    }
-
-
-    /**
-     * Update an existing evaluation
-     */
-    public function update(RefereeEvaluationRequest $request, $id)
-    {
-        $user = auth('api')->user();
-
-        $evaluation = RefereeEvaluation::find($id);
-        if (!$evaluation) {
-            return $this->error([], 'Evaluation not found.', 404);
-        }
-
-        // Check permission to edit
-        if (!$evaluation->canBeEditedBy($user)) {
-            return $this->error([], 'You do not have permission to edit this evaluation.', 403);
-        }
-
-        $validated = $request->validated();
-
-        // Update evaluation
-        $evaluation->update([
-            'call_accuracy' => $validated['call_accuracy'] ?? $evaluation->call_accuracy,
-            'communication_skills' => $validated['communication_skills'] ?? $evaluation->communication_skills,
-            'consistency_of_calls' => $validated['consistency_of_calls'] ?? $evaluation->consistency_of_calls,
-            'court_position_mechanics' => $validated['court_position_mechanics'] ?? $evaluation->court_position_mechanics,
-            'fitness_mobility' => $validated['fitness_mobility'] ?? $evaluation->fitness_mobility,
-            'game_awareness' => $validated['game_awareness'] ?? $evaluation->game_awareness,
-            'private_comments' => $validated['private_comments'] ?? $evaluation->private_comments,
-            'referee_feedback' => $validated['referee_feedback'] ?? $evaluation->referee_feedback,
-            'recommended_highest_level' => $validated['recommended_highest_level'] ?? $evaluation->recommended_highest_level,
-            'status' => $validated['status'] ?? $evaluation->status,
-            'submitted_at' => ($validated['status'] ?? $evaluation->status) === 'submitted' && !$evaluation->submitted_at
-                ? now()
-                : $evaluation->submitted_at,
-        ]);
-
-        return $this->success(
-            'Evaluation updated successfully.',
-            new RefereeEvaluationResource($evaluation->fresh()->load(['referee', 'evaluator', 'camp', 'gameSlot']))
-        );
     }
 
 

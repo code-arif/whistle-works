@@ -110,4 +110,23 @@ class Camp extends Model
                 ->distinct();
         })->get();
     }
+
+
+    /**
+     * Boot method - Automatically add extra price on camp creation
+     */
+    // protected static function boot()
+    // {
+    //     parent::boot();
+
+    //     // Only runs when creating a NEW camp (not on update)
+    //     static::creating(function ($camp) {
+    //         $extraPrice = config('camp.extra_price', 25); // Default 25 if not set
+
+    //         // Add extra price to the base price
+    //         if (isset($camp->price)) {
+    //             $camp->price = $camp->price + $extraPrice;
+    //         }
+    //     });
+    // }
 }

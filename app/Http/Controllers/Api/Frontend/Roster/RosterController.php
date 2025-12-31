@@ -32,6 +32,11 @@ class RosterController extends Controller
             return $this->error([], 'Camp not found.', 404);
         }
 
+        // Get all game slot assignments for this camp
+        $gameSlotAssignments = $camp->schedule?->gameSlots->flatMap(function ($gameSlot) {
+            return $gameSlot->slotAssignments;
+        }) ?? collect();
+
         $response = [
             'camp' => [
                 'camp_name' => $camp->camp_name,
@@ -75,7 +80,7 @@ class RosterController extends Controller
                                     return [
                                         'type' => 'crew',
                                         'crew_id' => $assignment->assignable_id,
-                                        'crew_name' => $assignment->assignable->crew_name ?? 'N/A',
+                                        'crew_name' => $assignment->assignable->name ?? 'N/A',
                                         'position' => $assignment->position,
                                         'is_auto_assigned' => $assignment->is_auto_assigned,
                                     ];
@@ -96,13 +101,21 @@ class RosterController extends Controller
                         ];
                     }) ?? collect(),
                 ],
-                'referees' => $camp->checkedInReferees->map(function ($referee) {
+                'referees' => $camp->checkedInReferees->map(function ($referee) use ($gameSlotAssignments) {
+                    // Count how many games this referee is assigned to
+                    $assignedGamesCount = $gameSlotAssignments->where('assignment_type', 'individual')
+                        ->where('assignable_id', $referee->referee->id)
+                        ->count();
+
                     return [
                         'id' => $referee->referee->id,
                         'name' => $referee->referee->first_name . ' ' . $referee->referee->last_name,
                         'avatar' => $referee->referee->avatar ? asset('' . $referee->referee->avatar) : asset('default/profile.jpg'),
                         'email' => $referee->referee->email,
+                        'phone' => $referee->referee->phone,
+                        'address' => $referee->referee->address,
                         'status' => $referee->registration_status,
+                        'assigned_games_count' => $assignedGamesCount, // NEW: Games count
                     ];
                 }),
                 'evaluators' => $camp->evaluations->pluck('evaluator')->unique('id')->map(function ($evaluator) {

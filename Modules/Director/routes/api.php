@@ -108,6 +108,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
  * globar camp details
  */
 Route::get('v1/camp/details/{id}', [CampManageController::class, 'campDetails'])->middleware('auth:api', 'role:director|referee|evaluator,api');
+Route::get('no-auth/camp/details/{id}', [CampManageController::class, 'noAuthCampDetails']); // no auth camp details
 
 // ==========================================
 // REFEREE ROUTES (Auth Required)

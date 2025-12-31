@@ -5,6 +5,7 @@ namespace Modules\Director\Http\Controllers\Api\Schedule;
 use Carbon\Carbon;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Modules\Director\Models\Crew;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Modules\Director\Models\GameSlotAssignment;
@@ -238,9 +239,7 @@ class ScheduleController extends Controller
     {
         $user = auth('api')->user();
 
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $user->id)
-            ->first();
+        $camp = Camp::where('director_id', $user->id)->find($campId);
 
         if (!$camp) {
             return $this->error('Camp not found.', null, 404);
@@ -266,13 +265,29 @@ class ScheduleController extends Controller
         // Get date from request or use first date
         $selectedDate = $request->date ?? $availableDates->first()['date'];
 
-        // Get all game slots for selected date
+        // Get all game slots for selected date with proper eager loading
         $gameSlots = GameSlot::where('schedule_id', $schedule->id)
             ->where('game_date', $selectedDate)
-            ->with(['location', 'slotAssignments.assignable'])
+            ->with([
+                'location',
+                'slotAssignments.assignable' => function ($query) {
+                    // Eager load crew members when assignable is Crew
+                    $query->when(function ($q) {
+                        return $q->getModel() instanceof Crew;
+                    }, function ($q) {
+                        $q->with('members');
+                    });
+                }
+            ])
             ->orderBy('start_time')
             ->orderBy('court_number')
             ->get();
+
+        $scheduleFormat = [
+            'schedule_id' => $schedule->id,
+            "max_referees_per_slot" => $schedule->max_referees_per_slot,
+            "status" => $schedule->status,
+        ];
 
         $scheduleFormat = [
             'schedule_id' => $schedule->id,
@@ -298,18 +313,35 @@ class ScheduleController extends Controller
                         'assignments_count' => $slot->slotAssignments->count(),
                         'assignments' => $slot->slotAssignments->map(function ($assignment) {
                             if ($assignment->assignment_type === 'crew') {
+                                $crew = $assignment->assignable;
+
+                                // Get crew members with their details
+                                $members = $crew->members->map(function ($member) {
+                                    return [
+                                        'referee_id' => $member->id,
+                                        'referee_name' => $member->first_name . ' ' . $member->last_name,
+                                        'avatar' => $member->avatar ? asset('' . $member->avatar) : asset('default/profile.jpg'),
+                                        'email' => $member->email,
+                                    ];
+                                });
+
                                 return [
+                                    'assignment_id' => $assignment->id,
                                     'type' => 'crew',
-                                    'crew_name' => $assignment->assignable->name ?? 'Unknown',
+                                    'crew_id' => $crew->id,
+                                    'crew_name' => $crew->name ?? 'Unknown',
+                                    'member_count' => $crew->members->count(),
+                                    'members' => $members
                                 ];
                             } else {
+                                // Individual referee
                                 return [
                                     'type' => 'individual',
-                                    'assgnment_id' => $assignment?->id,
-                                    'referee_id' => $assignment?->assignable?->id,
+                                    'assignment_id' => $assignment->id,
+                                    'referee_id' => $assignment->assignable->id,
                                     'referee_name' => ($assignment->assignable->first_name ?? '') . ' ' . ($assignment->assignable->last_name ?? ''),
-                                    'avatar' => $assignment?->assignable?->avatar
-                                        ? asset('/' . $assignment?->assignable?->avatar)
+                                    'avatar' => $assignment->assignable->avatar
+                                        ? asset('/' . $assignment->assignable->avatar)
                                         : asset('default/profile.jpg'),
                                 ];
                             }
@@ -447,6 +479,7 @@ class ScheduleController extends Controller
             'camp_id' => $schedule->camp_id,
             'game_duration' => $schedule->game_duration,
             'status' => $schedule->status,
+            'max_referees_per_slot' => $schedule->max_referees_per_slot,
             'time_ranges' => $schedule->timeRanges->map(function ($range) {
                 return [
                     'date' => $range->date,
