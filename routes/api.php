@@ -13,14 +13,15 @@ use App\Http\Controllers\Api\Frontend\SettingsController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\Frontend\AnnouncementController;
 use App\Http\Controllers\Api\Frontend\CMS\HomePageController;
-use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegisterManageForDirectorController;
 use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
 use App\Http\Controllers\Api\Frontend\Roster\RosterController;
 use App\Http\Controllers\Api\Frontend\RefereeEvaluationController;
 use App\Http\Controllers\Api\Frontend\Evaluator\EvaluatorController;
 use App\Http\Controllers\Api\Frontend\Evaluator\GameOverviewController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
+use App\Http\Controllers\Api\Frontend\CampRanking\CampRankingSettingsController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegistrationController;
+use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegisterManageForDirectorController;
 
 // health check
 Route::get('/health-check', function () {
@@ -150,6 +151,21 @@ Route::middleware(['auth:api', 'role:director,api'])->group(function () {
         Route::post('/approve/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'approve']); // done
         Route::post('/reject/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'reject']); // done
         Route::post('/toggle-visibility/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'toggleEvaluatorVisibility']);
+    });
+});
+
+// Ranking Settings Routes (Only for Directors)
+Route::middleware(['auth:api', 'role:director,api'])->group(function () {
+    Route::prefix('camp/{campId}/ranking-settings')->group(function () {
+        // Get ranking settings for a camp
+        Route::get('/', [CampRankingSettingsController::class, 'getRankingSettings']);
+
+        // Update ranking settings for a camp
+        Route::put('/', [CampRankingSettingsController::class, 'updateRankingSettings']);
+
+        // Toggle individual evaluator permission
+        Route::put('/evaluator/{evaluatorId}/toggle-permission',
+            [CampRankingSettingsController::class, 'toggleEvaluatorPermission']);
     });
 });
 

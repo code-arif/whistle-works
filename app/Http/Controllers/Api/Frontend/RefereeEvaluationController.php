@@ -181,19 +181,18 @@ class RefereeEvaluationController extends Controller
             $query->where('evaluator_id', $user->id);
         }
 
-        $evaluations = $query->orderByDesc('average_score')
-            ->paginate($request->get('per_page', 15));
+        $evaluations = $query->orderByDesc('average_score')->get();
 
         return $this->success(
             'Evaluations retrieved successfully.',
             [
                 'evaluations' => RefereeEvaluationListResource::collection($evaluations),
-                'pagination' => [
-                    'total'        => $evaluations->total(),
-                    'per_page'     => $evaluations->perPage(),
-                    'current_page' => $evaluations->currentPage(),
-                    'last_page'    => $evaluations->lastPage(),
-                ],
+                // 'pagination' => [
+                //     'total'        => $evaluations->total(),
+                //     'per_page'     => $evaluations->perPage(),
+                //     'current_page' => $evaluations->currentPage(),
+                //     'last_page'    => $evaluations->lastPage(),
+                // ],
             ]
         );
     }
