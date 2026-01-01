@@ -21,8 +21,10 @@ class CampRegistraionsListResource extends JsonResource
             // evaluator nested – limited fields only
             'evaluator' => [
                 'id' => $this->evaluator->id,
-                'name' => $this->first_name . ' ' . $this->last_name ?? null,
+                'name' => $this->evaluator->first_name . ' ' . $this->evaluator->last_name ?? null,
                 'email' => $this->evaluator->email,
+                'phone' => $this->evaluator->phone,
+                'address' => $this->evaluator->address,
                 'avatar' => $this->avatar ? asset('' . $this->avatar) : asset('default/profile.jpg'),
             ],
         ];

@@ -441,4 +441,36 @@ class RefereeEvaluationController extends Controller
             ],
         ], 200);
     }
+
+    /**
+     * Get all referees for a camp that the evaluator can evaluate
+     */
+    public function getAllReferees($campId)
+    {
+        $user = auth('api')->user();
+
+        // Check if camp exists
+        $camp = Camp::find($campId);
+        if (!$camp) {
+            return $this->error('Camp not found.', null, 404);
+        }
+
+        // **NEW: Check if user can evaluate in this camp**
+        if (!RefereeEvaluation::canEvaluateInCamp($user, $campId)) {
+            if ($user->hasRole('director')) {
+                return $this->error([], 'You can only view referees from your own camps.', 403);
+            } else {
+                return $this->error([], 'You must be registered and approved for this camp.', 403);
+            }
+        }
+
+        $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
+            ->with('referee')
+            ->get();
+
+        return $this->success('Registered referees fetched successfully.', [
+            'total' => $checkedInReferees->count(),
+            'referees' => CheckedInRefereeResource::collection($checkedInReferees),
+        ], 200);
+    }
 }

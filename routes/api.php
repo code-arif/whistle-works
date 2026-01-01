@@ -87,6 +87,7 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
 
         // Get all registered referee
         Route::get('/camp/{campId}/all-registered-in-referees', [RefereeEvaluationController::class, 'getAllRegisteredInReferees']); // done
+        Route::get('/camp/{campId}/all-referees', [RefereeEvaluationController::class, 'getAllReferees']); // done
     });
 
     // Roster - Get all information of a camp

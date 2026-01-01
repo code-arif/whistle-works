@@ -18,8 +18,9 @@ class CheckedInRefereeResource extends JsonResource
             'name'   => $this->referee->first_name . ' ' . $this->referee->last_name,
             'email'  => $this->referee->email,
             'phone'  => $this->referee->phone,
+            'address'  => $this->referee->address,
             'avatar' => $this->referee->avatar
-                ? asset('/' . $this->referee->avatar)
+                ? asset('' . $this->referee->avatar)
                 : asset('default/profile.jpg'),
         ];
     }
