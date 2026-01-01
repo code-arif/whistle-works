@@ -113,8 +113,8 @@
                         </li>
                         <li><a href="{{ route('admin.setting.stripe.index') }}" class="slide-item">Stripe
                                 Settings</a></li>
-                        <li><a href="{{ route('admin.setting.firebase.index') }}" class="slide-item">Firebase
-                                Settings</a></li>
+                        {{-- <li><a href="{{ route('admin.setting.firebase.index') }}" class="slide-item">Firebase
+                                Settings</a></li> --}}
                     </ul>
                 </li>
             </ul>

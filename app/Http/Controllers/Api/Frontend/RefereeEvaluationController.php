@@ -15,6 +15,7 @@ use App\Models\CampEvaluatorRegistration;
 use App\Http\Requests\RefereeEvaluationRequest;
 use Modules\Director\Models\CampRefereeCheckin;
 use App\Http\Resources\RefereeEvaluationResource;
+use App\Http\Resources\RefereeEvaluationListResource;
 use Modules\Director\Transformers\Referee\CheckedInRefereeResource;
 
 class RefereeEvaluationController extends Controller
@@ -61,9 +62,17 @@ class RefereeEvaluationController extends Controller
         }
 
         // Verify referee has checked in to this camp
+        // $checkin = CampRefereeCheckin::where('camp_id', $camp->id)
+        //     ->where('referee_id', $referee->id)
+        //     ->where('registration_status', 'registered')
+        //     ->first();
+
+        // if (!$checkin) {
+        //     return $this->error([], 'Referee has not checked in to this camp.', 400);
+        // }
+
         $checkin = CampRefereeCheckin::where('camp_id', $camp->id)
             ->where('referee_id', $referee->id)
-            ->where('registration_status', 'registered')
             ->first();
 
         if (!$checkin) {
@@ -122,7 +131,6 @@ class RefereeEvaluationController extends Controller
         }
     }
 
-
     /**
      * Get evaluations by camp (for directors/evaluators)
      */
@@ -130,7 +138,6 @@ class RefereeEvaluationController extends Controller
     {
         $user = auth('api')->user();
 
-        // Only directors and evaluators can view camp evaluations
         if (!$user->hasAnyRole(['director', 'evaluator'])) {
             return $this->error('Unauthorized access.', null, 403);
         }
@@ -140,7 +147,6 @@ class RefereeEvaluationController extends Controller
             return $this->error([], 'Camp not found.', 404);
         }
 
-        // **NEW: Check access permission**
         if ($user->hasRole('director') && $camp->director_id !== $user->id) {
             return $this->error([], 'You can only view evaluations from your own camps.', 403);
         }
@@ -155,26 +161,22 @@ class RefereeEvaluationController extends Controller
                 return $this->error([], 'You must be registered and approved for this camp.', 403);
             }
 
-            // **NEW: Check if evaluator has permission to view evaluations**
             if (!$registration->can_view_own_evaluations) {
                 return $this->error([], 'You do not have permission to view evaluations for this camp. Contact the director.', 403);
             }
         }
 
-        $query = RefereeEvaluation::with(['referee', 'evaluator', 'gameSlot'])
+        $query = RefereeEvaluation::with(['referee', 'evaluator', 'gameSlot', 'recommendedLevels'])
             ->forCamp($campId);
 
-        // Filter by referee if provided
         if ($request->has('referee_id')) {
             $query->forReferee($request->referee_id);
         }
 
-        // Filter by status
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
 
-        // **NEW: Evaluators can only see their own evaluations**
         if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
             $query->where('evaluator_id', $user->id);
         }
@@ -185,7 +187,7 @@ class RefereeEvaluationController extends Controller
         return $this->success(
             'Evaluations retrieved successfully.',
             [
-                'evaluations' => RefereeEvaluationResource::collection($evaluations),
+                'evaluations' => RefereeEvaluationListResource::collection($evaluations),
                 'pagination' => [
                     'total'        => $evaluations->total(),
                     'per_page'     => $evaluations->perPage(),
@@ -208,9 +210,7 @@ class RefereeEvaluationController extends Controller
             return $this->error([], 'Only evaluators and directors can access this.', 403);
         }
 
-        // **NEW: Check if evaluator has permission to view their evaluations**
         if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
-            // Get camp_id from request if filtering by specific camp
             if ($request->has('camp_id')) {
                 $registration = CampEvaluatorRegistration::where('camp_id', $request->camp_id)
                     ->where('evaluator_id', $user->id)
@@ -221,7 +221,6 @@ class RefereeEvaluationController extends Controller
                     return $this->error([], 'You do not have permission to view evaluations for this camp. Contact the director.', 403);
                 }
             } else {
-                // Check if evaluator has ANY camp where they can view evaluations
                 $hasPermission = CampEvaluatorRegistration::where('evaluator_id', $user->id)
                     ->where('status', 'approved')
                     ->where('can_view_own_evaluations', true)
@@ -233,15 +232,15 @@ class RefereeEvaluationController extends Controller
             }
         }
 
-        $query = RefereeEvaluation::with(['referee', 'camp', 'gameSlot'])
+        $allowedCamps = collect();
+
+        $query = RefereeEvaluation::with(['referee', 'camp', 'gameSlot', 'recommendedLevels'])
             ->byEvaluator($user->id);
 
-        // Filter by camp if provided
         if ($request->has('camp_id')) {
             $query->where('camp_id', $request->camp_id);
         }
 
-        // **NEW: For evaluators, only show evaluations from camps where they have permission**
         if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
             $allowedCamps = CampEvaluatorRegistration::where('evaluator_id', $user->id)
                 ->where('status', 'approved')
@@ -254,10 +253,42 @@ class RefereeEvaluationController extends Controller
         $evaluations = $query->orderBy('created_at', 'desc')
             ->paginate($request->get('per_page', 15));
 
+        // Overall level summary
+        $summaryQuery = RefereeEvaluation::with(['recommendedLevels'])
+            ->byEvaluator($user->id)
+            ->when($request->has('camp_id'), fn($q) => $q->where('camp_id', $request->camp_id))
+            ->when(
+                $user->hasRole('evaluator') && !$user->hasRole('director') && $allowedCamps->isNotEmpty(),
+                fn($q) => $q->whereIn('camp_id', $allowedCamps)
+            )
+            ->has('recommendedLevels')
+            ->get();
+
+        $allLevels = ['NCAA D1', 'NCAA D2', 'NAIA', 'JUCO', 'HS', 'JH/ELEM'];
+        $overallSummary = [];
+
+        foreach ($allLevels as $level) {
+            $count = RecommendedLevel::whereIn(
+                'evaluation_id',
+                $summaryQuery->pluck('id')
+            )->where('level', $level)->count();
+
+            if ($count > 0) {
+                $overallSummary[] = [
+                    'level' => $level,
+                    'count' => $count,
+                ];
+            }
+        }
+
+        // Sort by count descending
+        usort($overallSummary, fn($a, $b) => $b['count'] <=> $a['count']);
+
         return $this->success(
             'Your evaluations retrieved successfully.',
             [
-                'evaluations' => RefereeEvaluationResource::collection($evaluations),
+                'evaluations' => RefereeEvaluationListResource::collection($evaluations),
+                'overall_level_summary' => $overallSummary,
                 'pagination' => [
                     'total'        => $evaluations->total(),
                     'per_page'     => $evaluations->perPage(),
