@@ -192,7 +192,9 @@ class CampManageController extends Controller
      */
     public function noAuthCampDetails($id)
     {
-        $camp = Camp::with(['sportsType'])->find($id);
+        $camp = Camp::with(['sportsType', 'director'])->find($id);
+
+        // return $camp;exit();
 
         if (!$camp) {
             return $this->error(null, 'Camp not found.', 404);

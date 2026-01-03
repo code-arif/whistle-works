@@ -331,7 +331,7 @@ class RefereeCheckinController extends Controller
         $today = now()->toDateString();
 
         // Get per_page from request, default 10
-        $perPage = $request->get('per_page', 10);
+        // $perPage = $request->get('per_page', 10);
 
         $total = CampRefereeCheckin::where('referee_id', $referee->id)->count();
 
@@ -341,8 +341,7 @@ class RefereeCheckinController extends Controller
                 'camp:id,camp_name,location,start_date,end_date,camp_logo,price,sports_type_name',
                 'camp.sportsType:id,sports_name,icon',
             ])
-            ->latest('registered_at')
-            ->paginate($perPage);
+            ->latest('registered_at')->get();
 
         // Get payment info for current page camps only
         $campIds = $registrations->pluck('camp_id')->toArray();
@@ -405,12 +404,12 @@ class RefereeCheckinController extends Controller
             'My registered camp fetched successfully.',
             [
                 'registrations' => $formatted,
-                'pagination' => [
-                    'total' => $registrations->total(),
-                    'per_page' => $registrations->perPage(),
-                    'current_page' => $registrations->currentPage(),
-                    'last_page' => $registrations->lastPage(),
-                ],
+                // 'pagination' => [
+                //     'total' => $registrations->total(),
+                //     'per_page' => $registrations->perPage(),
+                //     'current_page' => $registrations->currentPage(),
+                //     'last_page' => $registrations->lastPage(),
+                // ],
                 'summary' => [
                     'total' => $total,
                     'registered_only' => $totalRegistered,

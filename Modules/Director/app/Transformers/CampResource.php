@@ -36,6 +36,21 @@ class CampResource extends JsonResource
                 'sports_name'   => $this->sportsType->sports_name ?? null,
                 'icon'          => $this->sportsType && $this->sportsType->icon ? asset($this->sportsType->icon) : asset('default/no_image.webp'),
             ],
+
+            // Director information added here
+            'director'          => [
+                'id'         => $this->director->id ?? null,
+                'name'       => $this->director
+                    ? trim($this->director->first_name . ' ' . $this->director->last_name)
+                    : null,
+                'avatar'     => $this->director && $this->director->avatar
+                    ? asset($this->director->avatar)
+                    : asset('default/profile.jpg'),
+                'email'      => $this->director->email ?? null,
+                'phone'      => $this->director->phone ?? null,
+                'address'    => $this->director->address ?? null,
+            ],
+            
             $this->mergeWhen(
                 auth('api')->check() && auth('api')->user()->hasRole('referee'),
                 function () use ($checkin) {
