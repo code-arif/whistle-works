@@ -39,7 +39,7 @@ Route::group(['middleware' => 'guest:api'], function ($router) {
     Route::post('/register', [RegisterController::class, 'register']); // done
     Route::post('/verify-email', [RegisterController::class, 'VerifyEmail']); // done
     Route::post('/resend-otp', [RegisterController::class, 'ResendOtp']); // done
-    Route::post('/verify-otp', [RegisterController::class, 'VerifyEmail']); // working
+    // Route::post('/verify-otp', [RegisterController::class, 'VerifyEmail']); // working
 
     //login
     Route::post('/login', [LoginController::class, 'login'])->name('api.login'); // done

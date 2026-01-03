@@ -372,7 +372,7 @@ class RefereeCheckinController extends Controller
                 'checked_in_at' => $registration->checked_in_at?->format('Y-m-d H:i:s'),
                 'camp' => [
                     'id' => $camp->id,
-                    'name' => $camp->camp_name,
+                    'camp_name' => $camp->camp_name,
                     'location' => $camp->location,
                     'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
                     'start_date' => $camp->start_date,
@@ -471,7 +471,7 @@ class RefereeCheckinController extends Controller
                 'checked_in_at' => $checkin->checked_in_at?->format('Y-m-d H:i:s'),
                 'camp' => [
                     'id' => $camp->id,
-                    'name' => $camp->camp_name,
+                    'camp_name' => $camp->camp_name,
                     'location' => $camp->location,
                     'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
                     'start_date' => $camp->start_date,

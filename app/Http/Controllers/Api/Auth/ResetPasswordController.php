@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
-use App\Http\Controllers\Controller;
-use App\Helpers\Helper;
-use App\Models\User;
-use App\Traits\ApiResponse;
-use Carbon\Carbon;
 use Exception;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
+use App\Models\User;
+use App\Helpers\Helper;
+use App\Mail\ForgotPassOTP;
+use App\Traits\ApiResponse;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class ResetPasswordController extends Controller
 {
@@ -30,28 +33,37 @@ class ResetPasswordController extends Controller
         $request->validate([
             'email' => 'required|email|exists:users,email',
         ]);
+
         try {
             $email = $request->input('email');
             $otp   = rand(1000, 9999);
             $user  = User::where('email', $email)->first();
 
             if ($user) {
-                //  Mail::to($email)->send(new OtpMail($otp, $user, 'Reset Your Password'));
+                // Send OTP Email
+                Mail::to($email)->send(new ForgotPassOTP($otp, $user, 'Reset Your Password - Whistle Works'));
 
+                // Update user with new OTP
                 $user->otp            = $otp;
                 $user->otp_expires_at = Carbon::now()->addMinutes(60);
                 $user->save();
 
+                // Log the OTP request for security
+                Log::info('Password reset OTP sent to ' . $email . ' at ' . now());
+
                 $response = [
                     'email'  => $email,
-                    'otp'    => $otp,
+                    'expires_at' => $user->otp_expires_at->format('Y-m-d H:i:s'),
+                    'message' => 'OTP sent successfully. Please check your email.'
                 ];
-                return $this->success('OTP sent successfully',  $response, 200);
+
+                return $this->success('OTP sent successfully', $response, 200);
             } else {
-                return $this->success('Invalid Email Address', [], 404);
+                return $this->error('User not found with this email address', 404);
             }
         } catch (Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            Log::error('Forgot password error: ' . $e->getMessage());
+            return $this->error('Failed to send OTP. Please try again later.', 500);
         }
     }
 
@@ -63,33 +75,66 @@ class ResetPasswordController extends Controller
     {
         $request->validate([
             'email' => 'required|email|exists:users,email',
+            'purpose' => 'nullable|string|in:registration,password_reset,verification,login',
         ]);
 
         try {
             $email = $request->input('email');
+            $purpose = $request->input('purpose', 'verification');
             $user = User::where('email', $email)->first();
 
             if ($user) {
+                // Generate new OTP
                 $otp = rand(1000, 9999);
                 $user->otp = $otp;
                 $user->otp_expires_at = Carbon::now()->addMinutes(60);
                 $user->save();
 
-                // Mail::to($email)->send(new OtpMail($otp, $user, 'Reset Your Password'));
+                // Determine email subject based on purpose
+                $subject = $this->getOtpSubject($purpose);
+
+                // Send OTP email using your existing OtpMail class
+                Mail::to($email)->send(new ForgotPassOTP($otp, $user, 'Reset Your Password - Whistle Works'));
+
+                // Log the resend activity
+                Log::info('OTP resent to ' . $email . ' for ' . $purpose . ' at ' . now());
 
                 $response = [
-                    'otp'    => $otp,
+                    'email' => $email,
+                    'expires_at' => $user->otp_expires_at->format('Y-m-d H:i:s'),
+                    'purpose' => $purpose,
+                    'message' => 'OTP has been resent to your email address.'
                 ];
 
                 return $this->success('OTP resent successfully', $response, 200);
             } else {
-                return $this->success('Invalid Email Address', [], 404);
+                return $this->error('User not found with this email address', 404);
             }
         } catch (Exception $e) {
-            return $this->error($e->getMessage(), 500);
+            Log::error('Resend OTP error: ' . $e->getMessage());
+            return $this->error('Failed to resend OTP. Please try again later.', 500);
         }
     }
 
+    /**
+     * Get email subject based on OTP purpose
+     */
+    private function getOtpSubject($purpose)
+    {
+        $subjects = [
+            'registration' => 'Verify Your Email Address - Whistle Works',
+            'password_reset' => 'Reset Your Password - Whistle Works',
+            'verification' => 'Verify Your Account - Whistle Works',
+            'login' => 'Login Verification - Whistle Works',
+        ];
+
+        return $subjects[$purpose] ?? 'Your Verification Code - Whistle Works';
+    }
+
+
+    /**
+     * Verify otp
+     */
     public function MakeOtpToken(Request $request)
     {
         $request->validate([
@@ -134,6 +179,9 @@ class ResetPasswordController extends Controller
     }
 
 
+    /**
+     * Set new password
+     */
     public function ResetPassword(Request $request)
     {
         $request->validate([

@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
-use App\Traits\ApiResponse;
 use Exception;
 use Carbon\Carbon;
 use App\Traits\SMS;
 use App\Models\User;
 use App\Mail\OtpMail;
 use App\Helpers\Helper;
+use App\Mail\WelcomeMail;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -96,7 +98,7 @@ class RegisterController extends Controller
 
             $data = User::select('otp')->find($user->id);
 
-            // Mail::to($user->email)->send(new OtpMail($user->otp, $user, 'Verify Your Email Address'));
+            Mail::to($user->email)->send(new OtpMail($user->otp, $user, 'Verify Your Email Address'));
 
             DB::commit();
 
@@ -112,7 +114,7 @@ class RegisterController extends Controller
                 'avatar' => $user->avatar,
                 'role' => $user->role,
                 'biography' => $user->biography,
-                'otp' => auth('api')->user()->otp,
+                // 'otp' => auth('api')->user()->otp,
             ];
 
             return $this->success(
@@ -171,6 +173,14 @@ class RegisterController extends Controller
             $user->otp = null;
             $user->otp_expires_at = null;
             $user->save();
+
+            // Send Welcome Email
+            try {
+                Mail::to($user->email)->send(new WelcomeMail($user));
+            } catch (Exception $mailException) {
+                // Log the mail error but don't fail the verification
+                Log::error('Welcome email failed to send: ' . $mailException->getMessage());
+            }
 
             // Generate token
             $token = auth('api')->login($user);
@@ -231,7 +241,7 @@ class RegisterController extends Controller
             $user->save();
 
             //* Send the new OTP to the user's email
-            //  Mail::to($user->email)->send(new OtpMail($newOtp, $user, 'Verify Your Email Address'));
+            Mail::to($user->email)->send(new OtpMail($newOtp, $user, 'Verify Your Email Address'));
 
             return response()->json([
                 'status'  => true,
