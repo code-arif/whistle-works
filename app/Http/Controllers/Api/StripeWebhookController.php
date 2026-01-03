@@ -1,14 +1,23 @@
 <?php
 
-namespace App\Http\Controllers\Api\Gateway\Stripe;
+namespace App\Http\Controllers\Api;
 
 use Exception;
 use Stripe\Webhook;
+use App\Models\User;
+use App\Models\CampPayment;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Log;
-use App\Models\{CampPayment, CampPaymentAttempt};
+use App\Mail\PaymentFailedMail;
+use Modules\Director\Models\Camp;
+use App\Models\CampPaymentAttempt;
 use Illuminate\Support\Facades\DB;
+use App\Mail\PaymentSuccessfulMail;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PaymentSessionExpiredMail;
+use App\Mail\AdminPaymentNotificationMail;
+use App\Mail\RegistrationConfirmationMail;
 use Modules\Director\Models\CampRefereeCheckin;
 use Stripe\Exception\SignatureVerificationException;
 
@@ -17,7 +26,7 @@ class StripeWebhookController extends Controller
     /**
      * Handle Stripe webhook events
      */
-    public function handle(Request $request)
+    public function HandlePaymentWebhook(Request $request)
     {
         $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
@@ -60,7 +69,6 @@ class StripeWebhookController extends Controller
 
     /**
      * Handle successful checkout session
-     * This automatically processes payment and creates registration
      */
     protected function handleCheckoutSessionCompleted($session)
     {
@@ -94,6 +102,19 @@ class StripeWebhookController extends Controller
                     'payment_status' => $session->payment_status
                 ]);
                 DB::commit();
+                return;
+            }
+
+            // Get user and camp
+            $user = User::find($attempt->referee_id);
+            $camp = Camp::find($attempt->camp_id);
+
+            if (!$user || !$camp) {
+                Log::error('Stripe Webhook: User or camp not found', [
+                    'user_id' => $attempt->referee_id,
+                    'camp_id' => $attempt->camp_id
+                ]);
+                DB::rollBack();
                 return;
             }
 
@@ -162,6 +183,17 @@ class StripeWebhookController extends Controller
                     'referee_id' => $attempt->referee_id,
                     'amount' => $payment->amount
                 ]);
+
+                // Send registration confirmation email to referee
+                try {
+                    Mail::to($user->email)->send(new RegistrationConfirmationMail($user, $camp, $registration));
+                } catch (Exception $e) {
+                    Log::error('Stripe Webhook: Failed to send registration email', [
+                        'error' => $e->getMessage(),
+                        'user_id' => $user->id,
+                        'camp_id' => $camp->id
+                    ]);
+                }
             } else {
                 Log::info('Stripe Webhook: Payment completed, registration already exists', [
                     'payment_id' => $payment->id,
@@ -171,11 +203,31 @@ class StripeWebhookController extends Controller
                 ]);
             }
 
+            // Send payment success email to referee
+            try {
+                Mail::to($user->email)->send(new PaymentSuccessfulMail($user, $camp, $payment));
+            } catch (Exception $e) {
+                Log::error('Stripe Webhook: Failed to send payment success email', [
+                    'error' => $e->getMessage(),
+                    'user_id' => $user->id,
+                    'camp_id' => $camp->id
+                ]);
+            }
+
+            // Send admin notification email
+            try {
+                $admins = User::role('admin')->get();
+                foreach ($admins as $admin) {
+                    // Mail::to($admin->email)->send(new AdminPaymentNotificationMail($user, $camp, $payment, $admin));
+                    Mail::to('arifulislam6460@gmail.com')->send(new AdminPaymentNotificationMail($user, $camp, $payment, $admin));
+                }
+            } catch (Exception $e) {
+                Log::error('Stripe Webhook: Failed to send admin notification', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             DB::commit();
-
-            // Optional: Send notification email to referee
-            // event(new PaymentSuccessful($payment, $attempt->referee));
-
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -199,6 +251,26 @@ class StripeWebhookController extends Controller
 
             if ($attempt) {
                 $attempt->update(['status' => 'failed']);
+
+                // Get user and camp
+                $user = User::find($attempt->referee_id);
+                $camp = Camp::find($attempt->camp_id);
+
+                if ($user && $camp) {
+                    // Send session expired email
+                    try {
+                        Mail::to($user->email)->send(new PaymentSessionExpiredMail(
+                            $user,
+                            $camp,
+                            $session->id,
+                            'Your Payment Session Expired - Whistle Works'
+                        ));
+                    } catch (Exception $e) {
+                        Log::error('Stripe Webhook: Failed to send session expired email', [
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
 
                 Log::info('Stripe Webhook: Checkout session expired', [
                     'session_id' => $session->id,
@@ -225,8 +297,8 @@ class StripeWebhookController extends Controller
             'currency' => $paymentIntent->currency
         ]);
 
-        // Additional processing if needed
         // This event fires before checkout.session.completed
+        // We can use it for logging or additional processing
     }
 
     /**
@@ -242,9 +314,37 @@ class StripeWebhookController extends Controller
                 'error_code' => $paymentIntent->last_payment_error->code ?? null
             ]);
 
-            // Optional: Update payment attempt if we can find it
-            // Note: We might not have the session_id at this point
-            // You could store payment_intent_id in attempts table for better tracking
+            // Try to find the related payment attempt via metadata
+            if (isset($paymentIntent->metadata->session_id)) {
+                $attempt = CampPaymentAttempt::where('stripe_session_id', $paymentIntent->metadata->session_id)
+                    ->where('status', 'pending')
+                    ->first();
+
+                if ($attempt) {
+                    $attempt->update(['status' => 'failed']);
+
+                    // Get user and camp
+                    $user = User::find($attempt->referee_id);
+                    $camp = Camp::find($attempt->camp_id);
+
+                    if ($user && $camp) {
+                        // Send payment failed email
+                        try {
+                            $errorMessage = $paymentIntent->last_payment_error->message ?? 'Payment was declined by your bank.';
+                            Mail::to($user->email)->send(new PaymentFailedMail(
+                                $user,
+                                $camp,
+                                $errorMessage,
+                                'Payment Failed - Whistle Works'
+                            ));
+                        } catch (Exception $e) {
+                            Log::error('Stripe Webhook: Failed to send payment failed email', [
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+                }
+            }
         } catch (Exception $e) {
             Log::error('Stripe Webhook: Failed to handle payment failure', [
                 'payment_intent_id' => $paymentIntent->id,

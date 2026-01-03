@@ -4,9 +4,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\Frontend\HomeController;
 use App\Http\Controllers\Api\Auth\SocialLoginController;
+use App\Http\Controllers\Api\StripeWebhookController as ApiStripeWebhookController;
 use App\Http\Controllers\Web\Frontend\AffiliateController;
 use App\Http\Controllers\Web\Frontend\SubscriberController;
-use App\Http\Controllers\Api\Gateway\Stripe\StripeWebHookController;
+use App\Https\App\Http\Controllers\Api\Gateway\Stripe\StripeWebhookController;
 
 Route::get('/',[HomeController::class, 'index'])->name('home');
 
@@ -32,7 +33,7 @@ Route::controller(NotificationController::class)->prefix('notification')->name('
 require __DIR__.'/auth.php';
 
 
-Route::post('/webhook/stripe', [StripeWebhookController::class, 'handle']);
+Route::post('/webhook/stripe', [ApiStripeWebhookController::class, 'HandlePaymentWebhook']);
 
 // Route::post('/rental/webhook', [RentedPaymentController::class, 'handleWebhook']);
 
