@@ -171,7 +171,7 @@
                 </p>
 
                 <!-- Dashboard Button -->
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top: 15px;">
+                {{-- <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top: 15px;">
                     <tr>
                         <td align="center">
                             <a href="{{ config('app.frontend_url') }}"
@@ -180,7 +180,7 @@
                             </a>
                         </td>
                     </tr>
-                </table>
+                </table> --}}
             </td>
         </tr>
     </table>

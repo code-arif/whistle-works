@@ -17,5 +17,4 @@
     <p>You are successfully registered for <strong>{{ $camp->camp_name }}</strong>.</p>
     <p>Registration ID: <strong>#{{ $registration->id }}</strong></p>
     <p>Registered on: {{ $registration->registered_at->format('F j, Y') }}</p>
-    <p><a href="{{ config('app.frontend_url') }}">View camps</a></p>
 @endsection

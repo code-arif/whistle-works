@@ -2,12 +2,16 @@
 
 namespace Modules\Director\Http\Controllers\Api\Schedule;
 
+use App\Models\User;
 use App\Models\CampPayment;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Modules\Director\Models\Camp;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Mail;
 use App\Services\StripePaymentService;
+use App\Mail\CampCheckinNotificationMail;
 use Illuminate\Support\Facades\Validator;
 use Modules\Director\Models\CampRefereeCheckin;
 
@@ -301,6 +305,9 @@ class RefereeCheckinController extends Controller
             'checked_in_at' => now(),
         ]);
 
+        // Send notification email to camp director(s)
+        $this->sendCheckinNotificationToDirectors($camp, $referee, $registration);
+
         return $this->success(
             'Successfully checked in! Welcome to the camp.',
             [
@@ -331,7 +338,7 @@ class RefereeCheckinController extends Controller
         $today = now()->toDateString();
 
         // Get per_page from request, default 10
-        // $perPage = $request->get('per_page', 10);
+        $perPage = $request->get('per_page', 10);
 
         $total = CampRefereeCheckin::where('referee_id', $referee->id)->count();
 
@@ -341,7 +348,8 @@ class RefereeCheckinController extends Controller
                 'camp:id,camp_name,location,start_date,end_date,camp_logo,price,sports_type_name',
                 'camp.sportsType:id,sports_name,icon',
             ])
-            ->latest('registered_at')->get();
+            ->latest('registered_at')
+            ->paginate($perPage);
 
         // Get payment info for current page camps only
         $campIds = $registrations->pluck('camp_id')->toArray();
@@ -404,12 +412,12 @@ class RefereeCheckinController extends Controller
             'My registered camp fetched successfully.',
             [
                 'registrations' => $formatted,
-                // 'pagination' => [
-                //     'total' => $registrations->total(),
-                //     'per_page' => $registrations->perPage(),
-                //     'current_page' => $registrations->currentPage(),
-                //     'last_page' => $registrations->lastPage(),
-                // ],
+                'pagination' => [
+                    'total' => $registrations->total(),
+                    'per_page' => $registrations->perPage(),
+                    'current_page' => $registrations->currentPage(),
+                    'last_page' => $registrations->lastPage(),
+                ],
                 'summary' => [
                     'total' => $total,
                     'registered_only' => $totalRegistered,
@@ -654,4 +662,68 @@ class RefereeCheckinController extends Controller
             200
         );
     }
+
+
+    /**
+ * Send check-in notification to camp directors
+ */
+private function sendCheckinNotificationToDirectors(Camp $camp, User $referee, CampRefereeCheckin $registration)
+{
+    try {
+        // Assuming camp has a relationship with directors
+        // You might need to adjust this based on your actual database structure
+        $directors = [];
+
+        // Option 1: If camp has a director_id field
+        if ($camp->director_id) {
+            $director = User::find($camp->director_id);
+            if ($director) {
+                $directors[] = $director;
+            }
+        }
+
+        // Option 4: If camp has an organizer/creator
+        if (!$directors && $camp->created_by) {
+            $director = User::find($camp->created_by);
+            if ($director) {
+                $directors[] = $director;
+            }
+        }
+
+        // If no directors found, try to get admin users
+        if (empty($directors)) {
+            $directors = User::role('admin')->take(3)->get();
+        }
+
+        // Send email to each director
+        foreach ($directors as $director) {
+            try {
+                Mail::to($director->email)->send(
+                    new CampCheckinNotificationMail($director, $referee, $camp, $registration)
+                );
+
+                Log::info('Check-in notification sent to director', [
+                    'director_id' => $director->id,
+                    'director_email' => $director->email,
+                    'referee_id' => $referee->id,
+                    'camp_id' => $camp->id,
+                    'registration_id' => $registration->id
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('Failed to send check-in notification to director', [
+                    'director_id' => $director->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+    } catch (\Exception $e) {
+        Log::error('Error in sendCheckinNotificationToDirectors', [
+            'error' => $e->getMessage(),
+            'camp_id' => $camp->id,
+            'referee_id' => $referee->id
+        ]);
+    }
+}
 }
