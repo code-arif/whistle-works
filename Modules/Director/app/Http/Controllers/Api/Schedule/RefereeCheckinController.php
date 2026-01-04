@@ -344,10 +344,14 @@ class RefereeCheckinController extends Controller
 
         $registrations = CampRefereeCheckin::where('referee_id', $referee->id)
             ->where('registration_status', 'registered')
+            ->whereHas('camp', function ($query) use ($today) {
+                $query->where('end_date', '>=', $today);
+            })
             ->with([
                 'camp:id,camp_name,location,start_date,end_date,camp_logo,price,sports_type_name',
                 'camp.sportsType:id,sports_name,icon',
             ])
+            ->with('camp.director')
             ->latest('registered_at')
             ->paginate($perPage);
 
@@ -391,6 +395,10 @@ class RefereeCheckinController extends Controller
                         'name' => $camp->sportsType->sports_name,
                         'icon' => $camp->sportsType->icon ? asset($camp->sportsType->icon) : asset('default/no_image.webp'),
                     ] : null,
+                    'director' => [
+                        'id' => $camp->director->id,
+                        'director_name' => $camp->director->first_name . ' ' . $camp->director->last_name ?? null,
+                    ],
                 ],
                 'payment' => $payment ? [
                     'amount' => $payment->amount,
@@ -402,10 +410,16 @@ class RefereeCheckinController extends Controller
         // Get total counts for summary (from all records, not just current page)
         $totalRegistered = CampRefereeCheckin::where('referee_id', $referee->id)
             ->where('registration_status', 'registered')
+            ->whereHas('camp', function ($query) use ($today) {
+                $query->where('end_date', '>=', $today);
+            })
             ->count();
 
         $totalCheckedIn = CampRefereeCheckin::where('referee_id', $referee->id)
             ->where('registration_status', 'checked_in')
+            ->whereHas('camp', function ($query) use ($today) {
+                $query->where('end_date', '>=', $today);
+            })
             ->count();
 
         return $this->success(
@@ -442,11 +456,15 @@ class RefereeCheckinController extends Controller
 
         $checkins = CampRefereeCheckin::where('referee_id', $referee->id)
             ->where('registration_status', 'checked_in')
+            ->whereHas('camp', function ($query) use ($today) {
+                $query->where('end_date', '>=', $today);
+            })
             ->whereNotNull('checked_in_at')
             ->with([
                 'camp:id,camp_name,location,start_date,end_date,camp_logo,price,sports_type_name',
                 'camp.sportsType:id,sports_name,icon',
             ])
+            ->with('camp.director')
             ->latest('checked_in_at')
             ->paginate($perPage);
 
@@ -490,6 +508,10 @@ class RefereeCheckinController extends Controller
                         'name' => $camp->sportsType->sports_name,
                         'icon' => $camp->sportsType->icon ? asset($camp->sportsType->icon) : asset('default/no_image.webp'),
                     ] : null,
+                    'director' => [
+                        'id' => $camp->director->id,
+                        'director_name' => $camp->director->first_name . ' ' . $camp->director->last_name ?? null,
+                    ],
                 ],
                 'payment' => $payment ? [
                     'amount' => $payment->amount,
@@ -501,10 +523,16 @@ class RefereeCheckinController extends Controller
         // Get total counts for summary (from all records, not just current page)
         $totalRegistered = CampRefereeCheckin::where('referee_id', $referee->id)
             ->where('registration_status', 'registered')
+            ->whereHas('camp', function ($query) use ($today) {
+                $query->where('end_date', '>=', $today);
+            })
             ->count();
 
         $totalCheckedIn = CampRefereeCheckin::where('referee_id', $referee->id)
             ->where('registration_status', 'checked_in')
+            ->whereHas('camp', function ($query) use ($today) {
+                $query->where('end_date', '>=', $today);
+            })
             ->count();
 
         return $this->success(
@@ -619,6 +647,7 @@ class RefereeCheckinController extends Controller
                 'camp:id,camp_name,location,start_date,end_date,camp_logo,price',
                 'camp.sportsType:id,sports_name,icon',
             ])
+            ->with('camp.director')
             ->whereHas('camp', function ($query) use ($today) {
                 $query->where('end_date', '<', $today);
             })
@@ -648,6 +677,10 @@ class RefereeCheckinController extends Controller
                     'start_date' => $camp->start_date,
                     'end_date' => $camp->end_date,
                     'status' => 'completed',
+                    'director' => [
+                        'id' => $camp->director->id,
+                        'director_name' => $camp->director->first_name . ' ' . $camp->director->last_name ?? null,
+                    ],
                 ],
                 'payment' => $payment ? [
                     'amount' => $payment->amount,
@@ -665,65 +698,63 @@ class RefereeCheckinController extends Controller
 
 
     /**
- * Send check-in notification to camp directors
- */
-private function sendCheckinNotificationToDirectors(Camp $camp, User $referee, CampRefereeCheckin $registration)
-{
-    try {
-        // Assuming camp has a relationship with directors
-        // You might need to adjust this based on your actual database structure
-        $directors = [];
+     * Send check-in notification to camp directors
+     */
+    private function sendCheckinNotificationToDirectors(Camp $camp, User $referee, CampRefereeCheckin $registration)
+    {
+        try {
+            // Assuming camp has a relationship with directors
+            // You might need to adjust this based on your actual database structure
+            $directors = [];
 
-        // Option 1: If camp has a director_id field
-        if ($camp->director_id) {
-            $director = User::find($camp->director_id);
-            if ($director) {
-                $directors[] = $director;
+            // Option 1: If camp has a director_id field
+            if ($camp->director_id) {
+                $director = User::find($camp->director_id);
+                if ($director) {
+                    $directors[] = $director;
+                }
             }
-        }
 
-        // Option 4: If camp has an organizer/creator
-        if (!$directors && $camp->created_by) {
-            $director = User::find($camp->created_by);
-            if ($director) {
-                $directors[] = $director;
+            // Option 4: If camp has an organizer/creator
+            if (!$directors && $camp->created_by) {
+                $director = User::find($camp->created_by);
+                if ($director) {
+                    $directors[] = $director;
+                }
             }
-        }
 
-        // If no directors found, try to get admin users
-        if (empty($directors)) {
-            $directors = User::role('admin')->take(3)->get();
-        }
-
-        // Send email to each director
-        foreach ($directors as $director) {
-            try {
-                Mail::to($director->email)->send(
-                    new CampCheckinNotificationMail($director, $referee, $camp, $registration)
-                );
-
-                Log::info('Check-in notification sent to director', [
-                    'director_id' => $director->id,
-                    'director_email' => $director->email,
-                    'referee_id' => $referee->id,
-                    'camp_id' => $camp->id,
-                    'registration_id' => $registration->id
-                ]);
-
-            } catch (\Exception $e) {
-                Log::error('Failed to send check-in notification to director', [
-                    'director_id' => $director->id,
-                    'error' => $e->getMessage()
-                ]);
+            // If no directors found, try to get admin users
+            if (empty($directors)) {
+                $directors = User::role('admin')->take(3)->get();
             }
-        }
 
-    } catch (\Exception $e) {
-        Log::error('Error in sendCheckinNotificationToDirectors', [
-            'error' => $e->getMessage(),
-            'camp_id' => $camp->id,
-            'referee_id' => $referee->id
-        ]);
+            // Send email to each director
+            foreach ($directors as $director) {
+                try {
+                    Mail::to($director->email)->send(
+                        new CampCheckinNotificationMail($director, $referee, $camp, $registration)
+                    );
+
+                    Log::info('Check-in notification sent to director', [
+                        'director_id' => $director->id,
+                        'director_email' => $director->email,
+                        'referee_id' => $referee->id,
+                        'camp_id' => $camp->id,
+                        'registration_id' => $registration->id
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send check-in notification to director', [
+                        'director_id' => $director->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Error in sendCheckinNotificationToDirectors', [
+                'error' => $e->getMessage(),
+                'camp_id' => $camp->id,
+                'referee_id' => $referee->id
+            ]);
+        }
     }
-}
 }

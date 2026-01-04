@@ -68,6 +68,7 @@ class RefereeAssignmentController extends Controller
                                 'name' => $member->first_name . ' ' . $member->last_name,
                                 'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
                                 'email' => $member->email,
+                                'phone' => $member->phone,
                                 'type' => 'crew_member',
                                 'crew_name' => $crew->crew_name ?? 'N/A',
                                 'position' => $crewAssignment->position,
@@ -86,6 +87,7 @@ class RefereeAssignmentController extends Controller
                     'name' => $assignedReferee->first_name . ' ' . $assignedReferee->last_name,
                     'avatar' => $assignedReferee->avatar ? asset($assignedReferee->avatar) : asset('default/profile.jpg'),
                     'email' => $assignedReferee->email,
+                    'phone' => $assignedReferee->phone,
                     'type' => 'individual',
                     'position' => $individualAssignment->position,
                     'is_me' => $assignedReferee->id === $referee->id, // Flag to identify current user

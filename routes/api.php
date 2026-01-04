@@ -90,12 +90,11 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
         Route::get('/camp/{campId}/all-referees', [RefereeEvaluationController::class, 'getAllReferees']); // done
     });
 
-    // Roster - Get all information of a camp
-    Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetails'])->middleware('referee,api');
-
     // Game overview
     Route::get('/evaluator/{campId}/game-overview', [GameOverviewController::class, 'gameOverview']);
 });
+
+Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetails'])->middleware('auth:api', 'role:director|referee|evaluator,api');
 
 /*
 |--------------------------------------------------------------------------
@@ -141,6 +140,7 @@ Route::middleware(['auth:api', 'role:evaluator,api'])->group(function () {
         Route::post('/register', [CampEvaluatorRegistrationController::class, 'register']); // done
         Route::get('/my-registrations', [CampEvaluatorRegistrationController::class, 'myRegistrations']); //done
         Route::delete('/cancel/{registrationId}', [CampEvaluatorRegistrationController::class, 'cancel']); // done
+        Route::get('/previous-camps', [CampEvaluatorRegistrationController::class, 'previousCamp']); // done
     });
 });
 

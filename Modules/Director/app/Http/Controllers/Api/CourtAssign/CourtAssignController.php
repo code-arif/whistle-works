@@ -30,7 +30,7 @@ class CourtAssignController extends Controller
     public function assignIndividualReferees(Request $request, $slotId)
     {
         $request->validate([
-            'referee_ids' => 'required|array|min:2|max:6',
+            'referee_ids' => 'required|array',
             'referee_ids.*' => 'exists:users,id',
         ]);
 

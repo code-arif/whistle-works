@@ -159,4 +159,68 @@ class CampEvaluatorRegistrationController extends Controller
 
         return $this->success('Registration cancelled successfully.', []);
     }
+
+    /**
+     * Previous camp
+     */
+    public function previousCamp()
+    {
+        $evaluator = auth('api')->user();
+        $today = now()->toDateString();
+
+        $registrations = CampEvaluatorRegistration::where('evaluator_id', $evaluator->id)
+            ->with([
+                'camp:id,camp_name,location,start_date,end_date,camp_logo,price',
+                'camp.sportsType:id,sports_name,icon',
+            ])
+            ->with('camp.director')
+            ->whereHas('camp', function ($query) use ($today) {
+                $query->where('end_date', '<', $today);
+            })
+            ->latest('registered_at')
+            ->get();
+
+            return($registrations);exit();
+
+        $campIds = $registrations->pluck('camp_id')->toArray();
+        $payments = CampPayment::where('referee_id', $referee->id)
+            ->whereIn('camp_id', $campIds)
+            ->get()
+            ->keyBy('camp_id');
+
+        $formatted = $registrations->map(function ($registration) use ($payments) {
+            $camp = $registration->camp;
+            $payment = $payments->get($camp->id);
+
+            return [
+                'registration_id' => $registration->id,
+                'registration_status' => $registration->registration_status,
+                'registered_at' => $registration->registered_at->format('Y-m-d H:i:s'),
+                'checked_in_at' => $registration->checked_in_at?->format('Y-m-d H:i:s'),
+                'camp' => [
+                    'id' => $camp->id,
+                    'name' => $camp->camp_name,
+                    'location' => $camp->location,
+                    'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
+                    'start_date' => $camp->start_date,
+                    'end_date' => $camp->end_date,
+                    'status' => 'completed',
+                    'director' => [
+                        'id' => $camp->director->id,
+                        'director_name' => $camp->director->first_name . ' ' . $camp->director->last_name ?? null,
+                    ],
+                ],
+                'payment' => $payment ? [
+                    'amount' => $payment->amount,
+                    'paid_at' => $payment->paid_at->format('Y-m-d H:i:s'),
+                ] : null,
+            ];
+        });
+
+        return $this->success(
+            'Previous camps fetched successfully.',
+            ['previous_camps' => $formatted],
+            200
+        );
+    }
 }
