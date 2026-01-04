@@ -189,4 +189,40 @@ class CampEvaluatorRegisterManageForDirectorController extends Controller
             ]
         );
     }
+
+    /**
+     * Director removes evaluator from camp (delete registration)
+     */
+    public function removeEvaluator($registrationId)
+    {
+        $user = auth('api')->user();
+
+        if (!$user->hasRole('director')) {
+            return $this->error([], 'Only directors can remove evaluators.', 403);
+        }
+
+        $registration = CampEvaluatorRegistration::with(['camp', 'evaluator'])->find($registrationId);
+
+        if (!$registration) {
+            return $this->error([], 'Registration not found.', 404);
+        }
+
+        // Verify camp ownership
+        if ($registration->camp->director_id !== $user->id) {
+            return $this->error([], 'Unauthorized to remove this evaluator.', 403);
+        }
+
+        // Store evaluator name for response message
+        $evaluatorName = $registration->evaluator->first_name . ' ' . $registration->evaluator->last_name;
+        $campName = $registration->camp->camp_name;
+
+        // Delete the registration
+        $registration->delete();
+
+        return $this->success(
+            "Evaluator {$evaluatorName} has been removed from {$campName}.",
+            [],
+            200
+        );
+    }
 }

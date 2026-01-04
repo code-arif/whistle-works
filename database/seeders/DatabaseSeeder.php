@@ -16,7 +16,11 @@ class DatabaseSeeder extends Seeder
             SettingSeeder::class,
             SportsTypeSeeder::class,
             CampTableSeeder::class,
-            CampPaymentAndCheckinSeeder::class
+            CampPaymentAndCheckinSeeder::class,
+            CampEvaluatorRegistrationSeeder::class
         ]);
+
+        // optional: show output
+        $this->command->info('All data seeded successfully');
     }
 }

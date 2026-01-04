@@ -39,9 +39,6 @@ return new class extends Migration
 
             $table->timestamps();
 
-            // Prevent duplicate evaluations for same referee by same evaluator in same camp
-            $table->unique(['referee_id', 'evaluator_id', 'camp_id', 'game_slot_id'], 'unique_evaluation');
-
             // Indexes for faster queries
             $table->index('referee_id');
             $table->index('evaluator_id');

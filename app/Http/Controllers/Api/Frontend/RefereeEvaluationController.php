@@ -50,7 +50,7 @@ class RefereeEvaluationController extends Controller
             }
         }
 
-        // Check if referee exists and has checked in to the camp
+        // Check if referee exists and has role
         $referee = User::find($validated['referee_id']);
         if (!$referee || !$referee->hasRole('referee')) {
             return $this->error([], 'Invalid referee selected.', 404);
@@ -62,34 +62,30 @@ class RefereeEvaluationController extends Controller
         }
 
         // Verify referee has checked in to this camp
-        // $checkin = CampRefereeCheckin::where('camp_id', $camp->id)
-        //     ->where('referee_id', $referee->id)
-        //     ->where('registration_status', 'registered')
-        //     ->first();
-
-        // if (!$checkin) {
-        //     return $this->error([], 'Referee has not checked in to this camp.', 400);
-        // }
-
         $checkin = CampRefereeCheckin::where('camp_id', $camp->id)
             ->where('referee_id', $referee->id)
             ->first();
 
         if (!$checkin) {
-            return $this->error([], 'Referee has not checked in to this camp.', 400);
+            return $this->error([], 'Referee has not registered for this camp.', 400);
         }
 
         DB::beginTransaction();
         try {
-            // Find existing evaluation or create new one
-            $evaluation = RefereeEvaluation::updateOrCreate(
-                [
-                    'referee_id' => $validated['referee_id'],
-                    'evaluator_id' => $user->id,
-                    'camp_id' => $validated['camp_id'],
-                    'game_slot_id' => $validated['game_slot_id'] ?? null,
-                ],
-                [
+            // If evaluation_id provided, update existing one
+            if (isset($validated['evaluation_id'])) {
+                $evaluation = RefereeEvaluation::find($validated['evaluation_id']);
+
+                if (!$evaluation) {
+                    return $this->error([], 'Evaluation not found.', 404);
+                }
+
+                // Check ownership
+                if ($evaluation->evaluator_id !== $user->id) {
+                    return $this->error([], 'You can only update your own evaluations.', 403);
+                }
+
+                $evaluation->update([
                     'call_accuracy' => $validated['call_accuracy'] ?? null,
                     'communication_skills' => $validated['communication_skills'] ?? null,
                     'consistency_of_calls' => $validated['consistency_of_calls'] ?? null,
@@ -100,30 +96,56 @@ class RefereeEvaluationController extends Controller
                     'referee_feedback' => $validated['referee_feedback'] ?? null,
                     'status' => $validated['status'] ?? 'draft',
                     'submitted_at' => ($validated['status'] ?? 'draft') === 'submitted' ? now() : null,
-                ]
-            );
-
-            // Handle single recommended level
-            if (isset($validated['recommended_level'])) {
-                // Delete old level and insert new one
-                $evaluation->recommendedLevels()->delete();
-
-                RecommendedLevel::create([
-                    'evaluation_id' => $evaluation->id,
-                    'level' => $validated['recommended_level'],
                 ]);
+
+                // Update recommended level
+                if (isset($validated['recommended_level'])) {
+                    $evaluation->recommendedLevels()->delete();
+                    RecommendedLevel::create([
+                        'evaluation_id' => $evaluation->id,
+                        'level' => $validated['recommended_level'],
+                    ]);
+                }
+
+                $message = 'Evaluation updated successfully.';
+                $statusCode = 200;
+            } else {
+                // Create new evaluation
+                $evaluation = RefereeEvaluation::create([
+                    'referee_id' => $validated['referee_id'],
+                    'evaluator_id' => $user->id,
+                    'camp_id' => $validated['camp_id'],
+                    'game_slot_id' => $validated['game_slot_id'] ?? null,
+                    'call_accuracy' => $validated['call_accuracy'] ?? null,
+                    'communication_skills' => $validated['communication_skills'] ?? null,
+                    'consistency_of_calls' => $validated['consistency_of_calls'] ?? null,
+                    'court_position_mechanics' => $validated['court_position_mechanics'] ?? null,
+                    'fitness_mobility' => $validated['fitness_mobility'] ?? null,
+                    'game_awareness' => $validated['game_awareness'] ?? null,
+                    'private_comments' => $validated['private_comments'] ?? null,
+                    'referee_feedback' => $validated['referee_feedback'] ?? null,
+                    'status' => $validated['status'] ?? 'draft',
+                    'submitted_at' => ($validated['status'] ?? 'draft') === 'submitted' ? now() : null,
+                ]);
+
+                // Add recommended level
+                if (isset($validated['recommended_level'])) {
+                    RecommendedLevel::create([
+                        'evaluation_id' => $evaluation->id,
+                        'level' => $validated['recommended_level'],
+                    ]);
+                }
+
+                $message = 'Evaluation created successfully.';
+                $statusCode = 201;
             }
 
             DB::commit();
 
-            $message = $evaluation->wasRecentlyCreated
-                ? 'Evaluation created successfully.'
-                : 'Evaluation updated successfully.';
-
             return $this->success(
                 $message,
                 new RefereeEvaluationResource($evaluation->load(['referee', 'evaluator', 'camp', 'gameSlot', 'recommendedLevels'])),
-                $evaluation->wasRecentlyCreated ? 201 : 200
+                $statusCode
             );
         } catch (Exception $e) {
             DB::rollBack();
@@ -131,8 +153,9 @@ class RefereeEvaluationController extends Controller
         }
     }
 
+
     /**
-     * Get evaluations by camp (for directors/evaluators)
+     * Get evaluations by camp (for directors/evaluators) - Excel format
      */
     public function getEvaluationsByCamp(Request $request, $campId)
     {
@@ -166,12 +189,9 @@ class RefereeEvaluationController extends Controller
             }
         }
 
+        // Get all evaluations with relationships
         $query = RefereeEvaluation::with(['referee', 'evaluator', 'gameSlot', 'recommendedLevels'])
             ->forCamp($campId);
-
-        if ($request->has('referee_id')) {
-            $query->forReferee($request->referee_id);
-        }
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
@@ -181,18 +201,97 @@ class RefereeEvaluationController extends Controller
             $query->where('evaluator_id', $user->id);
         }
 
-        $evaluations = $query->orderByDesc('average_score')->get();
+        $evaluations = $query->orderBy('created_at', 'asc')->get();
+
+        // Group by referee
+        $groupedByReferee = $evaluations->groupBy('referee_id');
+
+        $formattedData = [];
+
+        foreach ($groupedByReferee as $refereeId => $refereeEvaluations) {
+            $referee = $refereeEvaluations->first()->referee;
+
+            // Calculate averages for this referee
+            $avgCallAccuracy = round($refereeEvaluations->avg('call_accuracy'), 2);
+            $avgCommunication = round($refereeEvaluations->avg('communication_skills'), 2);
+            $avgConsistency = round($refereeEvaluations->avg('consistency_of_calls'), 2);
+            $avgCourtPosition = round($refereeEvaluations->avg('court_position_mechanics'), 2);
+            $avgFitness = round($refereeEvaluations->avg('fitness_mobility'), 2);
+            $avgGameAwareness = round($refereeEvaluations->avg('game_awareness'), 2);
+
+            // Calculate overall average
+            $overallAvg = round(($avgCallAccuracy + $avgCommunication + $avgConsistency +
+                $avgCourtPosition + $avgFitness + $avgGameAwareness) / 6, 2);
+
+            // Get all recommended levels with count
+            $recommendedLevels = [];
+            foreach ($refereeEvaluations as $evaluation) {
+                foreach ($evaluation->recommendedLevels as $level) {
+                    if (isset($recommendedLevels[$level->level])) {
+                        $recommendedLevels[$level->level]++;
+                    } else {
+                        $recommendedLevels[$level->level] = 1;
+                    }
+                }
+            }
+
+            // Format recommended levels for display
+            $recommendedLevelsFormatted = [];
+            foreach ($recommendedLevels as $level => $count) {
+                $recommendedLevelsFormatted[] = [
+                    'level' => $level,
+                    'count' => $count
+                ];
+            }
+
+            // Sort by count descending
+            usort($recommendedLevelsFormatted, fn($a, $b) => $b['count'] <=> $a['count']);
+
+            // Get the highest recommended level (most frequent)
+            $highestRecommendedLevel = !empty($recommendedLevelsFormatted)
+                ? $recommendedLevelsFormatted[0]['level']
+                : null;
+
+            // Collect all evaluator names
+            $evaluators = $refereeEvaluations->map(function ($eval) {
+                return $eval->evaluator->first_name . ' ' . $eval->evaluator->last_name;
+            })->unique()->values()->toArray();
+
+            // Collect all comments
+            $allComments = $refereeEvaluations->filter(function ($eval) {
+                return !empty($eval->referee_feedback);
+            })->pluck('referee_feedback')->toArray();
+
+            $formattedData[] = [
+                'referee_id' => $referee->id,
+                'referee_name' => $referee->first_name . ' ' . $referee->last_name,
+                'referee_email' => $referee->email,
+                'total_evaluations' => $refereeEvaluations->count(),
+                'averages' => [
+                    'overall' => $overallAvg,
+                    'call_accuracy' => $avgCallAccuracy,
+                    'communication_skills' => $avgCommunication,
+                    'consistency_of_calls' => $avgConsistency,
+                    'court_position_mechanics' => $avgCourtPosition,
+                    'fitness_mobility' => $avgFitness,
+                    'game_awareness' => $avgGameAwareness,
+                ],
+                'recommended_levels' => $recommendedLevelsFormatted,
+                'highest_recommended_level' => $highestRecommendedLevel,
+                'evaluators' => $evaluators,
+                'comments' => $allComments,
+            ];
+        }
+
+        // Sort by overall average descending
+        usort($formattedData, fn($a, $b) => $b['averages']['overall'] <=> $a['averages']['overall']);
 
         return $this->success(
             'Evaluations retrieved successfully.',
             [
-                'evaluations' => RefereeEvaluationListResource::collection($evaluations),
-                // 'pagination' => [
-                //     'total'        => $evaluations->total(),
-                //     'per_page'     => $evaluations->perPage(),
-                //     'current_page' => $evaluations->currentPage(),
-                //     'last_page'    => $evaluations->lastPage(),
-                // ],
+                'evaluations' => $formattedData,
+                'total_referees' => count($formattedData),
+                'total_evaluations' => $evaluations->count(),
             ]
         );
     }
@@ -201,7 +300,7 @@ class RefereeEvaluationController extends Controller
     /**
      * Get evaluations created by the authenticated evaluator
      */
-    public function getMyEvaluations(Request $request)
+    public function getMyEvaluations(Request $request, $campId)
     {
         $user = auth('api')->user();
 
@@ -209,57 +308,40 @@ class RefereeEvaluationController extends Controller
             return $this->error([], 'Only evaluators and directors can access this.', 403);
         }
 
+        // Check if camp exists
+        $camp = Camp::find($campId);
+        if (!$camp) {
+            return $this->error([], 'Camp not found.', 404);
+        }
+
+        // Permission check for evaluator (not director)
         if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
-            if ($request->has('camp_id')) {
-                $registration = CampEvaluatorRegistration::where('camp_id', $request->camp_id)
-                    ->where('evaluator_id', $user->id)
-                    ->where('status', 'approved')
-                    ->first();
+            $registration = CampEvaluatorRegistration::where('camp_id', $campId)
+                ->where('evaluator_id', $user->id)
+                ->where('status', 'approved')
+                ->first();
 
-                if (!$registration || !$registration->can_view_own_evaluations) {
-                    return $this->error([], 'You do not have permission to view evaluations for this camp. Contact the director.', 403);
-                }
-            } else {
-                $hasPermission = CampEvaluatorRegistration::where('evaluator_id', $user->id)
-                    ->where('status', 'approved')
-                    ->where('can_view_own_evaluations', true)
-                    ->exists();
-
-                if (!$hasPermission) {
-                    return $this->error([], 'You do not have permission to view any evaluations. Contact camp directors.', 403);
-                }
+            if (!$registration || !$registration->can_view_own_evaluations) {
+                return $this->error([], 'You do not have permission to view evaluations for this camp. Contact the director.', 403);
             }
         }
 
-        $allowedCamps = collect();
-
-        $query = RefereeEvaluation::with(['referee', 'camp', 'gameSlot', 'recommendedLevels'])
-            ->byEvaluator($user->id);
-
-        if ($request->has('camp_id')) {
-            $query->where('camp_id', $request->camp_id);
+        // Permission check for director
+        if ($user->hasRole('director') && $camp->director_id !== $user->id) {
+            return $this->error([], 'You can only view evaluations from your own camps.', 403);
         }
 
-        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
-            $allowedCamps = CampEvaluatorRegistration::where('evaluator_id', $user->id)
-                ->where('status', 'approved')
-                ->where('can_view_own_evaluations', true)
-                ->pluck('camp_id');
-
-            $query->whereIn('camp_id', $allowedCamps);
-        }
-
-        $evaluations = $query->orderBy('created_at', 'desc')
+        // Get all evaluations by this evaluator for this camp
+        $evaluations = RefereeEvaluation::with(['referee', 'camp', 'gameSlot', 'recommendedLevels'])
+            ->byEvaluator($user->id)
+            ->where('camp_id', $campId)
+            ->orderBy('created_at', 'desc')
             ->paginate($request->get('per_page', 15));
 
-        // Overall level summary
-        $summaryQuery = RefereeEvaluation::with(['recommendedLevels'])
+        // Get overall level summary for this evaluator in this camp
+        $summaryEvaluations = RefereeEvaluation::with(['recommendedLevels'])
             ->byEvaluator($user->id)
-            ->when($request->has('camp_id'), fn($q) => $q->where('camp_id', $request->camp_id))
-            ->when(
-                $user->hasRole('evaluator') && !$user->hasRole('director') && $allowedCamps->isNotEmpty(),
-                fn($q) => $q->whereIn('camp_id', $allowedCamps)
-            )
+            ->where('camp_id', $campId)
             ->has('recommendedLevels')
             ->get();
 
@@ -269,7 +351,7 @@ class RefereeEvaluationController extends Controller
         foreach ($allLevels as $level) {
             $count = RecommendedLevel::whereIn(
                 'evaluation_id',
-                $summaryQuery->pluck('id')
+                $summaryEvaluations->pluck('id')
             )->where('level', $level)->count();
 
             if ($count > 0) {
@@ -283,11 +365,28 @@ class RefereeEvaluationController extends Controller
         // Sort by count descending
         usort($overallSummary, fn($a, $b) => $b['count'] <=> $a['count']);
 
+        // Get unique referee count that this evaluator has evaluated in this camp
+        $uniqueRefereesEvaluated = RefereeEvaluation::where('evaluator_id', $user->id)
+            ->where('camp_id', $campId)
+            ->distinct('referee_id')
+            ->count('referee_id');
+
         return $this->success(
             'Your evaluations retrieved successfully.',
             [
+                'camp' => [
+                    'id' => $camp->id,
+                    'name' => $camp->camp_name,
+                    'location' => $camp->location,
+                    'start_date' => $camp->start_date,
+                    'end_date' => $camp->end_date,
+                ],
                 'evaluations' => RefereeEvaluationListResource::collection($evaluations),
                 'overall_level_summary' => $overallSummary,
+                'statistics' => [
+                    'total_evaluations' => $evaluations->total(),
+                    'unique_referees_evaluated' => $uniqueRefereesEvaluated,
+                ],
                 'pagination' => [
                     'total'        => $evaluations->total(),
                     'per_page'     => $evaluations->perPage(),

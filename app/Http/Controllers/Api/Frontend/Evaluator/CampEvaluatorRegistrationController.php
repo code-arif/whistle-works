@@ -106,7 +106,7 @@ class CampEvaluatorRegistrationController extends Controller
             return $this->error([], 'Only evaluators can access this.', 403);
         }
 
-        $query = CampEvaluatorRegistration::with(['camp', 'approver'])
+        $query = CampEvaluatorRegistration::with(['camp.director', 'approver'])
             ->where('evaluator_id', $user->id);
 
         // Filter by status
@@ -180,7 +180,8 @@ class CampEvaluatorRegistrationController extends Controller
             ->latest('registered_at')
             ->get();
 
-            return($registrations);exit();
+        return ($registrations);
+        exit();
 
         $campIds = $registrations->pluck('camp_id')->toArray();
         $payments = CampPayment::where('referee_id', $referee->id)

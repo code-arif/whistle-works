@@ -78,7 +78,7 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
     Route::prefix('referee/evaluation')->group(function () {
         Route::post('/upsert', [RefereeEvaluationController::class, 'storeOrUpdate']); // working - store evaluation
         Route::delete('/destroy/{id}', [RefereeEvaluationController::class, 'destroy']); // working - delete evaluation
-        Route::get('/my-evaluations', [RefereeEvaluationController::class, 'getMyEvaluations']); // working - get my evaluations (edit required for permission director)
+        Route::get('/my-evaluations/{campId}', [RefereeEvaluationController::class, 'getMyEvaluations']); // working - get my evaluations (edit required for permission director)
         Route::get('/camp/{campId}', [RefereeEvaluationController::class, 'getEvaluationsByCamp']); // working - get evaluations by camp
         Route::get('/details/{evaluationId}', [RefereeEvaluationController::class, 'show']); // working - get evaluation details
 
@@ -150,7 +150,7 @@ Route::middleware(['auth:api', 'role:director,api'])->group(function () {
         Route::get('/camp/{campId}', [CampEvaluatorRegisterManageForDirectorController::class, 'getCampRegistrations']); //done
         Route::post('/approve/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'approve']); // done
         Route::post('/reject/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'reject']); // done
-        Route::post('/toggle-visibility/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'toggleEvaluatorVisibility']);
+        Route::delete('/remove/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'removeEvaluator']); // done
     });
 });
 
