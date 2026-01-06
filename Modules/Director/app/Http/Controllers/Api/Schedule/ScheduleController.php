@@ -2,6 +2,7 @@
 
 namespace Modules\Director\Http\Controllers\Api\Schedule;
 
+use Exception;
 use Carbon\Carbon;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -66,22 +67,99 @@ class ScheduleController extends Controller
     /**
      * Create schedule with time ranges and locations
      */
+    // public function createSchedule(ScheduleCreateRequest $request, $campId)
+    // {
+    //     $user = auth('api')->user();
+
+    //     // Verify camp ownership
+    //     $camp = Camp::where('id', $campId)
+    //         ->where('director_id', $user->id)
+    //         ->first();
+
+    //     if (!$camp) {
+    //         return $this->error([], 'Camp not found.', 404);
+    //     }
+
+    //     // Check if schedule already exists
+    //     if ($camp->schedule()->exists()) {
+    //         return $this->error([], 'Schedule already exists for this camp. Delete existing schedule first.', 400);
+    //     }
+
+    //     // Validate dates are within camp range
+    //     foreach ($request->time_ranges as $range) {
+    //         $rangeDate = Carbon::parse($range['date']);
+    //         $campStart = Carbon::parse($camp->start_date);
+    //         $campEnd = Carbon::parse($camp->end_date);
+
+    //         if ($rangeDate->lt($campStart) || $rangeDate->gt($campEnd)) {
+    //             return $this->error([], "Date {$range['date']} is outside camp date range.", 400);
+    //         }
+    //     }
+
+    //     DB::beginTransaction();
+    //     try {
+    //         // Create schedule
+    //         $schedule = Schedule::create([
+    //             'camp_id' => $camp->id,
+    //             'game_duration' => $request->game_duration,
+    //             'max_referees_per_slot' => $request->max_referees_per_slot,
+    //             'status' => 'draft'
+    //         ]);
+
+    //         // Create time ranges
+    //         foreach ($request->time_ranges as $range) {
+    //             ScheduleTimeRange::create([
+    //                 'schedule_id' => $schedule->id,
+    //                 'date' => $range['date'],
+    //                 'start_time' => $range['start_time'],
+    //                 'end_time' => $range['end_time']
+    //             ]);
+    //         }
+
+    //         // Create locations with courts
+    //         foreach ($request->locations as $location) {
+    //             ScheduleLocation::create([
+    //                 'schedule_id' => $schedule->id,
+    //                 'location_name' => $location['location_name'],
+    //                 'latitude' => $location['latitude'] ?? null,
+    //                 'longitude' => $location['longitude'] ?? null,
+    //                 'court_count' => $location['court_count']
+    //             ]);
+    //         }
+
+    //         // Generate game slots
+    //         $slotsGenerated = $this->generateGameSlots($schedule, $locationMap);
+
+    //         DB::commit();
+
+    //         return $this->success(
+    //             'Schedule created successfully.',
+    //             array_merge(
+    //                 $this->formatScheduleResponse($schedule),
+    //                 ['slots_generated' => $slotsGenerated]
+    //             ),
+    //             201
+    //         );
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         return $this->error('Failed to create schedule: ' . $e->getMessage(), null, 500);
+    //     }
+    // }
+
     public function createSchedule(ScheduleCreateRequest $request, $campId)
     {
         $user = auth('api')->user();
 
-        // Verify camp ownership
         $camp = Camp::where('id', $campId)
             ->where('director_id', $user->id)
             ->first();
 
         if (!$camp) {
-            return $this->error([], 'Camp not found.', 404);
+            return $this->error('Camp not found.', null, 404);
         }
 
-        // Check if schedule already exists
         if ($camp->schedule()->exists()) {
-            return $this->error([], 'Schedule already exists for this camp. Delete existing schedule first.', 400);
+            return $this->error('Schedule already exists for this camp. Delete existing schedule first.', null, 400);
         }
 
         // Validate dates are within camp range
@@ -91,7 +169,7 @@ class ScheduleController extends Controller
             $campEnd = Carbon::parse($camp->end_date);
 
             if ($rangeDate->lt($campStart) || $rangeDate->gt($campEnd)) {
-                return $this->error([], "Date {$range['date']} is outside camp date range.", 400);
+                return $this->error("Date {$range['date']} is outside camp date range.", null, 400);
             }
         }
 
@@ -115,19 +193,23 @@ class ScheduleController extends Controller
                 ]);
             }
 
-            // Create locations with courts
+            // CREATE LOCATIONS AND STORE THEM
+            $locationMap = [];
             foreach ($request->locations as $location) {
-                ScheduleLocation::create([
+                $scheduleLocation = ScheduleLocation::create([
                     'schedule_id' => $schedule->id,
                     'location_name' => $location['location_name'],
                     'latitude' => $location['latitude'] ?? null,
                     'longitude' => $location['longitude'] ?? null,
                     'court_count' => $location['court_count']
                 ]);
+
+                // STORE CREATED LOCATION
+                $locationMap[] = $scheduleLocation;
             }
 
-            // Generate game slots
-            $slotsGenerated = $this->generateGameSlots($schedule);
+            // PASS BOTH PARAMETERS
+            $slotsGenerated = $this->generateGameSlots($schedule, $locationMap);
 
             DB::commit();
 
@@ -139,7 +221,7 @@ class ScheduleController extends Controller
                 ),
                 201
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return $this->error('Failed to create schedule: ' . $e->getMessage(), null, 500);
         }
@@ -153,12 +235,60 @@ class ScheduleController extends Controller
      * - Calculate how many games fit in that time (duration-based)
      * - For each game time slot, create entries for ALL courts
      */
-    private function generateGameSlots(Schedule $schedule)
+    // private function generateGameSlots(Schedule $schedule)
+    // {
+    //     $timeRanges = $schedule->timeRanges;
+    //     $locations = $schedule->locations;
+    //     $gameDuration = $schedule->game_duration; // in minutes
+
+    //     $totalSlotsCreated = 0;
+
+    //     foreach ($timeRanges as $range) {
+    //         $startTime = Carbon::parse($range->start_time);
+    //         $endTime = Carbon::parse($range->end_time);
+    //         $gameDate = $range->date;
+
+    //         // Calculate how many games can fit
+    //         $currentTime = $startTime->copy();
+
+    //         while ($currentTime->copy()->addMinutes($gameDuration)->lte($endTime)) {
+    //             $slotStartTime = $currentTime->format('H:i:s');
+    //             $slotEndTime = $currentTime->copy()->addMinutes($gameDuration)->format('H:i:s');
+
+    //             // Create slots for ALL locations and ALL courts
+    //             foreach ($locations as $location) {
+    //                 for ($courtNum = 1; $courtNum <= $location->court_count; $courtNum++) {
+    //                     GameSlot::create([
+    //                         'schedule_id' => $schedule->id,
+    //                         'schedule_location_id' => $location->id,
+    //                         'game_date' => $gameDate,
+    //                         'start_time' => $slotStartTime,
+    //                         'end_time' => $slotEndTime,
+    //                         'court_name' => $location->location_name . ' - Court ' . $courtNum,
+    //                         'court_number' => $courtNum,
+    //                         'status' => 'available',
+    //                         'is_block' => false
+    //                     ]);
+
+    //                     $totalSlotsCreated++;
+    //                 }
+    //             }
+
+    //             // Move to next time slot
+    //             $currentTime->addMinutes($gameDuration);
+    //         }
+    //     }
+
+    //     return $totalSlotsCreated;
+    // }
+
+    /**
+     * Generate game slots - LOCATION SPECIFIC
+     */
+    private function generateGameSlots(Schedule $schedule, $locationMap)
     {
         $timeRanges = $schedule->timeRanges;
-        $locations = $schedule->locations;
-        $gameDuration = $schedule->game_duration; // in minutes
-
+        $gameDuration = $schedule->game_duration;
         $totalSlotsCreated = 0;
 
         foreach ($timeRanges as $range) {
@@ -166,15 +296,15 @@ class ScheduleController extends Controller
             $endTime = Carbon::parse($range->end_time);
             $gameDate = $range->date;
 
-            // Calculate how many games can fit
             $currentTime = $startTime->copy();
 
+            // Generate time slots
             while ($currentTime->copy()->addMinutes($gameDuration)->lte($endTime)) {
                 $slotStartTime = $currentTime->format('H:i:s');
                 $slotEndTime = $currentTime->copy()->addMinutes($gameDuration)->format('H:i:s');
 
-                // Create slots for ALL locations and ALL courts
-                foreach ($locations as $location) {
+                // Create slots for EACH location with its OWN court count
+                foreach ($locationMap as $location) {
                     for ($courtNum = 1; $courtNum <= $location->court_count; $courtNum++) {
                         GameSlot::create([
                             'schedule_id' => $schedule->id,
@@ -182,7 +312,7 @@ class ScheduleController extends Controller
                             'game_date' => $gameDate,
                             'start_time' => $slotStartTime,
                             'end_time' => $slotEndTime,
-                            'court_name' => $location->location_name . ' - Court ' . $courtNum,
+                            'court_name' => "Court {$courtNum}", // Default naming
                             'court_number' => $courtNum,
                             'status' => 'available',
                             'is_block' => false
@@ -192,7 +322,6 @@ class ScheduleController extends Controller
                     }
                 }
 
-                // Move to next time slot
                 $currentTime->addMinutes($gameDuration);
             }
         }

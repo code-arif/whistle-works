@@ -82,6 +82,40 @@ class CourtManageController extends Controller
     /**
      * Update court name for a specific game slot
      */
+    // public function updateCourtName(Request $request, $slotId)
+    // {
+    //     $request->validate([
+    //         'court_name' => 'required|string|max:255'
+    //     ]);
+
+    //     $user = auth('api')->user();
+
+    //     $slot = GameSlot::with('schedule.camp')->find($slotId);
+
+    //     if (!$slot) {
+    //         return $this->error('Game slot not found!', null, 404);
+    //     }
+
+    //     // Authorization check
+    //     if ($slot->schedule->camp->director_id !== $user->id) {
+    //         return $this->error('Unauthorized.', null, 403);
+    //     }
+
+    //     $slot->update(['court_name' => $request->court_name]);
+
+    //     return $this->success(
+    //         'Court name updated successfully.',
+    //         [
+    //             'slot_id' => $slot->id,
+    //             'court_name' => $slot->court_name
+    //         ],
+    //         200
+    //     );
+    // }
+
+    /**
+     * Update court name - ONLY for specific slot
+     */
     public function updateCourtName(Request $request, $slotId)
     {
         $request->validate([
@@ -101,13 +135,17 @@ class CourtManageController extends Controller
             return $this->error('Unauthorized.', null, 403);
         }
 
-        $slot->update(['court_name' => $request->court_name]);
+        // Update ONLY this specific slot
+        $slot->court_name = $request->court_name;
+        $slot->save();
 
         return $this->success(
             'Court name updated successfully.',
             [
                 'slot_id' => $slot->id,
-                'court_name' => $slot->court_name
+                'court_name' => $slot->court_name,
+                'location' => $slot->location->location_name,
+                'court_number' => $slot->court_number
             ],
             200
         );

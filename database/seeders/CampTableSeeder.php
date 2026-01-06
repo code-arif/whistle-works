@@ -25,7 +25,7 @@ class CampTableSeeder extends Seeder
         for ($i = 1; $i <= 100; $i++) {
 
             // Fixed date range
-            $startDate = Carbon::create(2025, 12, rand(28, 31));
+            $startDate = Carbon::create(2026, 1, rand(05, 15));
             $endDate   = (clone $startDate)->addDays(rand(3, 10));
 
             $sportsTypeId = rand(1, 5);

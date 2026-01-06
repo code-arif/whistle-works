@@ -397,7 +397,7 @@ class RefereeCheckinController extends Controller
                     ] : null,
                     'director' => [
                         'id' => $camp->director->id,
-                        'director_name' => $camp->director->first_name . ' ' . $camp->director->last_name ?? null,
+                        'name' => $camp->director->first_name . ' ' . $camp->director->last_name ?? null,
                     ],
                 ],
                 'payment' => $payment ? [
@@ -510,7 +510,7 @@ class RefereeCheckinController extends Controller
                     ] : null,
                     'director' => [
                         'id' => $camp->director->id,
-                        'director_name' => $camp->director->first_name . ' ' . $camp->director->last_name ?? null,
+                        'name' => $camp->director->first_name . ' ' . $camp->director->last_name ?? null,
                     ],
                 ],
                 'payment' => $payment ? [
@@ -679,7 +679,7 @@ class RefereeCheckinController extends Controller
                     'status' => 'completed',
                     'director' => [
                         'id' => $camp->director->id,
-                        'director_name' => $camp->director->first_name . ' ' . $camp->director->last_name ?? null,
+                        'name' => $camp->director->first_name . ' ' . $camp->director->last_name ?? null,
                     ],
                 ],
                 'payment' => $payment ? [
