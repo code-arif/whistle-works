@@ -7,6 +7,7 @@ use Modules\Director\Http\Controllers\Api\Court\CourtManageController;
 use Modules\Director\Http\Controllers\Api\Crew\CrewManageController;
 use Modules\Director\Http\Controllers\Api\Schedule\ScheduleController;
 use Modules\Director\Http\Controllers\Api\CourtAssign\CourtAssignController;
+use Modules\Director\Http\Controllers\Api\Referee\RefereeManageController;
 use Modules\Director\Http\Controllers\Api\Schedule\RefereeCheckinController;
 
 // ==========================================
@@ -101,7 +102,18 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
     // Court mange routes
     Route::patch('slot/{slotId}/toggle-block', [CourtManageController::class, 'toggleBlockSlot']); // done - Court Block/Unblock
     Route::patch('slot/{slotId}/update-court-name', [CourtManageController::class, 'updateCourtName']);  // Change specific court name
-    Route::post('schedule/{scheduleId}/bulk-toggle-block', [CourtManageController::class, 'bulkToggleBlockByTime']);
+    Route::post('schedule/{scheduleId}/bulk-toggle-block', [CourtManageController::class, 'bulkToggleBlockByTime']); // done - Bulk Block/Unblock by time
+
+    Route::prefix('director')->group(function () {
+        // Manual check-in (single referee)
+        Route::put('camp/{campId}/referee/{refereeId}/manual-checkin', [RefereeManageController::class, 'directorManualCheckInReferee']);
+
+        // Bulk manual check-in (optional - multiple referees at once)
+        Route::post('camp/{campId}/bulk-manual-checkin', [RefereeManageController::class, 'bulkManualCheckIn']);
+
+        // Input jurcy number for a referee
+        Route::patch('camp/{campId}/referee/{refereeId}/update-jourcy-number', [RefereeManageController::class, 'updateRefereeJourcyNumber']);
+    });
 });
 
 /**

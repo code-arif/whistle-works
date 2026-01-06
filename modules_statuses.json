@@ -1,5 +1,6 @@
 {
     "Project": true,
     "Portfolio": true,
-    "Director": true
+    "Director": true,
+    "Controller": true
 }

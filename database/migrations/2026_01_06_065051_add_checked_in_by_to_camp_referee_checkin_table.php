@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-              $table->string('jourcy_number')->nullable()->after('biography');
+        Schema::table('camp_referee_checkins', function (Blueprint $table) {
+            $table->string('checked_in_by')->nullable()->after('checked_in_at'); // 'self' or 'director'
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('jourcy_number');
+        Schema::table('camp_referee_checkins', function (Blueprint $table) {
+            $table->dropColumn('checked_in_by');
         });
     }
 };

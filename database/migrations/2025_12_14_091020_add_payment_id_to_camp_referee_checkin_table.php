@@ -18,6 +18,7 @@ return new class extends Migration
             $table->enum('registration_status', ['registered', 'checked_in'])->default('registered')->after('referee_id');
             $table->timestamp('registered_at')->nullable()->after('registration_status');
             $table->timestamp('checked_in_at')->nullable()->change();
+            $table->string('checked_in_by')->nullable(); // 'self' or 'director'
         });
     }
 

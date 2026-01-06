@@ -53,6 +53,9 @@ class RosterController extends Controller
                     'name' => $camp->director->first_name . ' ' . $camp->director->last_name,
                     'avatar' => $camp->director->avatar ? asset('' . $camp->director->avatar) : asset('default/profile.jpg'),
                     'email' => $camp->director->email,
+                    'phone' => $camp->director->phone ?? null,
+                    'address' => $camp->director->address ?? null,
+                    'biography' => $camp->director->biography ?? null,
                 ],
                 'schedule' => [
                     'locations' => $camp->schedule?->locations->map(function ($location) {
@@ -83,6 +86,10 @@ class RosterController extends Controller
                                         'crew_name' => $assignment->assignable->name ?? 'N/A',
                                         'position' => $assignment->position,
                                         'is_auto_assigned' => $assignment->is_auto_assigned,
+                                        'jourcy_number' => $assignment->jourcy_number ?? null,
+                                        'phone' => $assignment->phone ?? null,
+                                        'address' => $assignment->address ?? null,
+                                        'biography' => $assignment->biography ?? null,
                                     ];
                                 } else {
                                     // Individual referee
@@ -95,6 +102,10 @@ class RosterController extends Controller
                                         'email' => $referee->email,
                                         'position' => $assignment->position,
                                         'is_auto_assigned' => $assignment->is_auto_assigned,
+                                        'jourcy_number' => $assignment->jourcy_number ?? null,
+                                        'phone' => $assignment->phone ?? null,
+                                        'address' => $assignment->address ?? null,
+                                        'biography' => $assignment->biography ?? null,
                                     ];
                                 }
                             }),
@@ -113,9 +124,11 @@ class RosterController extends Controller
                         'avatar' => $referee->referee->avatar ? asset('' . $referee->referee->avatar) : asset('default/profile.jpg'),
                         'email' => $referee->referee->email,
                         'phone' => $referee->referee->phone,
-                        'address' => $referee->referee->address,
+                        'address' => $referee->referee->address ?? null,
+                        'jourcy_number' => $referee->referee->jourcy_number ?? null,
+                        'biography' => $referee->referee->biography ?? null,
                         'status' => $referee->registration_status,
-                        'assigned_games_count' => $assignedGamesCount, // NEW: Games count
+                        'assigned_games_count' => $assignedGamesCount,
                     ];
                 }),
                 'evaluators' => $camp->evaluations->pluck('evaluator')->unique('id')->map(function ($evaluator) {
@@ -126,6 +139,7 @@ class RosterController extends Controller
                         'email' => $evaluator->email,
                         'phone' => $evaluator->phone ?? null,
                         'address' => $evaluator->address ?? null,
+                        'biography' => $evaluator->biography ?? null,
                     ];
                 })->values(),
             ]
