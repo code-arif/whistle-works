@@ -364,6 +364,159 @@ class ScheduleController extends Controller
      * Get game slots grouped by date, time, and court
      * This is for the UI grid display
      */
+    // public function getGameSlots($campId, Request $request)
+    // {
+    //     $user = auth('api')->user();
+
+    //     $camp = Camp::where('director_id', $user->id)->find($campId);
+
+    //     if (!$camp) {
+    //         return $this->error('Camp not found.', null, 404);
+    //     }
+
+    //     $schedule = $camp->schedule;
+    //     if (!$schedule) {
+    //         return $this->error('Schedule not found.', null, 404);
+    //     }
+
+    //     // Get available dates
+    //     $availableDates = $schedule->timeRanges()
+    //         ->orderBy('date')
+    //         ->get()
+    //         ->map(function ($range) {
+    //             return [
+    //                 'date' => $range->date,
+    //                 'formatted' => Carbon::parse($range->date)->format('F d'),
+    //                 'day' => Carbon::parse($range->date)->format('l')
+    //             ];
+    //         });
+
+    //     // Get date from request or use first date
+    //     $selectedDate = $request->date ?? $availableDates->first()['date'];
+
+    //     // Get all game slots for selected date with proper eager loading
+    //     $gameSlots = GameSlot::where('schedule_id', $schedule->id)
+    //         ->where('game_date', $selectedDate)
+    //         ->with([
+    //             'location',
+    //             'slotAssignments.assignable' => function ($query) {
+    //                 // Eager load crew members when assignable is Crew
+    //                 $query->when(function ($q) {
+    //                     return $q->getModel() instanceof Crew;
+    //                 }, function ($q) {
+    //                     $q->with('members');
+    //                 });
+    //             }
+    //         ])
+    //         ->orderBy('start_time')
+    //         ->orderBy('court_number')
+    //         ->get();
+
+    //     $scheduleFormat = [
+    //         'schedule_id' => $schedule->id,
+    //         "max_referees_per_slot" => $schedule->max_referees_per_slot,
+    //         "status" => $schedule->status,
+    //     ];
+
+    //     $scheduleFormat = [
+    //         'schedule_id' => $schedule->id,
+    //         "max_referees_per_slot" => $schedule->max_referees_per_slot,
+    //         "status" => $schedule->status,
+    //     ];
+
+    //     // Group by time
+    //     $timeSlots = $gameSlots->groupBy('start_time')->map(function ($slots, $time) {
+    //         return [
+    //             'time' => Carbon::parse($time)->format('h:i A'),
+    //             'time_24h' => $time,
+    //             'courts' => $slots->map(function ($slot) {
+    //                 return [
+    //                     'slot_id' => $slot->id,
+    //                     'court_name' => $slot->court_name,
+    //                     'court_number' => $slot->court_number,
+    //                     'location' => $slot->location->location_name,
+    //                     'status' => $slot->status,
+    //                     'is_blocked' => $slot->is_block,
+    //                     'start_time' => $slot->start_time,
+    //                     'end_time' => $slot->end_time,
+    //                     'assignments_count' => $slot->slotAssignments->count(),
+    //                     'assignments' => $slot->slotAssignments->map(function ($assignment) {
+    //                         if ($assignment->assignment_type === 'crew') {
+    //                             $crew = $assignment->assignable;
+
+    //                             // Get crew members with their details
+    //                             $members = $crew->members->map(function ($member) {
+    //                                 return [
+    //                                     'referee_id' => $member->id,
+    //                                     'referee_name' => $member->first_name . ' ' . $member->last_name,
+    //                                     'avatar' => $member->avatar ? asset('' . $member->avatar) : asset('default/profile.jpg'),
+    //                                     'email' => $member->email,
+    //                                 ];
+    //                             });
+
+    //                             return [
+    //                                 'assignment_id' => $assignment->id,
+    //                                 'type' => 'crew',
+    //                                 'crew_id' => $crew->id,
+    //                                 'crew_name' => $crew->name ?? 'Unknown',
+    //                                 'member_count' => $crew->members->count(),
+    //                                 'members' => $members
+    //                             ];
+    //                         } else {
+    //                             // Individual referee
+    //                             return [
+    //                                 'type' => 'individual',
+    //                                 'assignment_id' => $assignment->id,
+    //                                 'referee_id' => $assignment->assignable->id,
+    //                                 'referee_name' => ($assignment->assignable->first_name ?? '') . ' ' . ($assignment->assignable->last_name ?? ''),
+    //                                 'avatar' => $assignment->assignable->avatar
+    //                                     ? asset('/' . $assignment->assignable->avatar)
+    //                                     : asset('default/profile.jpg'),
+    //                             ];
+    //                         }
+    //                     })
+    //                 ];
+    //             })->values()
+    //         ];
+    //     })->values();
+
+    //     // Get unique court names for header
+    //     $courtHeaders = $gameSlots->unique('court_name')
+    //         ->sortBy('court_number')
+    //         ->map(function ($slot) {
+    //             return [
+    //                 'location' => $slot->location->location_name,
+    //                 'court_name' => $slot->court_name,
+    //                 'court_number' => $slot->court_number
+    //             ];
+    //         })
+    //         ->values();
+
+    //     return $this->success(
+    //         'Game slots fetched successfully.',
+    //         [
+    //             'schedule' => $scheduleFormat,
+    //             'selected_date' => $selectedDate,
+    //             'selected_date_formatted' => Carbon::parse($selectedDate)->format('F d, Y'),
+    //             'available_dates' => $availableDates,
+    //             'court_headers' => $courtHeaders,
+    //             'time_slots' => $timeSlots,
+    //             'total_slots' => $gameSlots->count(),
+    //             'assigned_slots' => $gameSlots->where('status', 'assigned')->count()
+    //         ],
+    //         200
+    //     );
+    // }
+
+
+    /**
+     * Get game slots grouped by date, time, and court
+     * This is for the UI grid display
+     *
+     * Query params:
+     * - date: Filter by specific date (optional, defaults to first date)
+     * - location_id: Filter by specific location (optional, shows all if not provided)
+     */
     public function getGameSlots($campId, Request $request)
     {
         $user = auth('api')->user();
@@ -394,8 +547,35 @@ class ScheduleController extends Controller
         // Get date from request or use first date
         $selectedDate = $request->date ?? $availableDates->first()['date'];
 
-        // Get all game slots for selected date with proper eager loading
-        $gameSlots = GameSlot::where('schedule_id', $schedule->id)
+        // Get all available locations for this schedule
+        $availableLocations = $schedule->locations()
+            ->orderBy('location_name')
+            ->get()
+            ->map(function ($location) {
+                return [
+                    'location_id' => $location->id,
+                    'location_name' => $location->location_name,
+                    'court_count' => $location->court_count,
+                ];
+            });
+
+        // Get selected location from request (optional)
+        $selectedLocationId = $request->location_id ?? null;
+
+        // Validate location_id if provided
+        if ($selectedLocationId && !$availableLocations->contains('location_id', $selectedLocationId)) {
+            return $this->error(
+                'Invalid location ID.',
+                [
+                    'provided_location_id' => $selectedLocationId,
+                    'available_locations' => $availableLocations
+                ],
+                400
+            );
+        }
+
+        // Build query for game slots
+        $gameSlotsQuery = GameSlot::where('schedule_id', $schedule->id)
             ->where('game_date', $selectedDate)
             ->with([
                 'location',
@@ -407,21 +587,23 @@ class ScheduleController extends Controller
                         $q->with('members');
                     });
                 }
-            ])
+            ]);
+
+        // Apply location filter if provided
+        if ($selectedLocationId) {
+            $gameSlotsQuery->where('schedule_location_id', $selectedLocationId);
+        }
+
+        // Get filtered game slots
+        $gameSlots = $gameSlotsQuery
             ->orderBy('start_time')
             ->orderBy('court_number')
             ->get();
 
         $scheduleFormat = [
             'schedule_id' => $schedule->id,
-            "max_referees_per_slot" => $schedule->max_referees_per_slot,
-            "status" => $schedule->status,
-        ];
-
-        $scheduleFormat = [
-            'schedule_id' => $schedule->id,
-            "max_referees_per_slot" => $schedule->max_referees_per_slot,
-            "status" => $schedule->status,
+            'max_referees_per_slot' => $schedule->max_referees_per_slot,
+            'status' => $schedule->status,
         ];
 
         // Group by time
@@ -435,6 +617,7 @@ class ScheduleController extends Controller
                         'court_name' => $slot->court_name,
                         'court_number' => $slot->court_number,
                         'location' => $slot->location->location_name,
+                        'location_id' => $slot->location->id, // Added for reference
                         'status' => $slot->status,
                         'is_blocked' => $slot->is_block,
                         'start_time' => $slot->start_time,
@@ -480,17 +663,26 @@ class ScheduleController extends Controller
             ];
         })->values();
 
-        // Get unique court names for header
-        $courtHeaders = $gameSlots->unique('court_name')
+        // Get unique court names for header (filtered by location if applicable)
+        $courtHeaders = $gameSlots->unique(function ($slot) {
+            return $slot->location->id . '-' . $slot->court_number;
+        })
             ->sortBy('court_number')
             ->map(function ($slot) {
                 return [
                     'location' => $slot->location->location_name,
+                    'location_id' => $slot->location->id,
                     'court_name' => $slot->court_name,
                     'court_number' => $slot->court_number
                 ];
             })
             ->values();
+
+        // Get selected location details
+        $selectedLocation = null;
+        if ($selectedLocationId) {
+            $selectedLocation = $availableLocations->firstWhere('location_id', $selectedLocationId);
+        }
 
         return $this->success(
             'Game slots fetched successfully.',
@@ -499,6 +691,11 @@ class ScheduleController extends Controller
                 'selected_date' => $selectedDate,
                 'selected_date_formatted' => Carbon::parse($selectedDate)->format('F d, Y'),
                 'available_dates' => $availableDates,
+
+                // Location filter data
+                'available_locations' => $availableLocations,
+                'selected_location' => $selectedLocation,
+
                 'court_headers' => $courtHeaders,
                 'time_slots' => $timeSlots,
                 'total_slots' => $gameSlots->count(),
