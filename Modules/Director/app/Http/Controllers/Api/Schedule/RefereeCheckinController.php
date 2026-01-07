@@ -108,11 +108,11 @@ class RefereeCheckinController extends Controller
 
         if (!$paymentResult['success']) {
             return $this->error(
-                $paymentResult['error'],
                 [
                     'message' => $paymentResult['message'] ?? $paymentResult['error'],
                     'details' => $paymentResult['data'] ?? null
                 ],
+                $paymentResult['error'],
                 400
             );
         }
@@ -291,10 +291,10 @@ class RefereeCheckinController extends Controller
         // Check if camp has ended
         if ($camp->end_date < $today) {
             return $this->error(
-                'This camp has already ended. Check-in is no longer available.',
                 [
                     'camp_ended_on' => $camp->end_date,
                 ],
+                'This camp has already ended. Check-in is no longer available.',
                 400
             );
         }

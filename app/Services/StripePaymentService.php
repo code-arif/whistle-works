@@ -47,7 +47,7 @@ class StripePaymentService
         if ($recentAttempt) {
             return [
                 'can_pay' => false,
-                'reason' => 'Payment session already in progress',
+                'reason' => 'Please wait for 5 minutes before creating a new payment',
                 'session_id' => $recentAttempt->stripe_session_id,
                 'expires_at' => $recentAttempt->expires_at
             ];

@@ -174,6 +174,12 @@ class CampManageController extends Controller
                     $q->where('referee_id', $user->id);
                 }]);
             })
+
+            ->when($user->hasRole('evaluator'), function ($query) use ($user) {
+                $query->with(['evaluatorRegistrations' => function ($q) use ($user) {
+                    $q->where('evaluator_id', $user->id);
+                }]);
+            })
             ->find($id);
 
         if (!$camp) {

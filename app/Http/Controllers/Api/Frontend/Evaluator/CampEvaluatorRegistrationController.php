@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Frontend\Evaluator;
 
 use App\Models\User;
+use App\Models\CampPayment;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Modules\Director\Models\Camp;
@@ -101,6 +102,7 @@ class CampEvaluatorRegistrationController extends Controller
     public function myRegistrations(Request $request)
     {
         $user = auth('api')->user();
+        $today = now()->toDateString();
 
         if (!$user->hasRole('evaluator')) {
             return $this->error([], 'Only evaluators can access this.', 403);
@@ -115,6 +117,9 @@ class CampEvaluatorRegistrationController extends Controller
         }
 
         $registrations = $query->orderBy('registered_at', 'desc')
+            ->whereHas('camp', function ($query) use ($today) {
+                $query->where('end_date', '>=', $today);
+            })
             ->paginate($request->get('per_page', 12));
 
         return $this->success(
@@ -163,65 +168,40 @@ class CampEvaluatorRegistrationController extends Controller
     /**
      * Previous camp
      */
-    public function previousCamp()
+    public function previousCamp(Request $request)
     {
-        $evaluator = auth('api')->user();
+        $user = auth('api')->user();
         $today = now()->toDateString();
 
-        $registrations = CampEvaluatorRegistration::where('evaluator_id', $evaluator->id)
-            ->with([
-                'camp:id,camp_name,location,start_date,end_date,camp_logo,price',
-                'camp.sportsType:id,sports_name,icon',
-            ])
-            ->with('camp.director')
+        if (!$user->hasRole('evaluator')) {
+            return $this->error([], 'Only evaluators can access this.', 403);
+        }
+
+        $query = CampEvaluatorRegistration::with(['camp.director', 'approver'])
+            ->where('evaluator_id', $user->id);
+
+        // Filter by status
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $registrations = $query->orderBy('registered_at', 'desc')
             ->whereHas('camp', function ($query) use ($today) {
                 $query->where('end_date', '<', $today);
             })
-            ->latest('registered_at')
-            ->get();
-
-        return ($registrations);
-        exit();
-
-        $campIds = $registrations->pluck('camp_id')->toArray();
-        $payments = CampPayment::where('referee_id', $referee->id)
-            ->whereIn('camp_id', $campIds)
-            ->get()
-            ->keyBy('camp_id');
-
-        $formatted = $registrations->map(function ($registration) use ($payments) {
-            $camp = $registration->camp;
-            $payment = $payments->get($camp->id);
-
-            return [
-                'registration_id' => $registration->id,
-                'registration_status' => $registration->registration_status,
-                'registered_at' => $registration->registered_at->format('Y-m-d H:i:s'),
-                'checked_in_at' => $registration->checked_in_at?->format('Y-m-d H:i:s'),
-                'camp' => [
-                    'id' => $camp->id,
-                    'name' => $camp->camp_name,
-                    'location' => $camp->location,
-                    'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
-                    'start_date' => $camp->start_date,
-                    'end_date' => $camp->end_date,
-                    'status' => 'completed',
-                    'director' => [
-                        'id' => $camp->director->id,
-                        'name' => $camp->director->first_name . ' ' . $camp->director->last_name ?? null,
-                    ],
-                ],
-                'payment' => $payment ? [
-                    'amount' => $payment->amount,
-                    'paid_at' => $payment->paid_at->format('Y-m-d H:i:s'),
-                ] : null,
-            ];
-        });
+            ->paginate($request->get('per_page', 12));
 
         return $this->success(
-            'Previous camps fetched successfully.',
-            ['previous_camps' => $formatted],
-            200
+            'Registrations retrieved successfully.',
+            [
+                'registrations' => CampEvaluatorRegistrationResource::collection($registrations),
+                'pagination' => [
+                    'total' => $registrations->total(),
+                    'per_page' => $registrations->perPage(),
+                    'current_page' => $registrations->currentPage(),
+                    'last_page' => $registrations->lastPage(),
+                ],
+            ]
         );
     }
 }

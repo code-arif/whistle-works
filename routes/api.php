@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
 use App\Http\Controllers\Api\Frontend\CampRanking\CampRankingSettingsController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegistrationController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegisterManageForDirectorController;
+use App\Http\Controllers\Api\Frontend\Referee\EvaluatedRefereeController;
 
 // health check
 Route::get('/health-check', function () {
@@ -94,7 +95,11 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
     Route::get('/evaluator/{campId}/game-overview', [GameOverviewController::class, 'gameOverview']);
 });
 
+// Roster camp details
 Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetails'])->middleware('auth:api', 'role:director|referee|evaluator,api');
+
+// Referee histroy
+Route::get('/camp/{campId}/referee/{refereeId}/history', [RefereeEvaluationController::class, 'getRefereeEvaluationHistory'])->middleware('auth:api', 'role:director|referee|evaluator,api');
 
 /*
 |--------------------------------------------------------------------------
@@ -103,7 +108,7 @@ Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetai
 */
 Route::middleware(['auth:api', 'role:referee'])->group(function () {
     // Get my evaluations (for logged-in referee)
-    Route::get('/referee/my-evaluations', [RefereeEvaluationController::class, 'getRefereeEvaluations']); // working - get my evaluations
+    Route::get('/referee/my-evaluations/{campId}', [EvaluatedRefereeController::class, 'getRefereeEvaluations']);
 
     Route::prefix('referee')->group(function () {
         // Get all game slots where referee is assigned

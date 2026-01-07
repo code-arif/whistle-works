@@ -181,7 +181,7 @@ class CourtAssignController extends Controller
     public function assignCrew(Request $request, $slotId)
     {
         $request->validate([
-            'crew_id' => 'required|exists:crews,id|max:1',
+            'crew_id' => 'required|exists:crews,id',
         ]);
 
         $user = auth('api')->user();

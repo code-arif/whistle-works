@@ -445,39 +445,6 @@ class RefereeEvaluationController extends Controller
 
 
     /**
-     * Get all evaluations for a specific referee (for referee's own view)
-     */
-    public function getRefereeEvaluations(Request $request)
-    {
-        $user = auth('api')->user();
-
-        // Only referees can access their own evaluations
-        if (!$user->hasRole('referee')) {
-            return $this->error([], 'This endpoint is only for referees.', 403);
-        }
-
-        $evaluations = RefereeEvaluation::with(['evaluator', 'camp', 'gameSlot'])
-            ->forReferee($user->id)
-            ->submitted()
-            ->orderBy('submitted_at', 'desc')
-            ->paginate($request->get('per_page', 15));
-
-        return $this->success(
-            'Evaluations retrieved successfully.',
-            [
-                'evaluations' => RefereeEvaluationResource::collection($evaluations),
-                'pagination' => [
-                    'total'        => $evaluations->total(),
-                    'per_page'     => $evaluations->perPage(),
-                    'current_page' => $evaluations->currentPage(),
-                    'last_page'    => $evaluations->lastPage(),
-                ],
-            ]
-        );
-    }
-
-
-    /**
      * Get referee statistics (average scores, count, etc.)
      */
     public function getRefereeStats($refereeId)
@@ -601,5 +568,208 @@ class RefereeEvaluationController extends Controller
             'total' => $checkedInReferees->count(),
             'referees' => CheckedInRefereeResource::collection($checkedInReferees),
         ], 200);
+    }
+
+    /**
+     * Get evaluation history for a specific referee in a camp
+     * Shows all individual evaluations with details
+     */
+    public function getRefereeEvaluationHistory(Request $request, $campId, $refereeId)
+    {
+        $user = auth('api')->user();
+
+        if (!$user->hasAnyRole(['director', 'evaluator'])) {
+            return $this->error('Unauthorized access.', null, 403);
+        }
+
+        // Check if camp exists
+        $camp = Camp::find($campId);
+        if (!$camp) {
+            return $this->error([], 'Camp not found.', 404);
+        }
+
+        // Permission check for director
+        if ($user->hasRole('director') && $camp->director_id !== $user->id) {
+            return $this->error([], 'You can only view evaluations from your own camps.', 403);
+        }
+
+        // Permission check for evaluator
+        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
+            $registration = CampEvaluatorRegistration::where('camp_id', $campId)
+                ->where('evaluator_id', $user->id)
+                ->where('status', 'approved')
+                ->first();
+
+            if (!$registration) {
+                return $this->error([], 'You must be registered and approved for this camp.', 403);
+            }
+
+            if (!$registration->can_view_own_evaluations) {
+                return $this->error([], 'You do not have permission to view evaluations for this camp. Contact the director.', 403);
+            }
+        }
+
+        // Check if referee exists
+        $referee = User::find($refereeId);
+        if (!$referee || !$referee->hasRole('referee')) {
+            return $this->error([], 'Referee not found.', 404);
+        }
+
+        // Check if referee is registered for this camp
+        $checkin = CampRefereeCheckin::where('camp_id', $campId)
+            ->where('referee_id', $refereeId)
+            ->first();
+
+        if (!$checkin) {
+            return $this->error([], 'Referee is not registered for this camp.', 404);
+        }
+
+        // Get all evaluations for this referee in this camp
+        $query = RefereeEvaluation::with(['evaluator', 'gameSlot', 'recommendedLevels'])
+            ->where('camp_id', $campId)
+            ->where('referee_id', $refereeId)
+            ->orderBy('submitted_at', 'desc');
+
+        // Filter by status if provided
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // If evaluator (not director), show only their own evaluations
+        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
+            $query->where('evaluator_id', $user->id);
+        }
+
+        $perPage = $request->get('per_page', 15);
+        $evaluations = $query->paginate($perPage);
+
+        // Get all evaluations for summary (without pagination)
+        $allEvaluations = RefereeEvaluation::where('camp_id', $campId)
+            ->where('referee_id', $refereeId)
+            ->when($user->hasRole('evaluator') && !$user->hasRole('director'), function ($q) use ($user) {
+                $q->where('evaluator_id', $user->id);
+            })
+            ->get();
+
+        // Calculate overall statistics
+        $statistics = null;
+        if ($allEvaluations->isNotEmpty()) {
+            $avgCallAccuracy = round($allEvaluations->avg('call_accuracy'), 2);
+            $avgCommunication = round($allEvaluations->avg('communication_skills'), 2);
+            $avgConsistency = round($allEvaluations->avg('consistency_of_calls'), 2);
+            $avgCourtPosition = round($allEvaluations->avg('court_position_mechanics'), 2);
+            $avgFitness = round($allEvaluations->avg('fitness_mobility'), 2);
+            $avgGameAwareness = round($allEvaluations->avg('game_awareness'), 2);
+
+            $overallAvg = round(($avgCallAccuracy + $avgCommunication + $avgConsistency +
+                $avgCourtPosition + $avgFitness + $avgGameAwareness) / 6, 2);
+
+            // Get recommended levels count
+            $recommendedLevels = [];
+            foreach ($allEvaluations as $evaluation) {
+                if ($evaluation->relationLoaded('recommendedLevels')) {
+                    foreach ($evaluation->recommendedLevels as $level) {
+                        if (isset($recommendedLevels[$level->level])) {
+                            $recommendedLevels[$level->level]++;
+                        } else {
+                            $recommendedLevels[$level->level] = 1;
+                        }
+                    }
+                }
+            }
+
+            $recommendedLevelsFormatted = [];
+            foreach ($recommendedLevels as $level => $count) {
+                $recommendedLevelsFormatted[] = [
+                    'level' => $level,
+                    'count' => $count
+                ];
+            }
+
+            usort($recommendedLevelsFormatted, fn($a, $b) => $b['count'] <=> $a['count']);
+
+            $statistics = [
+                'total_evaluations' => $allEvaluations->count(),
+                'averages' => [
+                    'overall' => $overallAvg,
+                    'call_accuracy' => $avgCallAccuracy,
+                    'communication_skills' => $avgCommunication,
+                    'consistency_of_calls' => $avgConsistency,
+                    'court_position_mechanics' => $avgCourtPosition,
+                    'fitness_mobility' => $avgFitness,
+                    'game_awareness' => $avgGameAwareness,
+                ],
+                'recommended_levels' => $recommendedLevelsFormatted,
+                'highest_recommended_level' => !empty($recommendedLevelsFormatted)
+                    ? $recommendedLevelsFormatted[0]['level']
+                    : null,
+            ];
+        }
+
+        // Format individual evaluations
+        $formattedEvaluations = $evaluations->map(function ($evaluation) {
+            return [
+                'id' => $evaluation->id,
+                'evaluator' => [
+                    'id' => $evaluation->evaluator_id,
+                    'name' => $evaluation->evaluator->first_name . ' ' . $evaluation->evaluator->last_name,
+                    'email' => $evaluation->evaluator->email,
+                    'role' => $evaluation->evaluator->getRoleNames()->first(),
+                ],
+                'game_slot' => $evaluation->game_slot_id ? [
+                    'id' => $evaluation->gameSlot->id,
+                    'date' => $evaluation->gameSlot->game_date,
+                    'time' => $evaluation->gameSlot->start_time . ' - ' . $evaluation->gameSlot->end_time,
+                    'court' => $evaluation->gameSlot->court_name ?? 'N/A',
+                ] : null,
+                'scores' => [
+                    'call_accuracy' => $evaluation->call_accuracy,
+                    'communication_skills' => $evaluation->communication_skills,
+                    'consistency_of_calls' => $evaluation->consistency_of_calls,
+                    'court_position_mechanics' => $evaluation->court_position_mechanics,
+                    'fitness_mobility' => $evaluation->fitness_mobility,
+                    'game_awareness' => $evaluation->game_awareness,
+                ],
+                'total_score' => (float) $evaluation->total_score,
+                'average_score' => (float) $evaluation->average_score,
+                'max_score' => 60,
+                'percentage' => $evaluation->total_score ? round(($evaluation->total_score / 60) * 100, 2) : 0,
+                'recommended_level' => $evaluation->relationLoaded('recommendedLevels') && $evaluation->recommendedLevels->isNotEmpty()
+                    ? $evaluation->recommendedLevels->first()->level
+                    : null,
+                'private_comments' => $evaluation->private_comments,
+                'referee_feedback' => $evaluation->referee_feedback,
+                'status' => $evaluation->status,
+                'submitted_at' => $evaluation->submitted_at ? $evaluation->submitted_at->format('Y-m-d H:i:s') : null,
+                'created_at' => $evaluation->created_at->format('Y-m-d H:i:s'),
+            ];
+        });
+
+        return $this->success(
+            'Referee evaluation history retrieved successfully.',
+            [
+                'camp' => [
+                    'id' => $camp->id,
+                    'name' => $camp->camp_name,
+                    'location' => $camp->location,
+                    'start_date' => $camp->start_date,
+                    'end_date' => $camp->end_date,
+                ],
+                'referee' => [
+                    'id' => $referee->id,
+                    'name' => $referee->first_name . ' ' . $referee->last_name,
+                    'email' => $referee->email,
+                    'avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
+                ],
+                'statistics' => $statistics,
+                'evaluations' => $formattedEvaluations,
+                'pagination' => [
+                    'total' => $evaluations->total(),
+                    'per_page' => $evaluations->perPage(),
+                    'current_page' => $evaluations->currentPage(),
+                    'last_page' => $evaluations->lastPage(),
+                ],
+            ]
+        );
     }
 }

@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\SportsType;
 use App\Models\RefereeEvaluation;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\CampEvaluatorRegistration;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -111,6 +112,11 @@ class Camp extends Model
         })->get();
     }
 
+    // Camp.php model এ
+    public function evaluatorRegistrations()
+    {
+        return $this->hasMany(CampEvaluatorRegistration::class, 'camp_id');
+    }
 
     /**
      * Boot method - Automatically add extra price on camp creation

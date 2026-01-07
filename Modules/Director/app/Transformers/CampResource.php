@@ -10,8 +10,18 @@ class CampResource extends JsonResource
     public function toArray($request)
     {
         $checkin = null;
-        if (auth('api')->check() && auth('api')->user()->hasRole('referee')) {
-            $checkin = $this->checkedInReferees->first();
+        $evaluatorRegistration = null;
+
+        if (auth('api')->check()) {
+            $user = auth('api')->user();
+
+            if ($user->hasRole('referee')) {
+                $checkin = $this->checkedInReferees->first();
+            }
+
+            if ($user->hasRole('evaluator')) {
+                $evaluatorRegistration = $this->evaluatorRegistrations->first();
+            }
         }
 
         return [
@@ -50,7 +60,7 @@ class CampResource extends JsonResource
                 'phone'      => $this->director->phone ?? null,
                 'address'    => $this->director->address ?? null,
             ],
-            
+
             $this->mergeWhen(
                 auth('api')->check() && auth('api')->user()->hasRole('referee'),
                 function () use ($checkin) {
@@ -58,6 +68,22 @@ class CampResource extends JsonResource
                         'referee_registration_status' => optional($checkin)->registration_status,
                         'registered_at'               => optional($checkin)->registered_at,
                         'checked_in_at'               => optional($checkin)->checked_in_at,
+                    ];
+                }
+            ),
+
+            // Evaluator registration status
+            $this->mergeWhen(
+                auth('api')->check() && auth('api')->user()->hasRole('evaluator'),
+                function () use ($evaluatorRegistration) {
+                    return [
+                        'evaluator_registration_status' => optional($evaluatorRegistration)->status,
+                        'registration_note'             => optional($evaluatorRegistration)->registration_note,
+                        'rejection_reason'              => optional($evaluatorRegistration)->rejection_reason,
+                        'registered_at'                 => optional($evaluatorRegistration)->registered_at,
+                        'approved_at'                   => optional($evaluatorRegistration)->approved_at,
+                        'rejected_at'                   => optional($evaluatorRegistration)->rejected_at,
+                        'can_view_own_evaluations'      => optional($evaluatorRegistration)->can_view_own_evaluations ?? false,
                     ];
                 }
             ),
