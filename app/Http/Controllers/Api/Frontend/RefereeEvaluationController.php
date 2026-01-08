@@ -212,16 +212,16 @@ class RefereeEvaluationController extends Controller
             $referee = $refereeEvaluations->first()->referee;
 
             // Calculate averages for this referee
-            $avgCallAccuracy = round($refereeEvaluations->avg('call_accuracy'), 2);
-            $avgCommunication = round($refereeEvaluations->avg('communication_skills'), 2);
-            $avgConsistency = round($refereeEvaluations->avg('consistency_of_calls'), 2);
-            $avgCourtPosition = round($refereeEvaluations->avg('court_position_mechanics'), 2);
-            $avgFitness = round($refereeEvaluations->avg('fitness_mobility'), 2);
-            $avgGameAwareness = round($refereeEvaluations->avg('game_awareness'), 2);
+            $avgCallAccuracy = round($refereeEvaluations->avg('call_accuracy'), 3);
+            $avgCommunication = round($refereeEvaluations->avg('communication_skills'), 3);
+            $avgConsistency = round($refereeEvaluations->avg('consistency_of_calls'), 3);
+            $avgCourtPosition = round($refereeEvaluations->avg('court_position_mechanics'), 3);
+            $avgFitness = round($refereeEvaluations->avg('fitness_mobility'), 3);
+            $avgGameAwareness = round($refereeEvaluations->avg('game_awareness'), 3);
 
             // Calculate overall average
             $overallAvg = round(($avgCallAccuracy + $avgCommunication + $avgConsistency +
-                $avgCourtPosition + $avgFitness + $avgGameAwareness) / 6, 2);
+                $avgCourtPosition + $avgFitness + $avgGameAwareness) / 6, 3);
 
             // Get all recommended levels with count
             $recommendedLevels = [];
