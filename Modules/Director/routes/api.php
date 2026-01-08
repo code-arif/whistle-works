@@ -113,6 +113,9 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
 
         // Input jurcy number for a referee
         Route::patch('camp/{campId}/referee/{refereeId}/update-jourcy-number', [RefereeManageController::class, 'updateRefereeJourcyNumber']);
+
+        // Remote referee from camp
+        Route::delete('camps/{campId}/referees/{refereeId}',[RefereeManageController::class, 'removeRefereeFromCamp']);
     });
 });
 

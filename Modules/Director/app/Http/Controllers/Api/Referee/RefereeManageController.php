@@ -5,6 +5,7 @@ namespace Modules\Director\Http\Controllers\Api\Referee;
 use Exception;
 use Carbon\Carbon;
 use App\Models\User;
+use App\Models\CampPayment;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Modules\Director\Models\Camp;
@@ -390,5 +391,102 @@ class RefereeManageController extends Controller
                 500
             );
         }
+    }
+
+
+    /**
+     * Director: Remove a referee from a camp (delete registration/check-in)
+     */
+    public function removeRefereeFromCamp(Request $request, $campId, $refereeId)
+    {
+        $director = auth('api')->user();
+
+        // Find the camp and verify ownership
+        $camp = Camp::where('id', $campId)
+            ->where('director_id', $director->id) // Important: only his own camp
+            ->where('status', 'active')
+            ->first();
+
+        if (!$camp) {
+            return $this->error('Camp not found or you are not authorized to manage this camp.', null, 404);
+        }
+
+        // Find the registration
+        $registration = CampRefereeCheckin::where('camp_id', $campId)
+            ->where('referee_id', $refereeId)
+            ->first();
+
+        if (!$registration) {
+            return $this->error('This referee is not registered for this camp.', null, 404);
+        }
+
+        // Optional: Prevent removal after check-in
+        // if ($registration->registration_status === 'checked_in') {
+        //     return $this->error('Cannot remove a referee who has already checked in.', null, 403);
+        // }
+
+        // Optional: Refund logic (Stripe refund)
+        $refunded = false;
+        $refundMessage = null;
+
+        $payment = CampPayment::where('camp_id', $campId)
+            ->where('referee_id', $refereeId)
+            ->where('status', 'succeeded')
+            ->first();
+
+        // if ($payment && $payment->stripe_payment_intent_id) {
+        //     try {
+        //         $refundResult = $this->stripeService->refundPayment($payment->stripe_payment_intent_id);
+
+        //         if ($refundResult['success']) {
+        //             $payment->update([
+        //                 'status' => 'refunded',
+        //                 'refunded_at' => now(),
+        //             ]);
+        //             $refunded = true;
+        //         } else {
+        //             $refundMessage = $refundResult['error'] ?? 'Refund failed';
+        //             // তবুও registration delete করবো? নাকি stop করবো?
+        //             // এখানে তুমি decide করো। আমি delete করছি, কিন্তু message দিচ্ছি
+        //         }
+        //     } catch (Exception $e) {
+        //         Log::error('Stripe refund failed during referee removal', [
+        //             'payment_id' => $payment->id,
+        //             'error' => $e->getMessage()
+        //         ]);
+        //         $refundMessage = 'Refund attempt failed: ' . $e->getMessage();
+        //     }
+        // }
+
+        // Delete the registration record
+        $registration->delete();
+
+        // Optional: Send notification email to referee
+        $referee = User::find($refereeId);
+        if ($referee && $referee->email) {
+            try {
+                // Mail::to($referee->email)->send(
+                //     new CampRegistrationCancelledMail($director, $referee, $camp, $refunded)
+                // );
+            } catch (Exception $e) {
+                Log::warning('Failed to send cancellation email to referee', [
+                    'referee_id' => $referee->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return $this->success(
+            'Referee successfully removed from the camp.',
+            [
+                'camp_id' => $camp->id,
+                'camp_name' => $camp->camp_name,
+                'referee_id' => $refereeId,
+                'refunded' => $refunded,
+                'refund_message' => $refundMessage,
+                'removed_at' => now()->format('Y-m-d H:i:s'),
+            ],
+            200
+        );
     }
 }
