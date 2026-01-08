@@ -654,15 +654,15 @@ class RefereeEvaluationController extends Controller
         // Calculate overall statistics
         $statistics = null;
         if ($allEvaluations->isNotEmpty()) {
-            $avgCallAccuracy = round($allEvaluations->avg('call_accuracy'), 2);
-            $avgCommunication = round($allEvaluations->avg('communication_skills'), 2);
-            $avgConsistency = round($allEvaluations->avg('consistency_of_calls'), 2);
-            $avgCourtPosition = round($allEvaluations->avg('court_position_mechanics'), 2);
-            $avgFitness = round($allEvaluations->avg('fitness_mobility'), 2);
-            $avgGameAwareness = round($allEvaluations->avg('game_awareness'), 2);
+            $avgCallAccuracy = round($allEvaluations->avg('call_accuracy'), 3);
+            $avgCommunication = round($allEvaluations->avg('communication_skills'), 3);
+            $avgConsistency = round($allEvaluations->avg('consistency_of_calls'), 3);
+            $avgCourtPosition = round($allEvaluations->avg('court_position_mechanics'), 3);
+            $avgFitness = round($allEvaluations->avg('fitness_mobility'), 3);
+            $avgGameAwareness = round($allEvaluations->avg('game_awareness'), 3);
 
             $overallAvg = round(($avgCallAccuracy + $avgCommunication + $avgConsistency +
-                $avgCourtPosition + $avgFitness + $avgGameAwareness) / 6, 2);
+                $avgCourtPosition + $avgFitness + $avgGameAwareness) / 6, 3);
 
             // Get recommended levels count
             $recommendedLevels = [];
