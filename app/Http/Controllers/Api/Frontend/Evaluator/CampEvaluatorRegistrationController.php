@@ -192,7 +192,7 @@ class CampEvaluatorRegistrationController extends Controller
             ->paginate($request->get('per_page', 12));
 
         return $this->success(
-            'Registrations retrieved successfully.',
+            'Previous retrieved successfully.',
             [
                 'registrations' => CampEvaluatorRegistrationResource::collection($registrations),
                 'pagination' => [

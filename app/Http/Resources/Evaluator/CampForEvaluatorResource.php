@@ -24,7 +24,7 @@ class CampForEvaluatorResource extends JsonResource
             'director' => $this->when($this->relationLoaded('director'), function () {
                 return [
                     'id' => $this->director->id,
-                    'full_name' => $this->director->first_name . ' ' . $this->director->last_name,
+                    'name' => $this->director->first_name . ' ' . $this->director->last_name,
                     'email' => $this->director->email,
                     'phone' => $this->director->phone,
                     'avatar' => $this->director->avatar ? asset($this->director->avatar) : asset('default/profile.jpg'),

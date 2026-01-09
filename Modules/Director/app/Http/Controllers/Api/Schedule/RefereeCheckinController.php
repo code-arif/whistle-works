@@ -637,10 +637,13 @@ class RefereeCheckinController extends Controller
     /**
      * Get previous/completed camps
      */
-    public function getPreviousCamps()
+    public function getPreviousCamps(Request $request)
     {
         $referee = auth('api')->user();
         $today = now()->toDateString();
+
+        // Get per_page from request, default 10
+        $perPage = $request->get('per_page', 10);
 
         $registrations = CampRefereeCheckin::where('referee_id', $referee->id)
             ->with([
@@ -652,7 +655,7 @@ class RefereeCheckinController extends Controller
                 $query->where('end_date', '<', $today);
             })
             ->latest('registered_at')
-            ->get();
+            ->paginate($perPage);
 
         $campIds = $registrations->pluck('camp_id')->toArray();
         $payments = CampPayment::where('referee_id', $referee->id)
@@ -660,7 +663,7 @@ class RefereeCheckinController extends Controller
             ->get()
             ->keyBy('camp_id');
 
-        $formatted = $registrations->map(function ($registration) use ($payments) {
+        $formatted = $registrations->getCollection()->map(function ($registration) use ($payments) {
             $camp = $registration->camp;
             $payment = $payments->get($camp->id);
 
@@ -678,8 +681,8 @@ class RefereeCheckinController extends Controller
                     'end_date' => $camp->end_date,
                     'status' => 'completed',
                     'director' => [
-                        'id' => $camp->director->id,
-                        'name' => $camp->director->first_name . ' ' . $camp->director->last_name ?? null,
+                        'id' => $camp->director->id ?? null,
+                        'name' => trim(($camp->director->first_name ?? '') . ' ' . ($camp->director->last_name ?? '')),
                     ],
                 ],
                 'payment' => $payment ? [
@@ -691,7 +694,15 @@ class RefereeCheckinController extends Controller
 
         return $this->success(
             'Previous camps fetched successfully.',
-            ['previous_camps' => $formatted],
+            [
+                'previous_camps' => $formatted->values(), // ✔️ Collection data
+                'pagination' => [
+                    'total' => $registrations->total(),
+                    'per_page' => $registrations->perPage(),
+                    'current_page' => $registrations->currentPage(),
+                    'last_page' => $registrations->lastPage(),
+                ],
+            ],
             200
         );
     }

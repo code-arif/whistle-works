@@ -101,6 +101,9 @@ Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetai
 // Referee histroy
 Route::get('/camp/{campId}/referee/{refereeId}/history', [RefereeEvaluationController::class, 'getRefereeEvaluationHistory'])->middleware('auth:api', 'role:director|referee|evaluator,api');
 
+// Referee histroy
+Route::get('/referee/evaluation/camp/{campId}', [RefereeEvaluationController::class, 'getEvaluationsByCamp'])->middleware('auth:api', 'role:director|referee|evaluator,api');
+
 /*
 |--------------------------------------------------------------------------
 | Referee API Routes
@@ -113,6 +116,8 @@ Route::middleware(['auth:api', 'role:referee'])->group(function () {
     Route::prefix('referee')->group(function () {
         // Get all game slots where referee is assigned
         Route::get('/my-assigned-slots', [RefereeAssignmentController::class, 'getMyAssignedSlots']); // done
+
+        Route::get('/camp/{campId}/assigned-slots', [RefereeAssignmentController::class, 'getCampAssignedSlots']);
 
         // Get specific game slot details with all assigned referees
         Route::get('/game-slot/{gameSlotId}', [RefereeAssignmentController::class, 'getGameSlotDetails']);
@@ -169,8 +174,10 @@ Route::middleware(['auth:api', 'role:director,api'])->group(function () {
         Route::put('/', [CampRankingSettingsController::class, 'updateRankingSettings']);
 
         // Toggle individual evaluator permission
-        Route::put('/evaluator/{evaluatorId}/toggle-permission',
-            [CampRankingSettingsController::class, 'toggleEvaluatorPermission']);
+        Route::put(
+            '/evaluator/{evaluatorId}/toggle-permission',
+            [CampRankingSettingsController::class, 'toggleEvaluatorPermission']
+        );
     });
 });
 

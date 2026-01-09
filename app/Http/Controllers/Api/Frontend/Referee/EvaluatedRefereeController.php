@@ -88,16 +88,12 @@ class EvaluatedRefereeController extends Controller
         $overallPercentage = round(($overallAvg / 10) * 100, 0);
 
         // Determine performance rating
-        $performanceRating = '';
-        if ($overallAvg >= 9) {
-            $performanceRating = 'Excellent';
-        } elseif ($overallAvg >= 7) {
-            $performanceRating = 'Good';
-        } elseif ($overallAvg >= 5) {
-            $performanceRating = 'Average';
-        } else {
-            $performanceRating = 'Needs Improvement';
-        }
+        $performanceRating = $this->getPerformanceRating($overallAvg);
+
+        // ============================================
+        // CALCULATE RANKING POSITION
+        // ============================================
+        $rankingData = $this->calculateRefereeRanking($campId, $user->id, $overallAvg);
 
         // Get recommended levels with count
         $recommendedLevels = [];
@@ -167,6 +163,7 @@ class EvaluatedRefereeController extends Controller
                 'rating' => $performanceRating,
                 'total_evaluations' => $evaluations->count(),
             ],
+            'ranking' => $rankingData,
             'performance_breakdown' => [
                 'call_accuracy' => [
                     'score' => $avgCallAccuracy,
@@ -204,26 +201,16 @@ class EvaluatedRefereeController extends Controller
 
         // If ranking numbers are hidden, remove numerical scores
         if ($camp->hide_ranking_numbers_from_referees) {
-            // Remove specific scores, keep only ratings
-            $response['overall_performance'] = [
-                'rating' => $performanceRating,
-                'total_evaluations' => $evaluations->count(),
-            ];
+            // Hide ranking position
+            $response['ranking'] = null;
 
-            // Remove breakdown scores
-            $response['performance_breakdown'] = [
-                'call_accuracy' => ['rating' => $this->getPerformanceRating($avgCallAccuracy)],
-                'communication_skills' => ['rating' => $this->getPerformanceRating($avgCommunication)],
-                'consistency_of_calls' => ['rating' => $this->getPerformanceRating($avgConsistency)],
-                'court_position_mechanics' => ['rating' => $this->getPerformanceRating($avgCourtPosition)],
-                'fitness_mobility' => ['rating' => $this->getPerformanceRating($avgFitness)],
-                'game_awareness' => ['rating' => $this->getPerformanceRating($avgGameAwareness)],
-            ];
+            // Keep scores but you can modify this based on requirements
+            $response['overall_performance']['score'] = $overallAvg;
 
             // Remove scores from recent feedback
             $response['recent_feedback'] = $recentFeedback->map(function ($feedback) {
-                unset($feedback['total_score']);
-                unset($feedback['max_score']);
+                // unset($feedback['total_score']);
+                // unset($feedback['max_score']);
                 return $feedback;
             });
         }
@@ -232,6 +219,75 @@ class EvaluatedRefereeController extends Controller
             'Your evaluations retrieved successfully.',
             $response
         );
+    }
+
+    /**
+     * Calculate referee's ranking position in the camp
+     *
+     * @param int $campId
+     * @param int $refereeId
+     * @param float $currentRefereeAvg - Current referee's overall average
+     * @return array
+     */
+    private function calculateRefereeRanking($campId, $refereeId, $currentRefereeAvg)
+    {
+        // Get all referees who have been evaluated in this camp
+        $allRefereeScores = RefereeEvaluation::select('referee_id')
+            ->selectRaw('
+                ROUND(
+                    (AVG(call_accuracy) +
+                     AVG(communication_skills) +
+                     AVG(consistency_of_calls) +
+                     AVG(court_position_mechanics) +
+                     AVG(fitness_mobility) +
+                     AVG(game_awareness)) / 6,
+                    1
+                ) as overall_average
+            ')
+            ->where('camp_id', $campId)
+            ->where('status', 'submitted')
+            ->groupBy('referee_id')
+            ->having('overall_average', '>', 0)
+            ->orderByDesc('overall_average')
+            ->get();
+
+        $totalReferees = $allRefereeScores->count();
+
+        if ($totalReferees == 0) {
+            return null;
+        }
+
+        // Find current referee's position
+        $position = 1;
+        foreach ($allRefereeScores as $index => $score) {
+            if ($score->referee_id == $refereeId) {
+                $position = $index + 1;
+                break;
+            }
+        }
+
+        // Calculate percentile (higher is better)
+        $percentile = 100 - (($position - 1) / $totalReferees * 100);
+
+        // Determine ranking category
+        $rankingCategory = '';
+        if ($percentile >= 90) {
+            $rankingCategory = 'Top 10%';
+        } elseif ($percentile >= 75) {
+            $rankingCategory = 'Top 25%';
+        } elseif ($percentile >= 50) {
+            $rankingCategory = 'Top 50%';
+        } else {
+            $rankingCategory = 'Below Average';
+        }
+
+        return [
+            'position' => $position,
+            // 'total_referees' => $totalReferees,
+            // 'percentile' => round($percentile, 1),
+            // 'category' => $rankingCategory,
+            // 'message' => "You ranked #{$position} out of {$totalReferees} referees",
+        ];
     }
 
     /**

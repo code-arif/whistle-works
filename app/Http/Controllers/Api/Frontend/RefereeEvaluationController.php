@@ -161,7 +161,7 @@ class RefereeEvaluationController extends Controller
     {
         $user = auth('api')->user();
 
-        if (!$user->hasAnyRole(['director', 'evaluator'])) {
+        if (!$user->hasAnyRole(['director', 'evaluator', 'referee'])) {
             return $this->error('Unauthorized access.', null, 403);
         }
 
@@ -189,17 +189,22 @@ class RefereeEvaluationController extends Controller
             }
         }
 
+        if ($user->hasRole('referee') && !$user->hasRole('director')) {
+            $referee_registration = CampRefereeCheckin::where('camp_id', $campId)
+                ->where('referee_id', $user->id)->first();
+
+            if (!$referee_registration) {
+                return $this->error([], 'You must be registered for this camp.', 403);
+            }
+
+            if ($camp->publish_ranking_for_referees == false) {
+                return $this->error([], 'You do not have permission to view evaluations for this camp. Contact the director.', 403);
+            }
+        }
+
         // Get all evaluations with relationships
         $query = RefereeEvaluation::with(['referee', 'evaluator', 'gameSlot', 'recommendedLevels'])
             ->forCamp($campId);
-
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
-            $query->where('evaluator_id', $user->id);
-        }
 
         $evaluations = $query->orderBy('created_at', 'asc')->get();
 

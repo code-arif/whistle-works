@@ -10,6 +10,7 @@ use Stripe\Checkout\Session;
 use Modules\Director\Models\Camp;
 use App\Models\CampPaymentAttempt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class StripePaymentService
 {
@@ -47,7 +48,7 @@ class StripePaymentService
         if ($recentAttempt) {
             return [
                 'can_pay' => false,
-                'reason' => 'Please wait for 5 minutes before creating a new payment',
+                'reason' => 'Please wait for 1 minutes before creating a new payment',
                 'session_id' => $recentAttempt->stripe_session_id,
                 'expires_at' => $recentAttempt->expires_at
             ];
@@ -74,6 +75,32 @@ class StripePaymentService
         }
 
         return ['can_pay' => true];
+    }
+
+    /**
+     * Get valid image URL for Stripe
+     */
+    private function getValidImageUrl(?string $logoPath): ?string
+    {
+        if (!$logoPath) {
+            return null;
+        }
+
+        // Generate full URL
+        $fullUrl = url($logoPath);
+
+        // Check if URL is valid and uses HTTPS in production
+        $isHttps = str_starts_with($fullUrl, 'https://');
+        $isLocalhost = str_contains($fullUrl, 'localhost') || str_contains($fullUrl, '127.0.0.1');
+
+        // In production, only return HTTPS URLs
+        // In local development, skip image to avoid Stripe errors
+        if (app()->environment('production')) {
+            return $isHttps ? $fullUrl : null;
+        }
+
+        // In local/staging, don't send image URL as Stripe won't accept it
+        return null;
     }
 
     /**
@@ -110,17 +137,27 @@ class StripePaymentService
                 $description .= " | {$camp->start_date} to {$camp->end_date}";
             }
 
+            // Get valid image URL (only for production HTTPS)
+            $imageUrl = $this->getValidImageUrl($camp->camp_logo);
+
+            // Prepare product data
+            $productData = [
+                'name' => "Camp Registration: {$camp->camp_name}",
+                'description' => $description,
+            ];
+
+            // Only add images if we have a valid URL
+            if ($imageUrl) {
+                $productData['images'] = [$imageUrl];
+            }
+
             // Create Stripe Checkout Session
             $session = Session::create([
                 'payment_method_types' => ['card'],
                 'line_items' => [[
                     'price_data' => [
                         'currency' => 'usd',
-                        'product_data' => [
-                            'name' => "Camp Registration: {$camp->camp_name}",
-                            'description' => $description,
-                            'images' => $camp->camp_logo ? [url($camp->camp_logo)] : []
-                        ],
+                        'product_data' => $productData,
                         'unit_amount' => (int)($camp->price * 100),
                     ],
                     'quantity' => 1,
@@ -159,6 +196,15 @@ class StripePaymentService
             ];
         } catch (Exception $e) {
             DB::rollBack();
+
+            // Log the error for debugging
+            Log::error('Stripe payment session creation failed', [
+                'camp_id' => $camp->id,
+                'referee_id' => $referee->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return [
                 'success' => false,
                 'error' => 'Failed to create payment session',
