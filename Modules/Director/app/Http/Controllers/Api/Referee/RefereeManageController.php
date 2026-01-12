@@ -286,7 +286,7 @@ class RefereeManageController extends Controller
         $director = auth('api')->user();
 
         $request->validate([
-            'jourcy_number' => 'required|string|max:3',
+            'jourcy_number' => 'nullable|string|max:3',
         ]);
 
         // Verify camp ownership
@@ -316,21 +316,21 @@ class RefereeManageController extends Controller
         }
 
         // Check if jourcy number already exists for another user
-        $existingUser = User::where('jourcy_number', $request->jourcy_number)
-            ->where('id', '!=', $refereeId)
-            ->first();
+        // $existingUser = User::where('jourcy_number', $request->jourcy_number)
+        //     ->where('id', '!=', $refereeId)
+        //     ->first();
 
-        if ($existingUser) {
-            return $this->error(
-                'This jourcy number is already assigned to another referee.',
-                [
-                    'jourcy_number' => $request->jourcy_number,
-                    'assigned_to' => $existingUser->first_name . ' ' . $existingUser->last_name,
-                    'assigned_to_email' => $existingUser->email,
-                ],
-                400
-            );
-        }
+        // if ($existingUser) {
+        //     return $this->error(
+        //         [
+        //             'jourcy_number' => $request->jourcy_number,
+        //             'assigned_to' => $existingUser->first_name . ' ' . $existingUser->last_name,
+        //             'assigned_to_email' => $existingUser->email,
+        //         ],
+        //         'This jourcy number is already assigned to another referee.',
+        //         400
+        //     );
+        // }
 
         DB::beginTransaction();
         try {
@@ -386,8 +386,8 @@ class RefereeManageController extends Controller
             ]);
 
             return $this->error(
-                'Failed to update jourcy number.',
                 ['error' => $e->getMessage()],
+                'Failed to update jourcy number.',
                 500
             );
         }
