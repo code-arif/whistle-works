@@ -74,7 +74,7 @@ class RefereeCheckinController extends Controller
                 'camp_id' => $campId,
                 'referee_id' => $referee->id,
                 'registration_status' => 'registered',
-                'registered_at' => $payment->paid_at, // Use payment time as registration time
+                'registered_at' => $payment->paid_at,
                 'checked_in_at' => null,
             ]);
 

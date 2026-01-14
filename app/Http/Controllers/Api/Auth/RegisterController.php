@@ -201,6 +201,9 @@ class RegisterController extends Controller
                     "role"       => $user->role,
                     "biography"  => $user->biography,
                 ],
+                'token'      => $token,
+                'token_type' => 'bearer',
+                'expires_in' => $expires_in,
                 "code" => 200
             ], 200);
         } catch (Exception $e) {

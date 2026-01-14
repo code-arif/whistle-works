@@ -33,9 +33,9 @@ class EvaluatedRefereeController extends Controller
         }
 
         // Check if ranking is published for referees
-        if (!$camp->publish_ranking_for_referees) {
-            return $this->error([], 'Evaluations are not yet published for referees in this camp.', 403);
-        }
+        // if (!$camp->publish_ranking_for_referees) {
+        //     return $this->error([], 'Evaluations are not yet published for referees in this camp.', 403);
+        // }
 
         // Check if referee is registered for this camp
         $checkin = CampRefereeCheckin::where('camp_id', $campId)

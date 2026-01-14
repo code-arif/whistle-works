@@ -19,6 +19,185 @@ class RefereeAssignmentController extends Controller
      * Get all game slots assigned to referee for a specific camp
      * Camp-specific assignments with grouped referees
      */
+    // public function getCampAssignedSlots(Request $request, $campId)
+    // {
+    //     $referee = auth('api')->user();
+
+    //     // Only referees can access this endpoint
+    //     if (!$referee->hasRole('referee')) {
+    //         return $this->error('Only referees can access this endpoint.', null, 403);
+    //     }
+
+    //     // Check if camp exists
+    //     $camp = Camp::find($campId);
+    //     if (!$camp) {
+    //         return $this->error('Camp not found.', null, 404);
+    //     }
+
+    //     // Check if referee is registered for this camp
+    //     $checkin = CampRefereeCheckin::where('camp_id', $campId)
+    //         ->where('referee_id', $referee->id)
+    //         ->first();
+
+    //     if (!$checkin) {
+    //         return $this->error('You are not registered for this camp.', null, 403);
+    //     }
+
+    //     // Get per_page from request, default 15
+    //     $perPage = $request->get('per_page', 15);
+    //     $today = now()->toDateString();
+
+    //     // Get all game slot assignments for this referee in this specific camp
+    //     $assignments = GameSlotAssignment::with([
+    //         'gameSlot.location',
+    //         'gameSlot.schedule',
+    //         'gameSlot.slotAssignments.assignable'
+    //     ])
+    //         ->where('assignable_type', User::class)
+    //         ->where('assignable_id', $referee->id)
+    //         ->where('assignment_type', 'individual')
+    //         ->whereHas('gameSlot.schedule', function ($query) use ($campId) {
+    //             $query->where('camp_id', $campId);
+    //         })
+    //         ->whereHas('gameSlot', function ($query) use ($today) {
+    //             // Order by closest to today (upcoming first, then past)
+    //             $query->orderByRaw("ABS(DATEDIFF(game_date, ?)) ASC", [$today])
+    //                 ->orderBy('start_time', 'asc');
+    //         })
+    //         ->orderBy('assigned_at', 'desc')
+    //         ->paginate($perPage);
+
+    //     if ($assignments->isEmpty()) {
+    //         return $this->success('No game slots assigned to you in this camp yet.', [
+    //             'camp' => [
+    //                 'id' => $camp->id,
+    //                 'name' => $camp->camp_name,
+    //                 'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
+    //                 'location' => $camp->location,
+    //                 'start_date' => $camp->start_date,
+    //                 'end_date' => $camp->end_date,
+    //             ],
+    //             'total_assignments' => 0,
+    //             'game_slots' => []
+    //         ]);
+    //     }
+
+    //     // Format game slots with all assigned referees
+    //     $gameSlots = $assignments->map(function ($assignment) use ($referee) {
+    //         $gameSlot = $assignment->gameSlot;
+
+    //         // Get all assignments for this game slot
+    //         $allAssignments = $gameSlot->slotAssignments;
+
+    //         // Separate crew and individual assignments
+    //         $crewAssignments = $allAssignments->where('assignment_type', 'crew');
+    //         $individualAssignments = $allAssignments->where('assignment_type', 'individual');
+
+    //         // Build crew members list
+    //         $crewMembers = [];
+    //         if ($crewAssignments->isNotEmpty()) {
+    //             foreach ($crewAssignments as $crewAssignment) {
+    //                 $crew = $crewAssignment->assignable; // Crew model
+    //                 if ($crew && $crew->members) {
+    //                     foreach ($crew->members as $member) {
+    //                         $crewMembers[] = [
+    //                             'id' => $member->id,
+    //                             'name' => $member->first_name . ' ' . $member->last_name,
+    //                             'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+    //                             'email' => $member->email,
+    //                             'phone' => $member->phone,
+    //                             'type' => 'crew_member',
+    //                             'crew_name' => $crew->crew_name ?? 'N/A',
+    //                             'is_me' => $member->id === $referee->id,
+    //                         ];
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         // Build individual referees list
+    //         $individualReferees = $individualAssignments->map(function ($individualAssignment) use ($referee) {
+    //             $assignedReferee = $individualAssignment->assignable; // User model
+
+    //             return [
+    //                 'id' => $assignedReferee->id,
+    //                 'name' => $assignedReferee->first_name . ' ' . $assignedReferee->last_name,
+    //                 'avatar' => $assignedReferee->avatar ? asset($assignedReferee->avatar) : asset('default/profile.jpg'),
+    //                 'email' => $assignedReferee->email,
+    //                 'phone' => $assignedReferee->phone,
+    //                 'type' => 'individual',
+    //                 'is_me' => $assignedReferee->id === $referee->id, // Flag to identify current user
+    //             ];
+    //         })->values()->toArray();
+
+    //         // Merge crew members and individual referees
+    //         $allReferees = array_merge($crewMembers, $individualReferees);
+
+    //         return [
+    //             'game_slot_id' => $gameSlot->id,
+    //             'game_details' => [
+    //                 'date' => $gameSlot->game_date,
+    //                 'start_time' => $gameSlot->start_time,
+    //                 'end_time' => $gameSlot->end_time,
+    //                 'court_name' => $gameSlot->court_name,
+    //                 'court_number' => $gameSlot->court_number,
+    //                 'status' => $gameSlot->status,
+    //                 'is_blocked' => (bool) $gameSlot->is_block,
+    //             ],
+    //             'location' => [
+    //                 'id' => $gameSlot->location->id ?? null,
+    //                 'name' => $gameSlot->location->location_name ?? 'N/A',
+    //                 'latitude' => $gameSlot->location->latitude ?? null,
+    //                 'longitude' => $gameSlot->location->longitude ?? null,
+    //             ],
+    //             'my_position' => $assignment->position,
+    //             'assigned_at' => $assignment->assigned_at->format('Y-m-d H:i:s'),
+    //             'is_auto_assigned' => (bool) $assignment->is_auto_assigned,
+
+    //             // All referees assigned to this game slot (grouped)
+    //             'assigned_referees' => [
+    //                 'total' => count($allReferees),
+    //                 'referees' => $allReferees,
+    //             ],
+    //         ];
+    //     })->unique('game_slot_id')->values();
+
+    //     // Calculate statistics
+    //     $totalSlots = $gameSlots->count();
+    //     $upcomingSlots = $gameSlots->filter(function ($slot) {
+    //         return $slot['game_details']['date'] >= now()->toDateString();
+    //     })->count();
+    //     $completedSlots = $gameSlots->filter(function ($slot) {
+    //         return $slot['game_details']['status'] === 'completed';
+    //     })->count();
+
+    //     return $this->success(
+    //         'Your assigned game slots for this camp retrieved successfully.',
+    //         [
+    //             'camp' => [
+    //                 'id' => $camp->id,
+    //                 'name' => $camp->camp_name,
+    //                 'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
+    //                 'location' => $camp->location,
+    //                 'start_date' => $camp->start_date,
+    //                 'end_date' => $camp->end_date,
+    //             ],
+    //             'statistics' => [
+    //                 'total_assigned_slots' => $totalSlots,
+    //                 'upcoming_slots' => $upcomingSlots,
+    //                 'completed_slots' => $completedSlots,
+    //             ],
+    //             'game_slots' => $gameSlots,
+    //             'pagination' => [
+    //                 'total' => $assignments->total(),
+    //                 'per_page' => $assignments->perPage(),
+    //                 'current_page' => $assignments->currentPage(),
+    //                 'last_page' => $assignments->lastPage(),
+    //             ],
+    //         ]
+    //     );
+    // }
+
     public function getCampAssignedSlots(Request $request, $campId)
     {
         $referee = auth('api')->user();
@@ -45,8 +224,10 @@ class RefereeAssignmentController extends Controller
 
         // Get per_page from request, default 15
         $perPage = $request->get('per_page', 15);
+        $today = now()->toDateString();
 
         // Get all game slot assignments for this referee in this specific camp
+        // Sort by closest to today first
         $assignments = GameSlotAssignment::with([
             'gameSlot.location',
             'gameSlot.schedule',
@@ -58,7 +239,11 @@ class RefereeAssignmentController extends Controller
             ->whereHas('gameSlot.schedule', function ($query) use ($campId) {
                 $query->where('camp_id', $campId);
             })
-            ->orderBy('assigned_at', 'desc')
+            ->whereHas('gameSlot', function ($query) use ($today) {
+                // Order by closest to today (upcoming first, then past)
+                $query->orderByRaw("ABS(DATEDIFF(game_date, ?)) ASC", [$today])
+                    ->orderBy('start_time', 'asc');
+            })
             ->paginate($perPage);
 
         if ($assignments->isEmpty()) {

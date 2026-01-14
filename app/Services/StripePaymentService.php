@@ -14,9 +14,29 @@ use Illuminate\Support\Facades\Log;
 
 class StripePaymentService
 {
+
+    // Processing fee percentage (3%)
+    const PROCESSING_FEE_PERCENTAGE = 3;
+
     public function __construct()
     {
         Stripe::setApiKey(config('services.stripe.secret'));
+    }
+
+    /**
+     * Calculate total amount with processing fee
+     */
+    private function calculateTotalAmount(float $basePrice): array
+    {
+        $processingFee = round($basePrice * (self::PROCESSING_FEE_PERCENTAGE / 100), 2);
+        $totalAmount = round($basePrice + $processingFee, 2);
+
+        return [
+            'base_price' => $basePrice,
+            'processing_fee' => $processingFee,
+            'processing_fee_percentage' => self::PROCESSING_FEE_PERCENTAGE,
+            'total_amount' => $totalAmount
+        ];
     }
 
     /**
@@ -106,6 +126,113 @@ class StripePaymentService
     /**
      * Create Stripe checkout session
      */
+    // public function createCheckoutSession(Camp $camp, User $referee): array
+    // {
+    //     DB::beginTransaction();
+
+    //     try {
+    //         // Check if can initiate payment
+    //         $canPay = $this->canInitiatePayment($camp, $referee);
+    //         if (!$canPay['can_pay']) {
+    //             return [
+    //                 'success' => false,
+    //                 'error' => $canPay['reason'],
+    //                 'data' => $canPay
+    //             ];
+    //         }
+
+    //         // Mark old expired attempts as failed
+    //         CampPaymentAttempt::where('camp_id', $camp->id)
+    //             ->where('referee_id', $referee->id)
+    //             ->where('status', 'pending')
+    //             ->where('expires_at', '<', now())
+    //             ->update(['status' => 'failed']);
+
+    //         // Stripe requires minimum 30 minutes
+    //         $stripeSessionExpiry = 30; // Stripe minimum
+    //         $retryWindow = (int) config('payment.retry_cooldown', 2); // Your custom retry window
+
+    //         $description = "Location: {$camp->location}";
+    //         if ($camp->start_date && $camp->end_date) {
+    //             $description .= " | {$camp->start_date} to {$camp->end_date}";
+    //         }
+
+    //         // Get valid image URL (only for production HTTPS)
+    //         $imageUrl = $this->getValidImageUrl($camp->camp_logo);
+
+    //         // Prepare product data
+    //         $productData = [
+    //             'name' => "Camp Registration: {$camp->camp_name}",
+    //             'description' => $description,
+    //         ];
+
+    //         // Only add images if we have a valid URL
+    //         if ($imageUrl) {
+    //             $productData['images'] = [$imageUrl];
+    //         }
+
+    //         // Create Stripe Checkout Session
+    //         $session = Session::create([
+    //             'payment_method_types' => ['card'],
+    //             'line_items' => [[
+    //                 'price_data' => [
+    //                     'currency' => 'usd',
+    //                     'product_data' => $productData,
+    //                     'unit_amount' => (int)($camp->price * 100),
+    //                 ],
+    //                 'quantity' => 1,
+    //             ]],
+    //             'mode' => 'payment',
+    //             'success_url' => config('payment.success_url') . '?session_id={CHECKOUT_SESSION_ID}',
+    //             'cancel_url' => config('payment.cancel_url') . '?session_id={CHECKOUT_SESSION_ID}',
+    //             'metadata' => [
+    //                 'camp_id' => $camp->id,
+    //                 'referee_id' => $referee->id,
+    //                 'camp_name' => $camp->camp_name,
+    //                 'referee_email' => $referee->email
+    //             ],
+    //             'customer_email' => $referee->email,
+    //             'expires_at' => now()->addMinutes($stripeSessionExpiry)->timestamp // 30 min minimum
+    //         ]);
+
+    //         // Create payment attempt with YOUR custom expiry (2 min)
+    //         $attempt = CampPaymentAttempt::create([
+    //             'camp_id' => $camp->id,
+    //             'referee_id' => $referee->id,
+    //             'stripe_session_id' => $session->id,
+    //             'amount' => $camp->price,
+    //             'status' => 'pending',
+    //             'expires_at' => now()->addMinutes($retryWindow) // Your custom: 2 minutes
+    //         ]);
+
+    //         DB::commit();
+
+    //         return [
+    //             'success' => true,
+    //             'session_id' => $session->id,
+    //             'checkout_url' => $session->url,
+    //             'attempt_id' => $attempt->id,
+    //             'expires_at' => $attempt->expires_at
+    //         ];
+    //     } catch (Exception $e) {
+    //         DB::rollBack();
+
+    //         // Log the error for debugging
+    //         Log::error('Stripe payment session creation failed', [
+    //             'camp_id' => $camp->id,
+    //             'referee_id' => $referee->id,
+    //             'error' => $e->getMessage(),
+    //             'trace' => $e->getTraceAsString()
+    //         ]);
+
+    //         return [
+    //             'success' => false,
+    //             'error' => 'Failed to create payment session',
+    //             'message' => $e->getMessage()
+    //         ];
+    //     }
+    // }
+
     public function createCheckoutSession(Camp $camp, User $referee): array
     {
         DB::beginTransaction();
@@ -120,6 +247,9 @@ class StripePaymentService
                     'data' => $canPay
                 ];
             }
+
+            // Calculate total amount with processing fee
+            $amountCalculation = $this->calculateTotalAmount($camp->price);
 
             // Mark old expired attempts as failed
             CampPaymentAttempt::where('camp_id', $camp->id)
@@ -136,6 +266,7 @@ class StripePaymentService
             if ($camp->start_date && $camp->end_date) {
                 $description .= " | {$camp->start_date} to {$camp->end_date}";
             }
+            $description .= " | Includes {$amountCalculation['processing_fee_percentage']}% processing fee";
 
             // Get valid image URL (only for production HTTPS)
             $imageUrl = $this->getValidImageUrl($camp->camp_logo);
@@ -151,14 +282,14 @@ class StripePaymentService
                 $productData['images'] = [$imageUrl];
             }
 
-            // Create Stripe Checkout Session
+            // Create Stripe Checkout Session with total amount (including processing fee)
             $session = Session::create([
                 'payment_method_types' => ['card'],
                 'line_items' => [[
                     'price_data' => [
                         'currency' => 'usd',
                         'product_data' => $productData,
-                        'unit_amount' => (int)($camp->price * 100),
+                        'unit_amount' => (int)($amountCalculation['total_amount'] * 100), // Total with fee
                     ],
                     'quantity' => 1,
                 ]],
@@ -169,18 +300,22 @@ class StripePaymentService
                     'camp_id' => $camp->id,
                     'referee_id' => $referee->id,
                     'camp_name' => $camp->camp_name,
-                    'referee_email' => $referee->email
+                    'referee_email' => $referee->email,
+                    'base_price' => $amountCalculation['base_price'],
+                    'processing_fee' => $amountCalculation['processing_fee'],
+                    'processing_fee_percentage' => $amountCalculation['processing_fee_percentage'],
+                    'total_amount' => $amountCalculation['total_amount']
                 ],
                 'customer_email' => $referee->email,
                 'expires_at' => now()->addMinutes($stripeSessionExpiry)->timestamp // 30 min minimum
             ]);
 
-            // Create payment attempt with YOUR custom expiry (2 min)
+            // Create payment attempt with total amount
             $attempt = CampPaymentAttempt::create([
                 'camp_id' => $camp->id,
                 'referee_id' => $referee->id,
                 'stripe_session_id' => $session->id,
-                'amount' => $camp->price,
+                'amount' => $amountCalculation['total_amount'], // Store total amount
                 'status' => 'pending',
                 'expires_at' => now()->addMinutes($retryWindow) // Your custom: 2 minutes
             ]);
@@ -192,7 +327,8 @@ class StripePaymentService
                 'session_id' => $session->id,
                 'checkout_url' => $session->url,
                 'attempt_id' => $attempt->id,
-                'expires_at' => $attempt->expires_at
+                'expires_at' => $attempt->expires_at,
+                'amount_breakdown' => $amountCalculation
             ];
         } catch (Exception $e) {
             DB::rollBack();

@@ -3,7 +3,6 @@
 namespace Modules\Director\Http\Controllers\Api\Referee;
 
 use Exception;
-use Carbon\Carbon;
 use App\Models\User;
 use App\Models\CampPayment;
 use App\Traits\ApiResponse;
@@ -12,8 +11,6 @@ use Modules\Director\Models\Camp;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\ManualCheckinNotificationMail;
 use Modules\Director\Models\CampRefereeCheckin;
 
 class RefereeManageController extends Controller
