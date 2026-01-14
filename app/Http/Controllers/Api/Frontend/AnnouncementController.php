@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers\Api\Frontend;
 
+use Exception;
 use App\Models\User;
-use App\Models\Announcement;
 use App\Traits\ApiResponse;
+use App\Models\Announcement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Models\AnnouncementRecipient;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\AnnouncementNotification;
 
 class AnnouncementController extends Controller
 {
     use ApiResponse;
+
     /**
-     * Make announcement
+     * Make announcement and send notifications
      */
     public function store(Request $request)
     {
@@ -24,114 +28,63 @@ class AnnouncementController extends Controller
             'specific_user_ids' => 'required_if:announcement_to,specific|array'
         ]);
 
-        $announcement = Announcement::create([
-            'created_by' => auth()->id(),
-            'subject' => $request->subject,
-            'message' => $request->message,
-            'announcement_to' => $request->announcement_to,
-            'status' => 'sent',
-            'sent_at' => now()
-        ]);
+        DB::beginTransaction();
 
-        // Recipients determine kora
-        $recipients = $this->getRecipients($request->announcement_to, $request->specific_user_ids);
-
-        // Recipients table e insert kora
-        foreach ($recipients as $userId) {
-            AnnouncementRecipient::create([
-                'announcement_id' => $announcement->id,
-                'user_id' => $userId
+        try {
+            // Create announcement
+            $announcement = Announcement::create([
+                'created_by' => auth()->id(),
+                'subject' => $request->subject,
+                'message' => $request->message,
+                'announcement_to' => $request->announcement_to,
+                'status' => 'sent',
+                'sent_at' => now()
             ]);
-        }
 
-        return $this->success('Announcement sent successfully', $announcement, 201);
+            // Get recipients
+            $recipients = $this->getRecipients($request->announcement_to, $request->specific_user_ids);
+
+            // Send notifications to all recipients
+            Notification::send($recipients, new AnnouncementNotification($announcement));
+
+            DB::commit();
+
+            return $this->success('Announcement sent successfully', [
+                'announcement' => $announcement,
+                'recipients_count' => count($recipients)
+            ], 201);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return $this->error([], 'Failed to send announcement: ' . $e->getMessage(), 500);
+        }
     }
 
     /**
-     * Format receipent
+     * Get recipients based on announcement type
      */
     private function getRecipients($announcementTo, $specificUserIds = [])
     {
         switch ($announcementTo) {
             case 'all':
-                return User::pluck('id')->toArray();
+                return User::all();
 
             case 'referees':
-                return User::role('referee')->pluck('id')->toArray();
+                return User::role('referee')->get();
 
             case 'evaluators':
-                return User::role('evaluator')->pluck('id')->toArray();
+                return User::role('evaluator')->get();
 
             case 'specific':
-                return $specificUserIds;
+                return User::whereIn('id', $specificUserIds)->get();
 
             default:
-                return [];
+                return collect([]);
         }
     }
 
     /**
-     * User tar notifications dekhar jonno
+     * Delete announcement - only creator/director can delete
      */
-    public function myAnnouncements(Request $request)
-    {
-        $announcements = Announcement::whereHas('recipients', function ($query) {
-            $query->where('user_id', auth('api')->id());
-        })
-            ->with(['creator' => function ($query) {
-                $query->select('id',);
-            }])
-            ->latest()
-            ->paginate($request->input('per_page', 10));
-
-        $response = [
-            'announcements' => $announcements->items(),
-            'pagination' => [
-                'total' => $announcements->total(),
-                'per_page' => $announcements->perPage(),
-                'current_page' => $announcements->currentPage(),
-                'last_page' => $announcements->lastPage(),
-            ]
-        ];
-
-        return $this->success('Announcement retrieved successfully !', $response, 200);
-    }
-
-    /**
-     * Mark as read
-     */
-    public function markAsRead($announcementId)
-    {
-        $recipient = AnnouncementRecipient::where('announcement_id', $announcementId)
-            ->where('user_id', auth()->id())
-            ->first();
-
-        if ($recipient) {
-            $recipient->update([
-                'is_read' => true,
-                'read_at' => now()
-            ]);
-        }
-
-        return $this->success('Marked as read', [], 200);
-    }
-
-    // Bulk mark as read - user er sob unread announcements read kore dibe
-    public function markAllAsRead()
-    {
-        $userId = auth('api')->id();
-
-        $updated = AnnouncementRecipient::where('user_id', $userId)
-            ->where('is_read', false)
-            ->update([
-                'is_read' => true,
-                'read_at' => now()
-            ]);
-
-        return $this->success('All announcements marked as read', $updated, 201);
-    }
-
-    // Delete announcement - only creator/director can delete
     public function destroy($id)
     {
         $announcement = Announcement::find($id);
@@ -141,12 +94,28 @@ class AnnouncementController extends Controller
         }
 
         // Check if user is creator or has director role
-        if ($announcement->created_by !== auth('api')->id() && !auth('api')->user()->hasRole('director')) {
+        if ($announcement->created_by !== auth()->id() && !auth()->user()->hasRole('director')) {
             return $this->error([], 'Unauthorized to delete this announcement', 403);
         }
 
-        $announcement->delete(); // soft delete
+        DB::beginTransaction();
 
-        return $this->success('Announcement deleted successfully', [], 200);
+        try {
+            // Delete related notifications
+            DB::table('notifications')
+                ->where('type', 'App\Notifications\AnnouncementNotification')
+                ->whereJsonContains('data->announcement_id', $announcement->id)
+                ->delete();
+
+            // Soft delete announcement
+            $announcement->delete();
+
+            DB::commit();
+
+            return $this->success('Announcement deleted successfully', [], 200);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return $this->error([], 'Failed to delete announcement: ' . $e->getMessage(), 500);
+        }
     }
 }

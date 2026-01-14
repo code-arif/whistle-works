@@ -16,7 +16,7 @@ class AvailableRefereeResource extends JsonResource
             'email'  => $this->email,
             'phone'  => $this->phone,
             'avatar' => $this->avatar
-                ? asset('storage/' . $this->avatar)
+                ? asset('' . $this->avatar)
                 : asset('default/profile.jpg'),
         ];
     }

@@ -653,7 +653,7 @@ class ScheduleController extends Controller
                                     'referee_id' => $assignment->assignable->id,
                                     'referee_name' => ($assignment->assignable->first_name ?? '') . ' ' . ($assignment->assignable->last_name ?? ''),
                                     'avatar' => $assignment->assignable->avatar
-                                        ? asset('/' . $assignment->assignable->avatar)
+                                        ? asset('' . $assignment->assignable->avatar)
                                         : asset('default/profile.jpg'),
                                 ];
                             }

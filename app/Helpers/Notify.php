@@ -38,14 +38,4 @@ class Notify
         $user->notify(new TestNotification($notiData, $user->id));
         broadcast(new TestNotificationEvent($notiData, $user->id))->toOthers();
     }
-
-    public static function email($subject, $content, $user_id = null)
-    {
-        try {
-            $user = $user_id ? User::find($user_id) : User::role('admin', 'web')->first();
-            Mail::to($user->email)->send(new TestMail($subject, $content));
-        } catch (Exception $e) {
-            Log::error($e->getMessage());
-        }
-    }
 }

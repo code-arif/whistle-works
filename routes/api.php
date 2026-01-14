@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
 use App\Http\Controllers\Api\Frontend\CampRanking\CampRankingSettingsController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegistrationController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegisterManageForDirectorController;
+use App\Http\Controllers\Api\Frontend\NotificationController;
 use App\Http\Controllers\Api\Frontend\Referee\EvaluatedRefereeController;
 
 // health check
@@ -200,15 +201,45 @@ Route::get('/settings', [SettingsController::class, 'index']);
 */
 Route::middleware(['auth:api'])->group(function () {
     // Making announcement only for director
-    Route::post('/director/announcements', [AnnouncementController::class, 'store'])
-        ->middleware('role:director');
-    Route::delete('/announcements/delete/{id}', [AnnouncementController::class, 'destroy'])->middleware('role:director');
-
-    // Announcement gat route for referee and evaluator
-    Route::get('/announcement/my-announcements', [AnnouncementController::class, 'myAnnouncements'])->middleware('role:referee|evaluator|director,api');
-    Route::patch('/announcements/{id}/read', [AnnouncementController::class, 'markAsRead'])->middleware('role:referee|evaluator|director,api');
-    Route::patch('/announcements/mark-all-read', [AnnouncementController::class, 'markAllAsRead'])->middleware('role:referee|evaluator|director,api');
+    Route::post('/director/announcement/store', [AnnouncementController::class, 'store'])->middleware('role:director'); // done
+    Route::delete('director/announcements/delete/{id}', [AnnouncementController::class, 'destroy'])->middleware('role:director'); // done
 });
+
+
+// // Notificatios gat route for referee and evaluator
+// Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->middleware('role:referee|evaluator|director,api');
+// Route::get('/{notificationId}', [NotificationController::class, 'show'])->middleware('role:referee|evaluator|director,api');
+// Route::get('/notifications/', [NotificationController::class, 'myAnnouncements'])->middleware('role:referee|evaluator|director,api');
+// Route::patch('/{id}/read', [NotificationController::class, 'markAsRead'])->middleware('role:referee|evaluator|director,api');
+// Route::patch('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->middleware('role:referee|evaluator|director,api');
+
+// === Unified Notification Routes ===
+Route::prefix('notifications')->middleware(['auth:api', 'role:referee|evaluator|director,api'])->group(function () {
+    // Get all notifications (with optional type filter)
+    Route::get('/', [NotificationController::class, 'index']); // done
+
+    // Get only unread notifications
+    Route::get('/unread', [NotificationController::class, 'unread']);
+
+    // Get notification counts by type
+    Route::get('/counts', [NotificationController::class, 'counts']); // done
+
+    // Get single notification
+    Route::get('/{notificationId}', [NotificationController::class, 'show']); // done
+
+    // Mark single notification as read
+    Route::post('/{notificationId}/mark-as-read', [NotificationController::class, 'markAsRead']); //done
+
+    // Mark all as read (with optional type filter)
+    Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead']); // done
+
+    // Delete notification
+    Route::delete('/delete/{notificationId}', [NotificationController::class, 'destroy']); // done
+
+    // Clear all read notifications
+    Route::delete('/clear-read', [NotificationController::class, 'clearRead']); // done
+});
+
 
 /*
 |--------------------------------------------------------------------------

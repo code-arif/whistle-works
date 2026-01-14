@@ -9,6 +9,7 @@ use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Notifications\AnnouncementNotification;
 use Modules\Director\Models\CampRefereeCheckin;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -139,5 +140,15 @@ class User extends Authenticatable implements JWTSubject
     public function evaluations()
     {
         return $this->hasMany(RefereeEvaluation::class, 'referee_id');
+    }
+
+    /**
+     * Get unread announcements count
+     */
+    public function unreadAnnouncementsCount()
+    {
+        return $this->unreadNotifications()
+            ->where('type', 'AnnouncementNotification')
+            ->count();
     }
 }

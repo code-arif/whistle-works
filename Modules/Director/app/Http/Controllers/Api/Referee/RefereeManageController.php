@@ -11,7 +11,10 @@ use Modules\Director\Models\Camp;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\JourcyNumberNotification;
 use Modules\Director\Models\CampRefereeCheckin;
+use App\Notifications\RefereeRemovedFromCampNotification;
 
 class RefereeManageController extends Controller
 {
@@ -271,9 +274,7 @@ class RefereeManageController extends Controller
         }
     }
 
-    /**
-     * Update jourcy number for a referee
-     */
+
     /**
      * Update referee's jourcy number (Director only)
      * Director can assign/update jourcy number for registered referees
@@ -293,6 +294,14 @@ class RefereeManageController extends Controller
 
         if (!$camp) {
             return $this->error('Camp not found or unauthorized.', null, 404);
+        }
+
+        if ($camp->schedule && $camp->schedule->status === 'published') {
+            return $this->error(
+                [],
+                'You cannot change the jourcy number because the camp schedule is already published.',
+                403
+            );
         }
 
         // Verify referee is registered for this camp
@@ -332,12 +341,25 @@ class RefereeManageController extends Controller
         DB::beginTransaction();
         try {
             $referee = $registration->referee;
+
             $oldJourcyNumber = $referee->jourcy_number;
 
             // Update jourcy number in users table
             $referee->update([
                 'jourcy_number' => $request->jourcy_number,
             ]);
+
+            // Send notifications to this referee
+            Notification::send(
+                $referee,
+                new JourcyNumberNotification(
+                    $referee,
+                    $camp,
+                    $director,
+                    $request->jourcy_number
+                )
+            );
+
 
             DB::commit();
 
@@ -408,6 +430,14 @@ class RefereeManageController extends Controller
             return $this->error('Camp not found or you are not authorized to manage this camp.', null, 404);
         }
 
+        if ($camp->schedule && $camp->schedule->status === 'published') {
+            return $this->error(
+                [],
+                'You cannot remove a referee because the camp schedule is already published.',
+                403
+            );
+        }
+
         // Find the registration
         $registration = CampRefereeCheckin::where('camp_id', $campId)
             ->where('referee_id', $refereeId)
@@ -462,9 +492,12 @@ class RefereeManageController extends Controller
         $referee = User::find($refereeId);
         if ($referee && $referee->email) {
             try {
-                // Mail::to($referee->email)->send(
-                //     new CampRegistrationCancelledMail($director, $referee, $camp, $refunded)
-                // );
+                if ($referee) {
+                    Notification::send(
+                        $referee,
+                        new RefereeRemovedFromCampNotification($camp, $director)
+                    );
+                }
             } catch (Exception $e) {
                 Log::warning('Failed to send cancellation email to referee', [
                     'referee_id' => $referee->id,

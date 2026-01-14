@@ -398,6 +398,12 @@ class RefereeAssignmentController extends Controller
             ->where('assignable_type', User::class)
             ->where('assignable_id', $referee->id)
             ->where('assignment_type', 'individual')
+            // IMPORTANT LOGIC: only published schedules
+            ->whereHas('gameSlot', function ($q) {
+                $q->whereHas('schedule', function ($q2) {
+                    $q2->where('status', 'published');
+                });
+            })
             ->orderBy('assigned_at', 'desc')
             ->get();
 

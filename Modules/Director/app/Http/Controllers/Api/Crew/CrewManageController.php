@@ -160,7 +160,7 @@ class CrewManageController extends Controller
         $crews = Crew::where('camp_id', $campId)
             ->withCount('members')
             ->with(['members' => function ($query) {
-                $query->select('users.id', 'users.first_name', 'users.last_name', 'users.email');
+                $query->select('users.id', 'users.first_name', 'users.last_name', 'users.email', 'users.avatar');
             }])
             ->get();
 
