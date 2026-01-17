@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 class RosterController extends Controller
 {
     use ApiResponse;
+
     /**
      * Get camp details
      */
