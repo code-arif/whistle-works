@@ -2,6 +2,7 @@
 
 namespace Modules\Director\Models;
 
+use Carbon\Carbon;
 use App\Models\User;
 use App\Models\SportsType;
 use App\Models\RefereeEvaluation;
@@ -10,14 +11,23 @@ use App\Models\CampEvaluatorRegistration;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Helpers\HandlesTimezones;
 
 class Camp extends Model
 {
     protected $guarded = [];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
+        'start_date' => 'date:Y-m-d',  // Force Y-m-d format
+        'end_date' => 'date:Y-m-d',    // Force Y-m-d format
+        'latitude' => 'decimal:7',
+        'longitude' => 'decimal:7',
+        'price' => 'decimal:2',
+    ];
+
+    protected $appends = [
+        'timezone_display_name',
+        'timezone_offset_hours',
     ];
 
     /**
@@ -58,7 +68,7 @@ class Camp extends Model
     public function getCampLogoUrlAttribute()
     {
         return $this->camp_logo
-            ? asset('/' . $this->camp_logo)
+            ? asset(' ' . $this->camp_logo)
             : null;
     }
 
@@ -117,6 +127,59 @@ class Camp extends Model
     {
         return $this->hasMany(CampEvaluatorRegistration::class, 'camp_id');
     }
+
+    /**
+     * Accessors
+     */
+    public function getTimezoneDisplayNameAttribute(): string
+    {
+        return HandlesTimezones::getDisplayName($this->timezone ?? 'UTC');
+    }
+
+    public function getTimezoneOffsetHoursAttribute(): float
+    {
+        return Carbon::now($this->timezone ?? 'UTC')->offsetHours;
+    }
+
+    /**
+     * Helper method to convert time to camp timezone
+     */
+    public function toCampTime($dateTime, string $format = 'Y-m-d H:i:s'): string
+    {
+        return HandlesTimezones::convertToTimezone($dateTime, $this->timezone, $format);
+    }
+
+    /**
+     * Get timezone offset message for users
+     */
+    public function getTimezoneOffsetText(?string $userTimezone = null): ?string
+    {
+        return HandlesTimezones::getOffsetText($this->timezone, $userTimezone);
+    }
+
+    /**
+     * Boot method to auto-detect timezone
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($camp) {
+            // Auto-detect timezone if not provided but coordinates exist
+            if (!$camp->timezone && $camp->latitude && $camp->longitude) {
+                $camp->timezone = HandlesTimezones::detectFromCoordinates(
+                    $camp->latitude,
+                    $camp->longitude
+                );
+            }
+
+            // Default to UTC if still not set
+            if (!$camp->timezone) {
+                $camp->timezone = config('app.timezone', 'UTC');
+            }
+        });
+    }
+
 
     /**
      * Boot method - Automatically add extra price on camp creation

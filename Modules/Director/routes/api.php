@@ -29,6 +29,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
     Route::group([], function () {
         Route::post('/camp/create', [CampManageController::class, 'createCamp']); // done
         Route::post('/camp/update/{id}', [CampManageController::class, 'updateCamp']); // done
+        Route::get('/timezones/available', [CampManageController::class, 'getAvailableTimezones']);
         Route::post('/camp/status/{id}', [CampManageController::class, 'updateStatus']); // done
         Route::delete('/camp/delete/{id}', [CampManageController::class, 'deleteCamp']); // done
         Route::get('/director/camp/list', [CampManageController::class, 'directorCampList']); // done
@@ -115,7 +116,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::patch('camp/{campId}/referee/{refereeId}/update-jourcy-number', [RefereeManageController::class, 'updateRefereeJourcyNumber']);
 
         // Remote referee from camp
-        Route::delete('camps/{campId}/referees/{refereeId}',[RefereeManageController::class, 'removeRefereeFromCamp']);
+        Route::delete('camps/{campId}/referees/{refereeId}', [RefereeManageController::class, 'removeRefereeFromCamp']);
     });
 });
 

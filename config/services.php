@@ -40,10 +40,14 @@ return [
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
-    
+
     'stripe' => [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
         'webhook' => env('STRIPE_WEBHOOK_SECRET')
+    ],
+
+    'google_maps' => [
+        'api_key' => env('GOOGLE_MAPS_API_KEY', 'AIzaSyA-9OmmV8vaRrLOOW57zlW9ws4QPUb8S0c'),
     ],
 ];

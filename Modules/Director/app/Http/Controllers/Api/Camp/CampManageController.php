@@ -2,9 +2,12 @@
 
 namespace Modules\Director\Http\Controllers\Api\Camp;
 
+use Carbon\Carbon;
 use App\Models\SportsType;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use App\Helpers\HandlesTimezones;
+use App\Services\LocationService;
 use Modules\Director\Models\Camp;
 use App\Http\Controllers\Controller;
 use Modules\Director\Helpers\UploadFile;
@@ -15,7 +18,16 @@ class CampManageController extends Controller
 {
     use ApiResponse;
 
-    // create camp
+    protected $locationService;
+
+    public function __construct(LocationService $locationService)
+    {
+        $this->locationService = $locationService;
+    }
+
+    /**
+     * Create camp with timezone support
+     */
     public function createCamp(CampCreateRequest $request)
     {
         $user = auth('api')->user();
@@ -42,20 +54,78 @@ class CampManageController extends Controller
         // Final price calculation
         $finalPrice = $request->price + $extraPrice;
 
+        // Detect timezone from coordinates if not provided
+        $timezone = $request->timezone;
+        if (!$timezone && $request->latitude && $request->longitude) {
+            $timezone = HandlesTimezones::detectFromCoordinates(
+                $request->latitude,
+                $request->longitude
+            );
+        }
+
+        // Handle Location Name
+        $locationName = $request->location;
+        $latitude = $request->latitude;
+        $longitude = $request->longitude;
+
+        // If coordinates provided, fetch proper location name
+        if ($latitude && $longitude) {
+            // Validate coordinates
+            if (!$this->locationService->validateCoordinates($latitude, $longitude)) {
+                return $this->error('Invalid coordinates provided.', null, 400);
+            }
+
+            // Fetch location from Google
+            $locationResult = $this->locationService->getLocationFromCoordinates(
+                $latitude,
+                $longitude,
+                'detailed' // Options: 'short', 'detailed', 'address', 'full'
+            );
+
+            if ($locationResult['success']) {
+                // Use Google's location if:
+                // 1. No location name provided from frontend, OR
+                // 2. Frontend location name is too long (> 100 chars)
+                if (empty($locationName) || strlen($locationName) > 100) {
+                    $locationName = $locationResult['location_name'];
+                }
+
+                // Optional: You can also store formatted_address separately
+                // $formattedAddress = $locationResult['formatted_address'];
+            } else {
+                // Google fetch failed, use fallback
+                if (empty($locationName)) {
+                    $locationName = 'Location coordinates: ' . $latitude . ', ' . $longitude;
+                }
+            }
+        } else {
+            // No coordinates provided, location name is required
+            if (empty($locationName)) {
+                return $this->error('Location name or coordinates are required.', null, 400);
+            }
+        }
+
+        // CRITICAL: Parse dates in the camp's timezone and store as date-only format
+        $campTimezone = $timezone ?? config('app.timezone', 'UTC');
+
+        $startDate = Carbon::parse($request->start_date, $campTimezone)->format('Y-m-d');
+        $endDate = Carbon::parse($request->end_date, $campTimezone)->format('Y-m-d');
+
         // Create Camp
         $camp = Camp::create([
             'director_id'      => $user->id,
             'sports_type_id'   => $sportsType->id,
             'sports_type_name' => $sportsType->sports_name,
             'camp_name'        => $request->camp_name,
-            'location'         => $request->location,
-            'start_date'       => $request->start_date,
-            'end_date'         => $request->end_date,
+            'location'         => $locationName,
+            'start_date'       => $startDate,
+            'end_date'         => $endDate,
             'camp_details'     => $request->camp_details,
             'price'            => $finalPrice,
             'camp_logo'        => $campLogoPath,
             'latitude'         => $request->latitude,
             'longitude'        => $request->longitude,
+            'timezone'         => $campTimezone,
         ]);
 
         return $this->success(
@@ -90,6 +160,9 @@ class CampManageController extends Controller
             'price'           => 'sometimes|numeric',
             'sports_type_id'  => 'sometimes|exists:sports_types,id',
             'camp_logo'       => 'sometimes|image|max:2048',
+            'latitude'        => 'sometimes|numeric',
+            'longitude'       => 'sometimes|numeric',
+            'timezone'        => 'sometimes|string|timezone',
         ]);
 
         // Update Sports Type
@@ -112,8 +185,66 @@ class CampManageController extends Controller
             );
         }
 
+        // Update coordinates and auto-detect timezone if needed
+        if ($request->filled('latitude') && $request->filled('longitude')) {
+            // $camp->latitude = $request->latitude;
+            // $camp->longitude = $request->longitude;
+
+            $latitude = $request->latitude;
+            $longitude = $request->longitude;
+
+            // Validate coordinates
+            if (!$this->locationService->validateCoordinates($latitude, $longitude)) {
+                return $this->error('Invalid coordinates provided.', null, 400);
+            }
+
+            $camp->latitude = $latitude;
+            $camp->longitude = $longitude;
+
+            // Fetch updated location name from Google if location name not explicitly provided
+            if (!$request->filled('location')) {
+                $locationResult = $this->locationService->getLocationFromCoordinates(
+                    $latitude,
+                    $longitude,
+                    'detailed'
+                );
+
+                if ($locationResult['success']) {
+                    $camp->location = $locationResult['location_name'];
+                }
+            }
+
+            // Auto-update timezone if not explicitly provided
+            if (!$request->filled('timezone')) {
+                $camp->timezone = HandlesTimezones::detectFromCoordinates(
+                    $request->latitude,
+                    $request->longitude
+                );
+            }
+        }
+
+        // Update location name if provided explicitly
+        if ($request->filled('location')) {
+            $locationName = $request->location;
+
+            // If location name is too long and we have coordinates, fetch from Google
+            if (strlen($locationName) > 100 && $camp->latitude && $camp->longitude) {
+                $locationResult = $this->locationService->getLocationFromCoordinates(
+                    $camp->latitude,
+                    $camp->longitude,
+                    'detailed'
+                );
+
+                if ($locationResult['success']) {
+                    $locationName = $locationResult['location_name'];
+                }
+            }
+
+            $camp->location = $locationName;
+        }
+
         // Update dynamic fields
-        $fields = ['camp_name', 'location', 'start_date', 'end_date', 'camp_details', 'price'];
+        $fields = ['camp_name', 'location', 'start_date', 'end_date', 'camp_details', 'price', 'timezone'];
         foreach ($fields as $field) {
             if ($request->filled($field)) {
                 $camp->$field = $request->$field;
@@ -125,6 +256,28 @@ class CampManageController extends Controller
         return $this->success(
             'Camp updated successfully.',
             new CampResource($camp),
+            200
+        );
+    }
+
+    /**
+     * Get available timezones for dropdown
+     */
+    public function getAvailableTimezones()
+    {
+        $timezones = HandlesTimezones::getAllTimezones();
+
+        $formatted = collect($timezones)->map(function ($name, $value) {
+            return [
+                'value' => $value,
+                'label' => $name,
+                'offset' => \Carbon\Carbon::now($value)->offsetHours,
+            ];
+        })->values();
+
+        return $this->success(
+            'Timezones fetched successfully.',
+            ['timezones' => $formatted],
             200
         );
     }
@@ -269,6 +422,8 @@ class CampManageController extends Controller
                     'camp_name'      => $camp->camp_name,
                     'camp_logo'      => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
                     'location'       => $camp->location,
+                    'timezone'       => $camp->timezone,
+                    'timezone_name'  => $camp->timezone_display_name,
                     'sports_type'    => $camp->sportsType->sports_name ?? null,
                     'sports_type_id' => $camp->sports_type_id,
                     'status'         => $camp->status,
