@@ -461,6 +461,7 @@ class ScheduleController extends Controller
                                     'assignment_id' => $assignment->id,
                                     'referee_id' => $assignment->assignable->id,
                                     'referee_name' => ($assignment->assignable->first_name ?? '') . ' ' . ($assignment->assignable->last_name ?? ''),
+                                    'jourcy_number' => $assignment->assignable->jourcy_number,
                                     'avatar' => $assignment->assignable->avatar
                                         ? asset($assignment->assignable->avatar)
                                         : asset('default/profile.jpg'),
