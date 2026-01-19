@@ -35,21 +35,9 @@ class AnnouncementNotification extends Notification
             'subject' => $this->announcement->subject,
             'message' => $this->announcement->message,
             'created_by' => $this->announcement->created_by,
-            'creator_name' => $this->announcement->creator->name ?? 'Director',
+            'creator_name' => $this->announcement->creator->first_name ?? 'Director',
             'sent_at' => $this->announcement->sent_at,
             'type' => 'announcement', // Distinguish from other notification types
         ];
     }
-
-    /**
-     * Get the mail representation of the notification (optional).
-     */
-    // public function toMail($notifiable)
-    // {
-    //     return (new MailMessage)
-    //         ->subject($this->announcement->subject)
-    //         ->line($this->announcement->message)
-    //         ->action('View Announcement', url('/announcements/' . $this->announcement->id))
-    //         ->line('Thank you for using our application!');
-    // }
 }

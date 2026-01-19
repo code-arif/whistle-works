@@ -3,52 +3,59 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class SchedulePublishNotification extends Notification
 {
     use Queueable;
 
-    /**
-     * Create a new notification instance.
-     */
-    public function __construct()
+    protected $camp;
+    protected $director;
+    protected $schedule;
+
+    public function __construct($camp, $director, $schedule)
     {
-        //
+        $this->camp = $camp;
+        $this->director = $director;
+        $this->schedule = $schedule;
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
+    public function via($notifiable)
     {
-        return ['mail'];
+        return ['database'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
-    public function toMail(object $notifiable): MailMessage
-    {
-        return (new MailMessage)
-                    ->line('The introduction to the notification.')
-                    ->action('Notification Action', url('/'))
-                    ->line('Thank you for using our application!');
-    }
-
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable)
     {
         return [
-            //
+            'type' => 'schedule_published',
+
+            'title' => 'Camp Schedule Published',
+
+            'message' => "The schedule for {$this->camp->camp_name} has been published. You can now view your assigned game slots.",
+
+            'camp' => [
+                'id' => $this->camp->id,
+                'name' => $this->camp->camp_name,
+                'logo' => $this->camp->camp_logo ? asset($this->camp->camp_logo) : asset('default/no_image.webp'),
+                'location' => $this->camp->location,
+                'start_date' => $this->camp->start_date,
+                'end_date' => $this->camp->end_date,
+            ],
+
+            'schedule' => [
+                'id' => $this->schedule->id,
+                'game_duration' => $this->schedule->game_duration,
+                'total_slots' => $this->schedule->gameSlots()->count(),
+            ],
+
+            'published_by' => [
+                'id' => $this->director->id,
+                'name' => $this->director->first_name . ' ' . $this->director->last_name,
+                'role' => 'Director',
+            ],
+
+            'action_url' => "/referee/camp/{$this->camp->id}/assigned-slots", // Frontend URL
         ];
     }
 }

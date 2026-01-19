@@ -222,13 +222,6 @@ Route::middleware(['auth:api'])->group(function () {
 });
 
 
-// // Notificatios gat route for referee and evaluator
-// Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->middleware('role:referee|evaluator|director,api');
-// Route::get('/{notificationId}', [NotificationController::class, 'show'])->middleware('role:referee|evaluator|director,api');
-// Route::get('/notifications/', [NotificationController::class, 'myAnnouncements'])->middleware('role:referee|evaluator|director,api');
-// Route::patch('/{id}/read', [NotificationController::class, 'markAsRead'])->middleware('role:referee|evaluator|director,api');
-// Route::patch('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->middleware('role:referee|evaluator|director,api');
-
 // === Unified Notification Routes ===
 Route::prefix('notifications')->middleware(['auth:api', 'role:referee|evaluator|director,api'])->group(function () {
     // Get all notifications (with optional type filter)
