@@ -73,19 +73,19 @@ class EvaluatedRefereeController extends Controller
         }
 
         // Calculate overall averages
-        $avgCallAccuracy = round($evaluations->avg('call_accuracy'), 1);
-        $avgCommunication = round($evaluations->avg('communication_skills'), 1);
-        $avgConsistency = round($evaluations->avg('consistency_of_calls'), 1);
-        $avgCourtPosition = round($evaluations->avg('court_position_mechanics'), 1);
-        $avgFitness = round($evaluations->avg('fitness_mobility'), 1);
-        $avgGameAwareness = round($evaluations->avg('game_awareness'), 1);
+        $avgCallAccuracy = round($evaluations->avg('call_accuracy'), 3);
+        $avgCommunication = round($evaluations->avg('communication_skills'), 3);
+        $avgConsistency = round($evaluations->avg('consistency_of_calls'), 3);
+        $avgCourtPosition = round($evaluations->avg('court_position_mechanics'), 3);
+        $avgFitness = round($evaluations->avg('fitness_mobility'), 3);
+        $avgGameAwareness = round($evaluations->avg('game_awareness'), 3);
 
         // Calculate overall average
         $overallAvg = round(($avgCallAccuracy + $avgCommunication + $avgConsistency +
-            $avgCourtPosition + $avgFitness + $avgGameAwareness) / 6, 1);
+            $avgCourtPosition + $avgFitness + $avgGameAwareness) / 6, 3);
 
         // Overall percentage (out of 10)
-        $overallPercentage = round(($overallAvg / 10) * 100, 0);
+        $overallPercentage = round(($overallAvg / 10) * 100, 3);
 
         // Determine performance rating
         $performanceRating = $this->getPerformanceRating($overallAvg);
