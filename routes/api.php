@@ -13,17 +13,18 @@ use App\Http\Controllers\Api\Frontend\SettingsController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\Frontend\AnnouncementController;
 use App\Http\Controllers\Api\Frontend\CMS\HomePageController;
+use App\Http\Controllers\Api\Frontend\NotificationController;
 use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
 use App\Http\Controllers\Api\Frontend\Roster\RosterController;
 use App\Http\Controllers\Api\Frontend\RefereeEvaluationController;
 use App\Http\Controllers\Api\Frontend\Evaluator\EvaluatorController;
 use App\Http\Controllers\Api\Frontend\Evaluator\GameOverviewController;
+use App\Http\Controllers\Api\Frontend\Referee\EvaluatedRefereeController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
+use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentCrewController;
 use App\Http\Controllers\Api\Frontend\CampRanking\CampRankingSettingsController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegistrationController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegisterManageForDirectorController;
-use App\Http\Controllers\Api\Frontend\NotificationController;
-use App\Http\Controllers\Api\Frontend\Referee\EvaluatedRefereeController;
 
 // health check
 Route::get('/health-check', function () {
@@ -125,6 +126,21 @@ Route::middleware(['auth:api', 'role:referee'])->group(function () {
 
         // Get upcoming game slots only
         Route::get('/upcoming-slots', [RefereeAssignmentController::class, 'getUpcomingSlots']);
+
+
+        // ===== NEW CREW-RELATED ROUTES =====
+
+        // Get all crews where referee is a member (across all camps)
+        Route::get('/my-crews', [RefereeAssignmentCrewController::class, 'getMyCrews']);
+
+        // Get crews for a specific camp where referee is a member
+        Route::get('/camp/{campId}/crews', [RefereeAssignmentCrewController::class, 'getCampCrews']);
+
+        // Get specific crew details with all game assignments
+        Route::get('/crew/{crewId}/details', [RefereeAssignmentCrewController::class, 'getCrewDetails']);
+
+        // Get upcoming games for all crews where referee is a member
+        Route::get('/my-crews/upcoming-games', [RefereeAssignmentCrewController::class, 'getMyCrewUpcomingGames']);
     });
 });
 
@@ -205,13 +221,6 @@ Route::middleware(['auth:api'])->group(function () {
     Route::delete('director/announcements/delete/{id}', [AnnouncementController::class, 'destroy'])->middleware('role:director'); // done
 });
 
-
-// // Notificatios gat route for referee and evaluator
-// Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->middleware('role:referee|evaluator|director,api');
-// Route::get('/{notificationId}', [NotificationController::class, 'show'])->middleware('role:referee|evaluator|director,api');
-// Route::get('/notifications/', [NotificationController::class, 'myAnnouncements'])->middleware('role:referee|evaluator|director,api');
-// Route::patch('/{id}/read', [NotificationController::class, 'markAsRead'])->middleware('role:referee|evaluator|director,api');
-// Route::patch('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->middleware('role:referee|evaluator|director,api');
 
 // === Unified Notification Routes ===
 Route::prefix('notifications')->middleware(['auth:api', 'role:referee|evaluator|director,api'])->group(function () {

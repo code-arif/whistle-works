@@ -45,7 +45,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::delete('/crew/delete/{crewId}', [CrewManageController::class, 'deleteCrew']); // working
 
         // Member Management
-        // Route::post('/crew/{crewId}/add-members', [CrewManageController::class, 'addMembers']);
+        Route::post('/crew/{crewId}/add-members', [CrewManageController::class, 'addMembers']);
         Route::delete('/crew/{crewId}/remove-members', [CrewManageController::class, 'removeMembers']);
 
         // Available Referees
@@ -80,7 +80,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::post('slot/{slotId}/assign-crew', [CourtAssignController::class, 'assignCrew']); // working - assign crew to a slot
 
         // Auto-assign all slots
-        Route::post('camp/{campId}/auto-assign', [CourtAssignController::class, 'autoAssignReferees']); // problem
+        Route::post('camp/{campId}/auto-assign', [CourtAssignController::class, 'autoAssignReferees']); // done
 
         // Remove assignment (crew or individual)
         Route::delete('assignment/{assignmentId}/remove', [CourtAssignController::class, 'removeAssignment']); // working - remove assignment by ID (crew or individual)
@@ -98,11 +98,14 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::get('slot/{slotId}/assigned-referees-crew', [CourtAssignController::class, 'getAssignedRefereesOrCrew']); // working - get all assigned referees for the slot
 
         Route::get('slot/{slotId}/available-referees-with-time-check', [CourtAssignController::class, 'getAvailableRefereesForSlot']);
+        Route::get('slot/{slotId}/available-crew-with-time-check', [CourtAssignController::class, 'getAvailableCrewsForSlot']);
     });
 
     // Court mange routes
     Route::patch('slot/{slotId}/toggle-block', [CourtManageController::class, 'toggleBlockSlot']); // done - Court Block/Unblock
-    Route::patch('slot/{slotId}/update-court-name', [CourtManageController::class, 'updateCourtName']);  // Change specific court name
+    Route::put('location/{locationId}/court/{courtNumber}/update-name', [CourtManageController::class, 'updateCourtName']);  // done - Change specific court name
+    Route::post('location/{locationId}/courts/bulk-update-names', [CourtManageController::class, 'bulkUpdateCourtNames']);  // done - Change specific court name
+    Route::get('location/{locationId}/court-names', [CourtManageController::class, 'getCourtNames']);  // done - Get court name
     Route::post('schedule/{scheduleId}/bulk-toggle-block', [CourtManageController::class, 'bulkToggleBlockByTime']); // done - Bulk Block/Unblock by time
 
     Route::prefix('director')->group(function () {
