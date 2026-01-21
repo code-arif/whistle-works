@@ -67,7 +67,7 @@ class RosterController extends Controller
                             'longitude' => $location->longitude
                         ];
                     }) ?? collect(),
-                    'game_courts' => $camp->schedule?->gameSlots->map(function ($gameSlot) {
+                    'game_courts' => $camp->schedule?->gameSlots->map(function ($gameSlot) use ($camp) {
                         return [
                             'id' => $gameSlot->id,
                             'game_date' => $gameSlot->game_date,
@@ -76,6 +76,14 @@ class RosterController extends Controller
                             'court_name' => $gameSlot->court_name,
                             'status' => $gameSlot->status,
                             'is_block' => $gameSlot->is_block,
+                            'locations' => $camp->schedule?->locations->map(function ($location) {
+                                return [
+                                    'id' => $location->id,
+                                    'name' => $location->location_name,
+                                    'latitude' => $location->latitude,
+                                    'longitude' => $location->longitude
+                                ];
+                            }) ?? collect(),
 
                             // Slot Assignments (Referees/Crew)
                             'assignments' => $gameSlot->slotAssignments->map(function ($assignment) {
