@@ -39,7 +39,6 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
     Route::group([], function () {
         // CRUD Operations
         Route::post('/camp/{campId}/crew/create', [CrewManageController::class, 'createCrew']); // working
-        Route::get('/camp/{campId}/crews', [CrewManageController::class, 'getCrews']); // working
         Route::get('/crew/{crewId}', [CrewManageController::class, 'getCrewDetails']); // working- crew details
         Route::post('/crew/update/{crewId}', [CrewManageController::class, 'updateCrew']); // working
         Route::delete('/crew/delete/{crewId}', [CrewManageController::class, 'deleteCrew']); // working
@@ -128,6 +127,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
  */
 Route::get('v1/camp/details/{id}', [CampManageController::class, 'campDetails'])->middleware('auth:api', 'role:director|referee|evaluator,api');
 Route::get('no-auth/camp/details/{id}', [CampManageController::class, 'noAuthCampDetails']); // no auth camp details
+Route::get('/camp/{campId}/crews', [CrewManageController::class, 'getCrews'])->middleware('auth:api', 'role:director|referee|evaluator,api'); // working
 
 // ==========================================
 // REFEREE ROUTES (Auth Required)

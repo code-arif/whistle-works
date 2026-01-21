@@ -22,12 +22,14 @@ class RosterController extends Controller
             ->with([
                 'sportsType',
                 'director',
-                'schedule.locations',
+                'schedule.locations.gameSlots',
                 'schedule.gameSlots.slotAssignments.assignable',
                 'checkedInReferees',
                 'evaluations.evaluator'
             ])
             ->first();
+
+            // return $camp; exit();
 
         if (!$camp) {
             return $this->error([], 'Camp not found.', 404);
@@ -76,14 +78,7 @@ class RosterController extends Controller
                             'court_name' => $gameSlot->court_name,
                             'status' => $gameSlot->status,
                             'is_block' => $gameSlot->is_block,
-                            'locations' => $camp->schedule?->locations->map(function ($location) {
-                                return [
-                                    'id' => $location->id,
-                                    'name' => $location->location_name,
-                                    'latitude' => $location->latitude,
-                                    'longitude' => $location->longitude
-                                ];
-                            }) ?? collect(),
+                            'location' => $gameSlot->location->location_name ?? 'N/A',
 
                             // Slot Assignments (Referees/Crew)
                             'assignments' => $gameSlot->slotAssignments->map(function ($assignment) {
