@@ -180,6 +180,14 @@ class Camp extends Model
         });
     }
 
+    /**
+     * Relation with camp table
+     */
+    public function crews()
+    {
+        return $this->hasMany(Crew::class);
+    }
+
 
     /**
      * Boot method - Automatically add extra price on camp creation

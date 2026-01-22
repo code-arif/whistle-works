@@ -25,11 +25,12 @@ class RosterController extends Controller
                 'schedule.locations.gameSlots',
                 'schedule.gameSlots.slotAssignments.assignable',
                 'checkedInReferees',
-                'evaluations.evaluator'
+                'evaluations.evaluator',
+                'crews.members'
             ])
             ->first();
 
-            // return $camp; exit();
+        // return $camp; exit();
 
         if (!$camp) {
             return $this->error([], 'Camp not found.', 404);
@@ -144,6 +145,25 @@ class RosterController extends Controller
                         'phone' => $evaluator->phone ?? null,
                         'address' => $evaluator->address ?? null,
                         'biography' => $evaluator->biography ?? null,
+                    ];
+                })->values(),
+                'crews' => $camp->crews->map(function ($crew) {
+                    return [
+                        'id' => $crew->id,
+                        'name' => $crew->name ?? 'N/A',
+                        'description' => $crew->description ?? "N/A",
+                        'status' => $crew->status ?? "N/A",
+                        'members' => $crew->members->map(function ($member) {
+                            return [
+                                'id' => $member->id,
+                                'name' => $member->first_name . ' ' . $member->last_name,
+                                'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                                'email' => $member->email,
+                                'phone' => $member->phone ?? null,
+                                'address' => $member->address ?? null,
+                                'biography' => $member->biography ?? null,
+                            ];
+                        })->values(),
                     ];
                 })->values(),
             ]
