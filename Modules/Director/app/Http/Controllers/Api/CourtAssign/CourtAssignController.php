@@ -911,14 +911,15 @@ class CourtAssignController extends Controller
         });
 
         // Sort: assigned first, then available, then unavailable
-        $sorted = $refereesWithStatus->sort(function ($a, $b) {
-            $order = [
-                'assigned_to_this_slot' => 1,
-                'available' => 2,
-                'needs_rest' => 3,
-                'time_conflict' => 4,
-            ];
-            return ($order[$a['status']] ?? 5) <=> ($order[$b['status']] ?? 5);
+        $sorted = collect($refereesWithStatus)->sortBy(function ($referee) {
+            // $order = [
+            //     'assigned_to_this_slot' => 1,
+            //     'available' => 2,
+            //     'needs_rest' => 3,
+            //     'time_conflict' => 4,
+            // ];
+            // return $order[$referee['status']] ?? 5;
+            return $referee['can_assign'] ? 1 : 0;
         })->values();
 
         // Count by status
