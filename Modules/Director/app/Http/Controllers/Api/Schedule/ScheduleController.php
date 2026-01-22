@@ -12,12 +12,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\CampEvaluatorRegistration;
-use App\Notifications\SchedulePublishNotification;
+use Illuminate\Support\Facades\Notification;
 use Modules\Director\Models\CampRefereeCheckin;
 use Modules\Director\Models\GameSlotAssignment;
+use App\Notifications\SchedulePublishNotification;
+use App\Notifications\ScheduleUpdatedNotification;
 use Modules\Director\Http\Requests\{ScheduleCreateRequest, LocationAddRequest};
 use Modules\Director\Models\{Camp, Schedule, ScheduleLocation, ScheduleTimeRange, GameSlot};
-use Illuminate\Support\Facades\Notification;
 
 class ScheduleController extends Controller
 {
@@ -647,6 +648,8 @@ class ScheduleController extends Controller
             return $this->error('Schedule not found.', null, 404);
         }
 
+        $wasPublished = $schedule->status === 'published';
+
         DB::beginTransaction();
         try {
             // Remove all assignments
@@ -658,10 +661,18 @@ class ScheduleController extends Controller
             // Reset slot statuses
             $schedule->gameSlots()->update(['status' => 'available']);
 
+            // Notify if schedule was published
+            $notifiedCount = 0;
+            if ($wasPublished) {
+                $notifiedCount = $this->notifyScheduleUpdate($schedule, 'assignments_changed');
+            }
+
             DB::commit();
 
-            return $this->success('All assignments cleared successfully.', null, 200);
-        } catch (\Exception $e) {
+            return $this->success('All assignments cleared successfully.', [
+                'notifications_sent' => $notifiedCount
+            ], 200);
+        } catch (Exception $e) {
             DB::rollBack();
             return $this->error('Failed to clear schedule: ' . $e->getMessage(), null, 500);
         }
@@ -687,9 +698,31 @@ class ScheduleController extends Controller
             return $this->error('Schedule not found.', null, 404);
         }
 
-        $schedule->delete();
+        $wasPublished = $schedule->status === 'published';
 
-        return $this->success('Schedule deleted successfully.', null, 200);
+        DB::beginTransaction();
+
+        try {
+            // Notify if schedule was published
+            if ($wasPublished) {
+                $notifiedCount = $this->notifyScheduleUpdate($schedule, 'slots_removed');
+            }
+
+            $schedule->delete();
+
+            DB::commit();
+
+            $message = $wasPublished
+                ? 'Schedule deleted successfully. All registered users have been notified.'
+                : 'Schedule deleted successfully.';
+
+            return $this->success($message, [
+                'notifications_sent' => $wasPublished ? ($notifiedCount ?? 0) : 0
+            ], 200);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return $this->error('Failed to delete schedule: ' . $e->getMessage(), null, 500);
+        }
     }
 
     /**
@@ -733,5 +766,61 @@ class ScheduleController extends Controller
             'blocked_slots' => $schedule->gameSlots()->where('is_block', true)->count(),
             'created_at' => $schedule->created_at->format('Y-m-d H:i:s')
         ];
+    }
+
+    /**
+     * Notify all registered referees/evaluators when schedule is updated after publishing
+     * Call this whenever you modify a published schedule
+     */
+    private function notifyScheduleUpdate($schedule, $changeType = 'assignments_changed')
+    {
+        try {
+            $camp = $schedule->camp;
+            $director = auth('api')->user();
+
+            // Get all registered referees
+            $registeredReferees = CampRefereeCheckin::where('camp_id', $camp->id)
+                ->with('referee')
+                ->get()
+                ->pluck('referee')
+                ->filter();
+
+            // Get all registered evaluators
+            $registeredEvaluators = collect();
+            if (class_exists(CampEvaluatorRegistration::class)) {
+                $registeredEvaluators = CampEvaluatorRegistration::where('camp_id', $camp->id)
+                    ->with('evaluator')
+                    ->get()
+                    ->pluck('evaluator')
+                    ->filter();
+            }
+
+            // Combine all recipients
+            $allRecipients = $registeredReferees->merge($registeredEvaluators);
+
+            // Send notifications
+            if ($allRecipients->isNotEmpty()) {
+                Notification::send(
+                    $allRecipients,
+                    new ScheduleUpdatedNotification($camp, $director, $schedule, $changeType)
+                );
+
+                Log::info('Schedule update notifications sent', [
+                    'director_id' => $director->id,
+                    'camp_id' => $camp->id,
+                    'schedule_id' => $schedule->id,
+                    'change_type' => $changeType,
+                    'recipients' => $allRecipients->count(),
+                ]);
+            }
+
+            return $allRecipients->count();
+        } catch (Exception $e) {
+            Log::error('Failed to send schedule update notifications', [
+                'schedule_id' => $schedule->id,
+                'error' => $e->getMessage(),
+            ]);
+            return 0;
+        }
     }
 }

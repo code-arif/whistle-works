@@ -34,7 +34,7 @@ class JourcyNumberNotification extends Notification
 
             'title' => 'New Jourcy Number Assigned',
 
-            'message' => "You have been assigned a new Jourcy Number for the camp.",
+            'message' => "You have been assigned a new jersey number for the camp.",
 
             'jourcy_number' => $this->jourcyNumber,
 

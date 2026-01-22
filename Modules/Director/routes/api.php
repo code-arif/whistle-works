@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Director\Http\Controllers\Api\Camp\CampManageController;
 use Modules\Director\Http\Controllers\Api\Camp\NoAuthCampController;
 use Modules\Director\Http\Controllers\Api\Court\CourtManageController;
+use Modules\Director\Http\Controllers\Api\CourtAssign\AutoCourtAssignController;
 use Modules\Director\Http\Controllers\Api\Crew\CrewManageController;
 use Modules\Director\Http\Controllers\Api\Schedule\ScheduleController;
 use Modules\Director\Http\Controllers\Api\CourtAssign\CourtAssignController;
@@ -80,7 +81,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::post('slot/{slotId}/assign-crew', [CourtAssignController::class, 'assignCrew']); // working - assign crew to a slot
 
         // Auto-assign all slots
-        Route::post('camp/{campId}/auto-assign', [CourtAssignController::class, 'autoAssignReferees']); // done
+        Route::post('camp/{campId}/auto-assign', [AutoCourtAssignController::class, 'autoAssignReferees']); // done
 
         // Remove assignment (crew or individual)
         Route::delete('assignment/{assignmentId}/remove', [CourtAssignController::class, 'removeAssignment']); // working - remove assignment by ID (crew or individual)
