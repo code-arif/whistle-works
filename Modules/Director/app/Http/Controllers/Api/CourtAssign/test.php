@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Director\Http\Controllers\Api\CourtAssign;
+// namespace Modules\Director\Http\Controllers\Api\CourtAssign;
 
 use App\Models\User;
 use Carbon\Carbon;
@@ -672,15 +672,59 @@ class CourtAssignController extends Controller
     /**
      * Remove assignment (individual referee or entire crew)
      */
+    // public function removeAssignment($assignmentId)
+    // {
+    //     $user = auth('api')->user();
+
+    //     $assignment = GameSlotAssignment::with('gameSlot.schedule.camp')
+    //         ->find($assignmentId);
+
+    //     if (!$assignment) {
+    //         return $this->error([], 'Assignment not found.', 404);
+    //     }
+
+    //     // Authorization check
+    //     if ($assignment->gameSlot->schedule->camp->director_id !== $user->id) {
+    //         return $this->error('Unauthorized.', null, 403);
+    //     }
+
+    //     DB::beginTransaction();
+    //     try {
+    //         $gameSlot = $assignment->gameSlot;
+    //         $assignment->delete();
+
+    //         // Update slot status if no more assignments
+    //         $remainingAssignments = GameSlotAssignment::where('game_slot_id', $gameSlot->id)->count();
+
+    //         if ($remainingAssignments === 0) {
+    //             $gameSlot->update(['status' => 'available']);
+    //         }
+
+    //         DB::commit();
+
+    //         return $this->success('Assignment removed successfully.', null, 200);
+    //     } catch (Exception $e) {
+    //         DB::rollBack();
+    //         return $this->error('Failed to remove assignment: ' . $e->getMessage(), null, 500);
+    //     }
+    // }
+
+    /**
+     * Remove assignment (individual referee or entire crew)
+     * Sends notification to affected referees
+     */
     public function removeAssignment($assignmentId)
     {
         $user = auth('api')->user();
 
-        $assignment = GameSlotAssignment::with('gameSlot.schedule.camp')
-            ->find($assignmentId);
+        $assignment = GameSlotAssignment::with([
+            'gameSlot.schedule.camp',
+            'gameSlot.location',
+            'assignable'
+        ])->find($assignmentId);
 
         if (!$assignment) {
-            return $this->error([], 'Assignment not found.', 404);
+            return $this->error('Assignment not found.', null, 404);
         }
 
         // Authorization check
@@ -691,6 +735,40 @@ class CourtAssignController extends Controller
         DB::beginTransaction();
         try {
             $gameSlot = $assignment->gameSlot;
+            $camp = $gameSlot->schedule->camp;
+
+            // Collect referees to notify based on assignment type
+            $refereesToNotify = collect();
+            $assignmentType = $assignment->assignment_type;
+            $crewName = null;
+
+            if ($assignmentType === 'crew') {
+                // Crew assignment - notify all crew members
+                $crew = $assignment->assignable;
+                $crewName = $crew->name;
+                $refereesToNotify = $crew->members; // Assuming crew has members relationship
+
+                Log::info('Crew assignment removed', [
+                    'director_id' => $user->id,
+                    'crew_id' => $crew->id,
+                    'crew_name' => $crewName,
+                    'slot_id' => $gameSlot->id,
+                    'members_count' => $refereesToNotify->count(),
+                ]);
+            } else {
+                // Individual assignment - notify single referee
+                $referee = $assignment->assignable;
+                $refereesToNotify->push($referee);
+
+                Log::info('Individual referee assignment removed', [
+                    'director_id' => $user->id,
+                    'referee_id' => $referee->id,
+                    'referee_name' => "{$referee->first_name} {$referee->last_name}",
+                    'slot_id' => $gameSlot->id,
+                ]);
+            }
+
+            // Delete the assignment
             $assignment->delete();
 
             // Update slot status if no more assignments
@@ -700,11 +778,53 @@ class CourtAssignController extends Controller
                 $gameSlot->update(['status' => 'available']);
             }
 
+            // Send notifications to affected referees
+            if ($refereesToNotify->isNotEmpty()) {
+                Notification::send(
+                    $refereesToNotify,
+                    new RefereeRemovedFromCourtNotification(
+                        $gameSlot,
+                        $camp,
+                        $user,
+                        $assignmentType,
+                        $crewName,
+                        'Assignment removed by director' // Optional reason
+                    )
+                );
+            }
+
             DB::commit();
 
-            return $this->success('Assignment removed successfully.', null, 200);
+            $responseData = [
+                'assignment_id' => $assignmentId,
+                'assignment_type' => $assignmentType,
+                'slot_id' => $gameSlot->id,
+                'court_name' => $gameSlot->court_name,
+                'notifications_sent' => $refereesToNotify->count(),
+                'remaining_assignments' => $remainingAssignments,
+                'slot_status' => $remainingAssignments === 0 ? 'available' : 'assigned',
+            ];
+
+            if ($assignmentType === 'crew') {
+                $responseData['crew_name'] = $crewName;
+                $responseData['affected_members'] = $refereesToNotify->count();
+            } else {
+                $responseData['referee_name'] = $refereesToNotify->first()->first_name . ' ' .
+                    $refereesToNotify->first()->last_name;
+            }
+
+            return $this->success(
+                'Assignment removed successfully. Notifications sent to affected referee(s).',
+                $responseData,
+                200
+            );
         } catch (Exception $e) {
             DB::rollBack();
+            Log::error('Failed to remove assignment', [
+                'error' => $e->getMessage(),
+                'assignment_id' => $assignmentId,
+                'trace' => $e->getTraceAsString(),
+            ]);
             return $this->error('Failed to remove assignment: ' . $e->getMessage(), null, 500);
         }
     }
