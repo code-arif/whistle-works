@@ -11,6 +11,7 @@ use Modules\Director\Models\Camp;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\CampRefereeJearsyNumber;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\JourcyNumberNotification;
 use Modules\Director\Models\CampRefereeCheckin;
@@ -276,15 +277,15 @@ class RefereeManageController extends Controller
 
 
     /**
-     * Update referee's jourcy number (Director only)
-     * Director can assign/update jourcy number for registered referees
+     * Update referee jersey number for a specific camp
+     * Jersey numbers are now camp-specific
      */
     public function updateRefereeJourcyNumber(Request $request, $campId, $refereeId)
     {
         $director = auth('api')->user();
 
         $request->validate([
-            'jourcy_number' => 'nullable|string|max:3',
+            'jourcy_number' => 'required|string|max:3',
         ]);
 
         // Verify camp ownership
@@ -296,10 +297,11 @@ class RefereeManageController extends Controller
             return $this->error('Camp not found or unauthorized.', null, 404);
         }
 
+        // Check if schedule is published
         if ($camp->schedule && $camp->schedule->status === 'published') {
             return $this->error(
-                [],
-                'You cannot change the jourcy number because the camp schedule is already published.',
+                'You cannot change the jersey number because the camp schedule is already published.',
+                null,
                 403
             );
         }
@@ -307,7 +309,7 @@ class RefereeManageController extends Controller
         // Verify referee is registered for this camp
         $registration = CampRefereeCheckin::where('camp_id', $campId)
             ->where('referee_id', $refereeId)
-            ->with('referee:id,first_name,last_name,email,jourcy_number')
+            ->with('referee:id,first_name,last_name,email,avatar')
             ->first();
 
         if (!$registration) {
@@ -321,65 +323,89 @@ class RefereeManageController extends Controller
             );
         }
 
-        // Check if jourcy number already exists for another user
-        // $existingUser = User::where('jourcy_number', $request->jourcy_number)
-        //     ->where('id', '!=', $refereeId)
-        //     ->first();
+        // Check if jersey number already exists in THIS CAMP for another referee
+        $existingJerseyAssignment = CampRefereeJearsyNumber::where('camp_id', $campId)
+            ->where('jersey_number', $request->jourcy_number)
+            ->where('referee_id', '!=', $refereeId)
+            ->with('referee:id,first_name,last_name,email')
+            ->first();
 
-        // if ($existingUser) {
-        //     return $this->error(
-        //         [
-        //             'jourcy_number' => $request->jourcy_number,
-        //             'assigned_to' => $existingUser->first_name . ' ' . $existingUser->last_name,
-        //             'assigned_to_email' => $existingUser->email,
-        //         ],
-        //         'This jourcy number is already assigned to another referee.',
-        //         400
-        //     );
-        // }
+        if ($existingJerseyAssignment) {
+            $assignedReferee = $existingJerseyAssignment->referee;
+            return $this->error(
+                'This jersey number is already assigned to another referee in this camp.',
+                [
+                    'jourcy_number' => $request->jourcy_number,
+                    'assigned_to' => $assignedReferee->first_name . ' ' . $assignedReferee->last_name,
+                    'assigned_to_email' => $assignedReferee->email,
+                    'assigned_to_id' => $assignedReferee->id,
+                ],
+                400
+            );
+        }
 
         DB::beginTransaction();
         try {
             $referee = $registration->referee;
 
-            $oldJourcyNumber = $referee->jourcy_number;
+            // Get old jersey number for this camp (if exists)
+            $oldJerseyAssignment = CampRefereeJearsyNumber::where('camp_id', $campId)
+                ->where('referee_id', $refereeId)
+                ->first();
 
-            // Update jourcy number in users table
-            $referee->update([
-                'jourcy_number' => $request->jourcy_number,
-            ]);
+            $oldJerseyNumber = $oldJerseyAssignment?->jersey_number;
 
-            // Send notifications to this referee
+            // Update or create jersey number for this camp
+            $jerseyAssignment = CampRefereeJearsyNumber::updateOrCreate(
+                [
+                    'camp_id' => $campId,
+                    'referee_id' => $refereeId,
+                ],
+                [
+                    'jersey_number' => $request->jourcy_number,
+                ]
+            );
+
+            // Send notification to referee
             Notification::send(
                 $referee,
                 new JourcyNumberNotification(
                     $referee,
                     $camp,
                     $director,
-                    $request->jourcy_number
+                    $request->jourcy_number,
+                    $oldJerseyNumber
                 )
             );
 
-
             DB::commit();
 
-            Log::info('Director updated referee jourcy number', [
+            Log::info('Director updated referee jersey number', [
                 'director_id' => $director->id,
                 'camp_id' => $campId,
                 'referee_id' => $refereeId,
-                'old_jourcy_number' => $oldJourcyNumber,
-                'new_jourcy_number' => $request->jourcy_number,
+                'old_jersey_number' => $oldJerseyNumber,
+                'new_jersey_number' => $request->jourcy_number,
+                'action' => $oldJerseyAssignment ? 'updated' : 'created',
             ]);
 
             return $this->success(
-                'Jourcy number updated successfully.',
+                $oldJerseyAssignment
+                    ? 'Jersey number updated successfully.'
+                    : 'Jersey number assigned successfully.',
                 [
                     'referee' => [
                         'id' => $referee->id,
                         'name' => $referee->first_name . ' ' . $referee->last_name,
                         'email' => $referee->email,
-                        'jourcy_number' => $referee->jourcy_number,
-                        'previous_jourcy_number' => $oldJourcyNumber,
+                        'avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
+                    ],
+                    'jersey_assignment' => [
+                        'id' => $jerseyAssignment->id,
+                        'jersey_number' => $jerseyAssignment->jersey_number,
+                        'previous_jersey_number' => $oldJerseyNumber,
+                        'assigned_at' => $jerseyAssignment->created_at->format('Y-m-d H:i:s'),
+                        'updated_at' => $jerseyAssignment->updated_at->format('Y-m-d H:i:s'),
                     ],
                     'registration' => [
                         'id' => $registration->id,
@@ -397,16 +423,18 @@ class RefereeManageController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
 
-            Log::error('Failed to update referee jourcy number', [
+            Log::error('Failed to update referee jersey number', [
                 'director_id' => $director->id,
                 'camp_id' => $campId,
                 'referee_id' => $refereeId,
+                'jersey_number' => $request->jourcy_number,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return $this->error(
+                'Failed to update jersey number.',
                 ['error' => $e->getMessage()],
-                'Failed to update jourcy number.',
                 500
             );
         }
