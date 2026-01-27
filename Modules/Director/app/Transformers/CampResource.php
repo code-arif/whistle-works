@@ -2,6 +2,7 @@
 
 namespace Modules\Director\Transformers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -29,8 +30,8 @@ class CampResource extends JsonResource
             'camp_name'         => $this->camp_name,
             'camp_logo'         => $this->camp_logo ? asset($this->camp_logo) : asset('default/no_image.webp'),
             'location'          => $this->location,
-            'start_date'        => $this->start_date,
-            'end_date'          => $this->end_date,
+            'start_date'        => $this->start_date->todateString(),
+            'end_date'          => $this->end_date->todateString(),
             'camp_details'      => $this->camp_details,
             'price'             => number_format($this->price, 2),
             'sports_type_id'    => $this->sports_type_id,
@@ -97,8 +98,8 @@ class CampResource extends JsonResource
     {
         $dates = [];
 
-        $startDate = \Carbon\Carbon::parse($start);
-        $endDate   = \Carbon\Carbon::parse($end);
+        $startDate = Carbon::parse($start);
+        $endDate   = Carbon::parse($end);
 
         while ($startDate->lte($endDate)) {
             $dates[] = [
