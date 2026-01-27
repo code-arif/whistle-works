@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('camp_id')->constrained()->onDelete('cascade');
             $table->foreignId('referee_id')->constrained('users')->onDelete('cascade');
-            $table->string('jersey_number');
+            $table->string('jersey_number')->nullable();
             $table->timestamps();
         });
     }

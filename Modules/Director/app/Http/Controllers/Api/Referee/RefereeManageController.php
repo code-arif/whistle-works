@@ -285,7 +285,7 @@ class RefereeManageController extends Controller
         $director = auth('api')->user();
 
         $request->validate([
-            'jourcy_number' => 'required|string|max:3',
+            'jourcy_number' => 'nullable|string|max:3',
         ]);
 
         // Verify camp ownership
