@@ -21,9 +21,9 @@ return new class extends Migration
             $table->string('location')->nullable();
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
-            $table->date('start_date')->nullable;
-            $table->date('end_date')->nullable;
-            $table->longText('camp_details')->nullable;
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
+            $table->longText('camp_details')->nullable();
             $table->decimal('price', 8, 2);
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
