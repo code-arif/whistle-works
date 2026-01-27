@@ -190,6 +190,7 @@ class RefereeAssignmentController extends Controller
                     'location' => $camp->location,
                     'start_date' => $camp->start_date,
                     'end_date' => $camp->end_date,
+                    'timezone' => $camp->timezone,
                 ],
                 'statistics' => [
                     'total_assigned_slots' => $totalSlots,
