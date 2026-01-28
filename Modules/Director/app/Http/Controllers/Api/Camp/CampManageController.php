@@ -137,6 +137,129 @@ class CampManageController extends Controller
 
 
     // Edit Camp
+    // public function updateCamp(Request $request, $id)
+    // {
+    //     $user = auth('api')->user();
+
+    //     // Find Camp
+    //     $camp = Camp::where('id', $id)
+    //         ->where('director_id', $user->id)
+    //         ->first();
+
+    //     if (!$camp) {
+    //         return $this->error('Camp not found.', null, 404);
+    //     }
+
+    //     // Validate request fields
+    //     $validated = $request->validate([
+    //         'camp_name'       => 'sometimes|string|max:255',
+    //         'location'        => 'sometimes|string|max:255',
+    //         'start_date'      => 'sometimes|date',
+    //         'end_date'        => 'sometimes|date|after_or_equal:start_date',
+    //         'camp_details'    => 'sometimes|string',
+    //         'price'           => 'sometimes|numeric',
+    //         'sports_type_id'  => 'sometimes|exists:sports_types,id',
+    //         'camp_logo'       => 'sometimes|image|max:2048',
+    //         'latitude'        => 'sometimes|numeric',
+    //         'longitude'       => 'sometimes|numeric',
+    //         'timezone'        => 'sometimes|string|timezone',
+    //     ]);
+
+    //     // Update Sports Type
+    //     if ($request->filled('sports_type_id')) {
+    //         $sportsType = SportsType::find($request->sports_type_id);
+    //         if ($sportsType) {
+    //             $camp->sports_type_id   = $sportsType->id;
+    //             $camp->sports_type_name = $sportsType->sports_name;
+    //         }
+    //     }
+
+    //     // Update Logo
+    //     if ($request->hasFile('camp_logo')) {
+    //         if ($camp->camp_logo) {
+    //             UploadFile::deleteImage($camp->camp_logo);
+    //         }
+    //         $camp->camp_logo = UploadFile::uploadFiles(
+    //             $request->file('camp_logo'),
+    //             'uploads/camp_logos'
+    //         );
+    //     }
+
+    //     // Update coordinates and auto-detect timezone if needed
+    //     if ($request->filled('latitude') && $request->filled('longitude')) {
+    //         // $camp->latitude = $request->latitude;
+    //         // $camp->longitude = $request->longitude;
+
+    //         $latitude = $request->latitude;
+    //         $longitude = $request->longitude;
+
+    //         // Validate coordinates
+    //         if (!$this->locationService->validateCoordinates($latitude, $longitude)) {
+    //             return $this->error('Invalid coordinates provided.', null, 400);
+    //         }
+
+    //         $camp->latitude = $latitude;
+    //         $camp->longitude = $longitude;
+
+    //         // Fetch updated location name from Google if location name not explicitly provided
+    //         if (!$request->filled('location')) {
+    //             $locationResult = $this->locationService->getLocationFromCoordinates(
+    //                 $latitude,
+    //                 $longitude,
+    //                 'detailed'
+    //             );
+
+    //             if ($locationResult['success']) {
+    //                 $camp->location = $locationResult['location_name'];
+    //             }
+    //         }
+
+    //         // Auto-update timezone if not explicitly provided
+    //         if (!$request->filled('timezone')) {
+    //             $camp->timezone = HandlesTimezones::detectFromCoordinates(
+    //                 $request->latitude,
+    //                 $request->longitude
+    //             );
+    //         }
+    //     }
+
+    //     // Update location name if provided explicitly
+    //     if ($request->filled('location')) {
+    //         $locationName = $request->location;
+
+    //         // If location name is too long and we have coordinates, fetch from Google
+    //         if (strlen($locationName) > 100 && $camp->latitude && $camp->longitude) {
+    //             $locationResult = $this->locationService->getLocationFromCoordinates(
+    //                 $camp->latitude,
+    //                 $camp->longitude,
+    //                 'detailed'
+    //             );
+
+    //             if ($locationResult['success']) {
+    //                 $locationName = $locationResult['location_name'];
+    //             }
+    //         }
+
+    //         $camp->location = $locationName;
+    //     }
+
+    //     // Update dynamic fields
+    //     $fields = ['camp_name', 'location', 'start_date', 'end_date', 'camp_details', 'price', 'timezone'];
+    //     foreach ($fields as $field) {
+    //         if ($request->filled($field)) {
+    //             $camp->$field = $request->$field;
+    //         }
+    //     }
+
+    //     $camp->save();
+
+    //     return $this->success(
+    //         'Camp updated successfully.',
+    //         new CampResource($camp),
+    //         200
+    //     );
+    // }
+
     public function updateCamp(Request $request, $id)
     {
         $user = auth('api')->user();
@@ -179,29 +302,28 @@ class CampManageController extends Controller
             if ($camp->camp_logo) {
                 UploadFile::deleteImage($camp->camp_logo);
             }
+
             $camp->camp_logo = UploadFile::uploadFiles(
                 $request->file('camp_logo'),
                 'uploads/camp_logos'
             );
         }
 
-        // Update coordinates and auto-detect timezone if needed
+        /**
+         * Handle Coordinates, Location & Timezone
+         */
         if ($request->filled('latitude') && $request->filled('longitude')) {
-            // $camp->latitude = $request->latitude;
-            // $camp->longitude = $request->longitude;
-
-            $latitude = $request->latitude;
+            $latitude  = $request->latitude;
             $longitude = $request->longitude;
 
-            // Validate coordinates
             if (!$this->locationService->validateCoordinates($latitude, $longitude)) {
                 return $this->error('Invalid coordinates provided.', null, 400);
             }
 
-            $camp->latitude = $latitude;
+            $camp->latitude  = $latitude;
             $camp->longitude = $longitude;
 
-            // Fetch updated location name from Google if location name not explicitly provided
+            // Auto update location if not provided
             if (!$request->filled('location')) {
                 $locationResult = $this->locationService->getLocationFromCoordinates(
                     $latitude,
@@ -214,20 +336,19 @@ class CampManageController extends Controller
                 }
             }
 
-            // Auto-update timezone if not explicitly provided
+            // Auto detect timezone if not provided
             if (!$request->filled('timezone')) {
                 $camp->timezone = HandlesTimezones::detectFromCoordinates(
-                    $request->latitude,
-                    $request->longitude
+                    $latitude,
+                    $longitude
                 );
             }
         }
 
-        // Update location name if provided explicitly
+        // Explicit location update
         if ($request->filled('location')) {
             $locationName = $request->location;
 
-            // If location name is too long and we have coordinates, fetch from Google
             if (strlen($locationName) > 100 && $camp->latitude && $camp->longitude) {
                 $locationResult = $this->locationService->getLocationFromCoordinates(
                     $camp->latitude,
@@ -243,8 +364,37 @@ class CampManageController extends Controller
             $camp->location = $locationName;
         }
 
-        // Update dynamic fields
-        $fields = ['camp_name', 'location', 'start_date', 'end_date', 'camp_details', 'price', 'timezone'];
+        /**
+         * CRITICAL: Price handling (same logic as createCamp)
+         */
+        if ($request->filled('price')) {
+            $extraPrice  = env('CAMP_EXTRA_PRICE', 0);
+            $camp->price = $request->price + $extraPrice;
+        }
+
+        /**
+         * Date handling (timezone-safe, date only)
+         */
+        $campTimezone = $request->timezone ?? $camp->timezone ?? config('app.timezone');
+
+        if ($request->filled('start_date')) {
+            $camp->start_date = Carbon::parse(
+                $request->start_date,
+                $campTimezone
+            )->format('Y-m-d');
+        }
+
+        if ($request->filled('end_date')) {
+            $camp->end_date = Carbon::parse(
+                $request->end_date,
+                $campTimezone
+            )->format('Y-m-d');
+        }
+
+        /**
+         * Update remaining simple fields
+         */
+        $fields = ['camp_name', 'camp_details', 'timezone'];
         foreach ($fields as $field) {
             if ($request->filled($field)) {
                 $camp->$field = $request->$field;
@@ -259,6 +409,7 @@ class CampManageController extends Controller
             200
         );
     }
+
 
     /**
      * Get available timezones for dropdown
