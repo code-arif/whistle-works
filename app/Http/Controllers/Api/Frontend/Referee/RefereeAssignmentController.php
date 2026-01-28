@@ -309,7 +309,7 @@ class RefereeAssignmentController extends Controller
                     'end_date' => $camp->end_date->toDateString(),
                 ],
                 'game_details' => [
-                    'date' => $gameSlot->game_date,
+                    'date' => $gameSlot->game_date->toDateString(),
                     'start_time' => $gameSlot->start_time,
                     'end_time' => $gameSlot->end_time,
                     'court_name' => $gameSlot->court_name,
