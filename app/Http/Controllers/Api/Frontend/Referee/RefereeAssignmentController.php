@@ -145,7 +145,7 @@ class RefereeAssignmentController extends Controller
             return [
                 'game_slot_id' => $gameSlot->id,
                 'game_details' => [
-                    'date' => $gameSlot->game_date,
+                    'date' => $gameSlot->game_date->toDateString(),
                     'start_time' => $gameSlot->start_time,
                     'end_time' => $gameSlot->end_time,
                     'court_name' => $gameSlot->court_name,
@@ -424,7 +424,7 @@ class RefereeAssignmentController extends Controller
         $response = [
             'game_slot' => [
                 'id' => $gameSlot->id,
-                'date' => $gameSlot->game_date,
+                'date' => $gameSlot->game_date->toDateString(),
                 'start_time' => $gameSlot->start_time,
                 'end_time' => $gameSlot->end_time,
                 'court_name' => $gameSlot->court_name,
@@ -494,7 +494,7 @@ class RefereeAssignmentController extends Controller
             return [
                 'game_slot_id' => $gameSlot->id,
                 'camp_name' => $camp->camp_name,
-                'date' => $gameSlot->game_date,
+                'date' => $gameSlot->game_date->toDateString(),
                 'time' => $gameSlot->start_time . ' - ' . $gameSlot->end_time,
                 'court' => $gameSlot->court_name,
                 'location' => $gameSlot->location->location_name ?? 'N/A',
