@@ -233,7 +233,7 @@ class RosterController extends Controller
                     'game_courts' => $camp->schedule?->gameSlots->map(function ($gameSlot) use ($camp) {
                         return [
                             'id' => $gameSlot->id,
-                            'game_date' => $gameSlot->game_date,
+                            'game_date' => $gameSlot->game_date->toDateString(),
                             'start_time' => $gameSlot->start_time,
                             'end_time' => $gameSlot->end_time,
                             'court_name' => $gameSlot->court_name,
