@@ -234,8 +234,8 @@ class RosterController extends Controller
                         return [
                             'id' => $gameSlot->id,
                             'game_date' => $gameSlot->game_date,
-                            'start_time' => $gameSlot->start_time->toTimeString(),
-                            'end_time' => $gameSlot->end_time->toTimeString(),
+                            'start_time' => $gameSlot->start_time,
+                            'end_time' => $gameSlot->end_time,
                             'court_name' => $gameSlot->court_name,
                             'status' => $gameSlot->status,
                             'is_block' => $gameSlot->is_block,

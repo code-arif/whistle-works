@@ -83,8 +83,8 @@ class RefereeAssignmentController extends Controller
                     'name' => $camp->camp_name,
                     'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
                     'location' => $camp->location,
-                    'start_date' => $camp->start_date,
-                    'end_date' => $camp->end_date,
+                    'start_date' => $camp->start_date->toDateString(),
+                    'end_date' => $camp->end_date->toDateString(),
                 ],
                 'total_assignments' => 0,
                 'game_slots' => []
@@ -188,8 +188,8 @@ class RefereeAssignmentController extends Controller
                     'name' => $camp->camp_name,
                     'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
                     'location' => $camp->location,
-                    'start_date' => $camp->start_date,
-                    'end_date' => $camp->end_date,
+                    'start_date' => $camp->start_date->toDateString(),
+                    'end_date' => $camp->end_date->toDateString(),
                     'timezone' => $camp->timezone,
                 ],
                 'statistics' => [
@@ -305,8 +305,8 @@ class RefereeAssignmentController extends Controller
                     'name' => $camp->camp_name,
                     'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
                     'location' => $camp->location,
-                    'start_date' => $camp->start_date,
-                    'end_date' => $camp->end_date,
+                    'start_date' => $camp->start_date->toDateString(),
+                    'end_date' => $camp->end_date->toDateString(),
                 ],
                 'game_details' => [
                     'date' => $gameSlot->game_date,
@@ -535,8 +535,8 @@ class RefereeAssignmentController extends Controller
                     'camp_name' => $checkin->camp->camp_name,
                     'location' => $checkin->camp->location,
                     'camp_logo' => $checkin->camp->camp_logo ? asset($checkin->camp->camp_logo) : asset('default/no_image.webp'),
-                    'start_date' => $checkin->camp->start_date,
-                    'end_date' => $checkin->camp->end_date,
+                    'start_date' => $checkin->camp->start_date->toDateString(),
+                    'end_date' => $checkin->camp->end_date->toDateString(),
                     'price' => $checkin->camp->price
                 ],
                 'payment' => $checkin->payment ? [
