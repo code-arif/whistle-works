@@ -8,9 +8,10 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Modules\Director\Models\Camp;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Modules\Director\Models\CampRefereeCheckin;
 
-class RegistrationConfirmationMail extends Mailable
+class RegistrationConfirmationMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

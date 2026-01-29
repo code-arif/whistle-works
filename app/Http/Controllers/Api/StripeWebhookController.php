@@ -187,7 +187,7 @@ class StripeWebhookController extends Controller
 
                 // Send registration confirmation email to referee
                 try {
-                    Mail::to($user->email)->send(new RegistrationConfirmationMail($user, $camp, $registration));
+                    Mail::to($user->email)->queue(new RegistrationConfirmationMail($user, $camp, $registration));
                 } catch (Exception $e) {
                     Log::error('Stripe Webhook: Failed to send registration email', [
                         'error' => $e->getMessage(),
