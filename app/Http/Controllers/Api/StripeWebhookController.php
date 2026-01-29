@@ -17,6 +17,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PaymentSessionExpiredMail;
 use App\Mail\AdminPaymentNotificationMail;
+use App\Mail\NewCampRegistrationNorificationForDirector;
 use App\Mail\RegistrationConfirmationMail;
 use Modules\Director\Models\CampRefereeCheckin;
 use Stripe\Exception\SignatureVerificationException;
@@ -215,17 +216,57 @@ class StripeWebhookController extends Controller
             }
 
             // Send admin notification email
+            // try {
+            //     $admins = User::role('admin')->get();
+            //     $director = User::find($camp->director_id);
+            //     if ($director) {
+            //         Mail::to($director->email)
+            //             ->queue(new NewCampRegistrationNorificationForDirector(
+            //                 $user,
+            //                 $camp,
+            //                 $payment
+            //             ));
+            //     }
+            //     foreach ($admins as $admin) {
+            //         // Mail::to($admin->email)->send(new AdminPaymentNotificationMail($user, $camp, $payment, $admin));
+            //         Mail::to('drew@whistleworks.org')->send(new AdminPaymentNotificationMail($user, $camp, $payment, $admin));
+            //     }
+            // } catch (Exception $e) {
+            //     Log::error('Stripe Webhook: Failed to send admin notification', [
+            //         'error' => $e->getMessage()
+            //     ]);
+            // }
+
             try {
                 $admins = User::role('admin')->get();
+                $director = User::find($camp->director_id);
+
+                // Director mail (queued)
+                if ($director) {
+                    Mail::to($director->email)
+                        ->queue(new NewCampRegistrationNorificationForDirector(
+                            $user,
+                            $camp,
+                            $payment
+                        ));
+                }
+
+                // Admin mails (queued)
                 foreach ($admins as $admin) {
-                    // Mail::to($admin->email)->send(new AdminPaymentNotificationMail($user, $camp, $payment, $admin));
-                    Mail::to('arifulislam6460@gmail.com')->send(new AdminPaymentNotificationMail($user, $camp, $payment, $admin));
+                    Mail::to('drew@whistleworks.org')
+                        ->queue(new AdminPaymentNotificationMail(
+                            $user,
+                            $camp,
+                            $payment,
+                            $admin
+                        ));
                 }
             } catch (Exception $e) {
-                Log::error('Stripe Webhook: Failed to send admin notification', [
+                Log::error('Stripe Webhook: Failed to send notification emails', [
                     'error' => $e->getMessage()
                 ]);
             }
+
 
             DB::commit();
         } catch (Exception $e) {
