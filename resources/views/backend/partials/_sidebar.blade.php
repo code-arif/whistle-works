@@ -53,8 +53,8 @@
                     </a>
 
                     <ul class="slide-menu">
-                        {{-- <li><a href="{{ route('admin.cms.privecyandterms.terms') }}" class="slide-item">Terms &
-                                Condition</a></li> --}}
+                        <li><a href="{{ route('admin.cms.privecyandterms.terms') }}" class="slide-item">Terms &
+                                Condition</a></li>
                         <li><a href="{{ route('admin.cms.privecyandterms.privacy') }}" class="slide-item">Privacy
                                 Policy</a></li>
 

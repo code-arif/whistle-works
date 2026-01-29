@@ -8,12 +8,28 @@ use Illuminate\Http\Request;
 
 class PrivecyPolicyController extends Controller
 {
-    public function index()
+    /**
+     * Display a listing of the privacy policies and terms.
+     */
+    public function privecyPolicy()
     {
        $data = PrivecyAndTerms::get();
        return response()->json([
            'status' => true,
-           'message' => 'Privacy and Terms fetched successfully',
+           'message' => 'Privacy policy fetched successfully',
+           'data' => $data
+       ]);
+    }
+
+    /**
+     * Display a listing of the terms and conditions.
+     */
+    public function termsAndConditions()
+    {
+       $data = PrivecyAndTerms::get();
+       return response()->json([
+           'status' => true,
+           'message' => 'Terms and conditions fetched successfully',
            'data' => $data
        ]);
     }

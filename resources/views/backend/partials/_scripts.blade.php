@@ -87,7 +87,7 @@
     for (var i = 0; i < elements.length; i++) {
         ClassicEditor
             .create(elements[i], {
-                height: '500px'
+                height: '300px'
             })
             .catch(error => {
                 console.error(error);

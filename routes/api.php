@@ -205,7 +205,8 @@ Route::post('/contact-form', [ContactController::class, 'submitContact']);
 Route::get('/cms/home', [HomePageController::class, 'home']);
 
 // get privacy policy data
-Route::get('/privacy-policy', [PrivecyPolicyController::class, 'index']);
+Route::get('/privacy-policy', [PrivecyPolicyController::class, 'privecyPolicy']);
+Route::get('/terms-and-conditions', [PrivecyPolicyController::class, 'termsAndConditions']);
 
 // get setting data
 Route::get('/settings', [SettingsController::class, 'index']);
