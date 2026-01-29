@@ -5,11 +5,12 @@ namespace App\Mail;
 use App\Models\User;
 use App\Models\CampPayment;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Modules\Director\Models\Camp;
 use Illuminate\Queue\SerializesModels;
 
-class AdminPaymentNotificationMail extends Mailable
+class AdminPaymentNotificationMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
