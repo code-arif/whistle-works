@@ -13,7 +13,7 @@ class PrivecyPolicyController extends Controller
      */
     public function privecyPolicy()
     {
-       $data = PrivecyAndTerms::get();
+       $data = PrivecyAndTerms::where('type', 'privacy')->first();
        return response()->json([
            'status' => true,
            'message' => 'Privacy policy fetched successfully',
@@ -26,7 +26,7 @@ class PrivecyPolicyController extends Controller
      */
     public function termsAndConditions()
     {
-       $data = PrivecyAndTerms::get();
+       $data = PrivecyAndTerms::where('type', 'terms')->first();
        return response()->json([
            'status' => true,
            'message' => 'Terms and conditions fetched successfully',

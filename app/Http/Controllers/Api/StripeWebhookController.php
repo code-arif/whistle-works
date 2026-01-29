@@ -238,7 +238,7 @@ class StripeWebhookController extends Controller
             // }
 
             try {
-                $admins = User::role('admin')->get();
+                $admin = User::role('admin')->first();
                 $director = User::find($camp->director_id);
 
                 // Director mail (queued)
@@ -252,15 +252,13 @@ class StripeWebhookController extends Controller
                 }
 
                 // Admin mails (queued)
-                foreach ($admins as $admin) {
-                    Mail::to('drew@whistleworks.org')
-                        ->queue(new AdminPaymentNotificationMail(
-                            $user,
-                            $camp,
-                            $payment,
-                            $admin
-                        ));
-                }
+                Mail::to($admin->email)
+                    ->queue(new AdminPaymentNotificationMail(
+                        $user,
+                        $camp,
+                        $payment,
+                        $admin
+                    ));
             } catch (Exception $e) {
                 Log::error('Stripe Webhook: Failed to send notification emails', [
                     'error' => $e->getMessage()
