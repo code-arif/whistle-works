@@ -7,8 +7,9 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Modules\Director\Models\Camp;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class PaymentSessionExpiredMail extends Mailable
+class PaymentSessionExpiredMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

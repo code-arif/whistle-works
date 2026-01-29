@@ -298,7 +298,7 @@ class StripeWebhookController extends Controller
                 if ($user && $camp) {
                     // Send session expired email
                     try {
-                        Mail::to($user->email)->send(new PaymentSessionExpiredMail(
+                        Mail::to($user->email)->queue(new PaymentSessionExpiredMail(
                             $user,
                             $camp,
                             $session->id,
