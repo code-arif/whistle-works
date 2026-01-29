@@ -742,7 +742,7 @@ class RefereeCheckinController extends Controller
             // Send email to each director
             foreach ($directors as $director) {
                 try {
-                    Mail::to($director->email)->send(
+                    Mail::to($director->email)->queue(
                         new CampCheckinNotificationMail($director, $referee, $camp, $registration)
                     );
 
