@@ -91,8 +91,8 @@ class RefereeCheckinController extends Controller
                         'id' => $camp->id,
                         'name' => $camp->camp_name,
                         'location' => $camp->location,
-                        'start_date' => $camp->start_date,
-                        'end_date' => $camp->end_date,
+                        'start_date' => $camp->start_date->toDateString(),
+                        'end_date' => $camp->end_date->toDateString(),
                     ],
                     'payment' => [
                         'amount' => $payment->amount,
@@ -130,8 +130,8 @@ class RefereeCheckinController extends Controller
                     'name' => $camp->camp_name,
                     'price' => $camp->price,
                     'location' => $camp->location,
-                    'start_date' => $camp->start_date,
-                    'end_date' => $camp->end_date,
+                    'start_date' => $camp->start_date->toDateString(),
+                    'end_date' => $camp->end_date->toDateString(),
                 ]
             ],
             200
@@ -212,14 +212,14 @@ class RefereeCheckinController extends Controller
                     'id' => $camp->id,
                     'name' => $camp->camp_name,
                     'location' => $camp->location,
-                    'start_date' => $camp->start_date,
-                    'end_date' => $camp->end_date,
+                    'start_date' => $camp->start_date->toDateString(),
+                    'end_date' => $camp->end_date->toDateString(),
                 ],
                 'payment' => [
                     'amount' => $paymentResult['payment']->amount,
                     'paid_at' => $paymentResult['payment']->paid_at->format('Y-m-d H:i:s'),
                 ],
-                'next_step' => "You can check-in starting from {$camp->start_date}",
+                'next_step' => "You can check-in starting from {$camp->start_date->toDateString()}.",
             ],
             201
         );
@@ -280,10 +280,10 @@ class RefereeCheckinController extends Controller
             $daysRemaining = now()->diffInDays($camp->start_date, false);
             return $this->error(
                 [
-                    'camp_starts_on' => $camp->start_date,
+                    'camp_starts_on' => $camp->start_date->toDateString(),
                     'days_remaining' => ceil($daysRemaining),
                 ],
-                "Camp has not started yet. Check-in will be available from {$camp->start_date}.",
+                "Camp has not started yet. Check-in will be available from {$camp->start_date->toDateString()}.",
                 400
             );
         }
@@ -292,7 +292,7 @@ class RefereeCheckinController extends Controller
         if ($camp->end_date < $today) {
             return $this->error(
                 [
-                    'camp_ended_on' => $camp->end_date,
+                    'camp_ended_on' => $camp->end_date->toDateString(),
                 ],
                 'This camp has already ended. Check-in is no longer available.',
                 400
@@ -321,8 +321,8 @@ class RefereeCheckinController extends Controller
                     'id' => $camp->id,
                     'name' => $camp->camp_name,
                     'location' => $camp->location,
-                    'start_date' => $camp->start_date,
-                    'end_date' => $camp->end_date,
+                    'start_date' => $camp->start_date->toDateString(),
+                    'end_date' => $camp->end_date->toDateString(),
                 ],
             ],
             200
@@ -386,8 +386,8 @@ class RefereeCheckinController extends Controller
                     'camp_name' => $camp->camp_name,
                     'location' => $camp->location,
                     'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
-                    'start_date' => $camp->start_date,
-                    'end_date' => $camp->end_date,
+                    'start_date' => $camp->start_date->toDateString(),
+                    'end_date' => $camp->end_date->toDateString(),
                     'price' => $camp->price,
                     'status' => $campStatus,
                     'sports_type' => $camp->sportsType ? [
@@ -499,8 +499,8 @@ class RefereeCheckinController extends Controller
                     'camp_name' => $camp->camp_name,
                     'location' => $camp->location,
                     'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
-                    'start_date' => $camp->start_date,
-                    'end_date' => $camp->end_date,
+                    'start_date' => $camp->start_date->toDateString(),
+                    'end_date' => $camp->end_date->toDateString(),
                     'price' => $camp->price,
                     'status' => $campStatus,
                     'sports_type' => $camp->sportsType ? [
@@ -602,8 +602,8 @@ class RefereeCheckinController extends Controller
                     'logo' => $camp->camp_logo
                         ? asset($camp->camp_logo)
                         : asset('default/no_image.webp'),
-                    'start_date' => $camp->start_date,
-                    'end_date' => $camp->end_date,
+                    'start_date' => $camp->start_date->toDateString(),
+                    'end_date' => $camp->end_date->toDateString(),
                     'status' => $campStatus,
                     'sports_type' => $camp->sportsType ? [
                         'name' => $camp->sportsType->sports_name,
@@ -677,8 +677,8 @@ class RefereeCheckinController extends Controller
                     'name' => $camp->camp_name,
                     'location' => $camp->location,
                     'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
-                    'start_date' => $camp->start_date,
-                    'end_date' => $camp->end_date,
+                    'start_date' => $camp->start_date->toDateString(),
+                    'end_date' => $camp->end_date->toDateString(),
                     'status' => 'completed',
                     'director' => [
                         'id' => $camp->director->id ?? null,

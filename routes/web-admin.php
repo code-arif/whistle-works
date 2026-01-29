@@ -88,8 +88,6 @@ Route::prefix('cms')->name('cms.')->group(function () {
     Route::controller(PrivacAndTermsController::class)->prefix('privecyandterms')->name('privecyandterms.')->group(function () {
         Route::get('/terms', 'termsAndCondition')->name('terms');
         Route::get('/privacy', 'privacyPolicy')->name('privacy');
-        Route::get('/why-desi-carousel', 'whyDesiCarousel')->name('why.desi.carousel');
-        Route::get('/trust-and-sefty', 'trustSefty')->name('trust-and-sefty');
 
         Route::post('/terms-condition/update', 'termsAndConditionUpdate')->name('terms.update');
         Route::post('/privacy-policy/update', 'privacyPolicyUpdate')->name('privacy.update');

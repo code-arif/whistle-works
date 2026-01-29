@@ -15,8 +15,8 @@ class CampForEvaluatorResource extends JsonResource
             'sports_type_name' => $this->sports_type_name,
             'camp_name' => $this->camp_name,
             'camp_logo' => $this->camp_logo ? asset($this->camp_logo) : asset('default/no_image.webp'),
-            'start_date' => $this->start_date,
-            'end_date' => $this->end_date,
+            'start_date' => $this->start_date->toDateString(),
+            'end_date' => $this->end_date->toDateString(),
             'price' => $this->price,
             'status' => $this->status,
 

@@ -34,6 +34,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::post('/camp/status/{id}', [CampManageController::class, 'updateStatus']); // done
         Route::delete('/camp/delete/{id}', [CampManageController::class, 'deleteCamp']); // done
         Route::get('/director/camp/list', [CampManageController::class, 'directorCampList']); // done
+        Route::get('/camp/admin/fee', [CampManageController::class, 'getAdminFee']);
     });
 
     // Crew Management

@@ -113,7 +113,6 @@ class StripeController extends Controller
     {
         $request->validate([
             'admin_percentage'    => 'nullable|string|regex:/^\S+$/',
-            'seller_percentage' => 'nullable|string|regex:/^\S+$/',
         ]);
 
         try {
@@ -121,8 +120,7 @@ class StripeController extends Controller
             $envContent = File::exists($envPath) ? File::get($envPath) : '';
 
             $keys = [
-                'ADMIN_PERCENTAGE'    => $request->admin_percentage,
-                'SELLER_PERCENTAGE'   => $request->seller_percentage,
+                'CAMP_EXTRA_PRICE'    => $request->admin_percentage,
             ];
 
             foreach ($keys as $key => $value) {
@@ -142,7 +140,7 @@ class StripeController extends Controller
             Artisan::call('route:clear');
 
             return back()->with('t-success', 'Updated Admin & Seller Profit');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return back()->with('t-error', 'Failed to update: ' . $e->getMessage());
         }
     }

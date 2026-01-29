@@ -3,7 +3,7 @@
 @section('content')
     <!--app-content open-->
     <div class="app-content main-content mt-0">
-        <div class="side-app">
+        <div class="side-app" style="margin-bottom: 50px">
 
             <!-- CONTAINER -->
             <div class="main-container container-fluid">
