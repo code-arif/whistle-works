@@ -2,14 +2,15 @@
 
 namespace App\Mail;
 
-use Modules\Director\Models\Camp;
-use App\Models\CampPayment;
 use App\Models\User;
+use App\Models\CampPayment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Modules\Director\Models\Camp;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class PaymentSuccessfulMail extends Mailable
+class PaymentSuccessfulMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

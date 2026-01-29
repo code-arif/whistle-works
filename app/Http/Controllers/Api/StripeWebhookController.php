@@ -206,7 +206,7 @@ class StripeWebhookController extends Controller
 
             // Send payment success email to referee
             try {
-                Mail::to($user->email)->send(new PaymentSuccessfulMail($user, $camp, $payment));
+                Mail::to($user->email)->queue(new PaymentSuccessfulMail($user, $camp, $payment));
             } catch (Exception $e) {
                 Log::error('Stripe Webhook: Failed to send payment success email', [
                     'error' => $e->getMessage(),
