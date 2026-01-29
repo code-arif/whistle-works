@@ -370,7 +370,7 @@ class StripeWebhookController extends Controller
                         // Send payment failed email
                         try {
                             $errorMessage = $paymentIntent->last_payment_error->message ?? 'Payment was declined by your bank.';
-                            Mail::to($user->email)->send(new PaymentFailedMail(
+                            Mail::to($user->email)->queue(new PaymentFailedMail(
                                 $user,
                                 $camp,
                                 $errorMessage,
