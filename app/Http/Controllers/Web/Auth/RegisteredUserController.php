@@ -69,7 +69,7 @@ class RegisteredUserController extends Controller
         ]);
 
         //* Send the new OTP to the user's email
-        Mail::to($user->email)->send(new OtpMail($user->otp, $user, 'Verify Your Email Address'));
+        Mail::to($user->email)->queue(new OtpMail($user->otp, $user, 'Verify Your Email Address'));
 
         event(new Registered($user));
 
@@ -147,7 +147,7 @@ class RegisteredUserController extends Controller
             $user->save();
 
             //* Send the new OTP to the user's email
-            Mail::to($user->email)->send(new OtpMail($newOtp, $user, 'Verify Your Email Address'));
+            Mail::to($user->email)->queue(new OtpMail($newOtp, $user, 'Verify Your Email Address'));
 
             return redirect()->intended(route('verify.otp.page'))->with('email', $request->email);
 
