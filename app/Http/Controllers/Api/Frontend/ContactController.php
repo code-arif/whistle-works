@@ -32,7 +32,7 @@ class ContactController extends Controller
             $contact = Contact::create($data);
 
             // Send mail (admin / support)
-            Mail::to(config('mail.from.address'))->send(new ContactSubmittedMail($contact));
+            Mail::to(config('mail.from.address'))->queue(new ContactSubmittedMail($contact));
 
             DB::commit();
 
