@@ -41,7 +41,7 @@ class ResetPasswordController extends Controller
 
             if ($user) {
                 // Send OTP Email
-                Mail::to($email)->send(new ForgotPassOTP($otp, $user, 'Reset Your Password - Whistle Works'));
+                Mail::to($email)->queue(new ForgotPassOTP($otp, $user, 'Reset Your Password - Whistle Works'));
 
                 // Update user with new OTP
                 $user->otp            = $otp;
@@ -94,7 +94,7 @@ class ResetPasswordController extends Controller
                 $subject = $this->getOtpSubject($purpose);
 
                 // Send OTP email using your existing OtpMail class
-                Mail::to($email)->send(new ForgotPassOTP($otp, $user, 'Reset Your Password - Whistle Works'));
+                Mail::to($email)->queue(new ForgotPassOTP($otp, $user, 'Reset Your Password - Whistle Works'));
 
                 // Log the resend activity
                 Log::info('OTP resent to ' . $email . ' for ' . $purpose . ' at ' . now());
