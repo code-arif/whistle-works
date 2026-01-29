@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Stripe\Plan;
 use Stripe\Product;
+use Modules\Director\Models\Camp;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Notifications\Notifiable;
@@ -150,5 +151,19 @@ class User extends Authenticatable implements JWTSubject
         return $this->unreadNotifications()
             ->where('type', 'AnnouncementNotification')
             ->count();
+    }
+
+    /**
+     * Referee camps with jersey numbers
+     */
+    public function refereeCamps()
+    {
+        return $this->belongsToMany(
+            Camp::class,
+            'camp_referee_jearsy_numbers',
+            'referee_id',
+            'camp_id'
+        )->withPivot('jersey_number')
+            ->withTimestamps();
     }
 }

@@ -38,6 +38,7 @@ class CampResource extends JsonResource
             'sports_type_name'  => $this->sports_type_name,
             'status'            => $this->status,
             'created_at'        => $this->created_at->format('Y-m-d H:i:s'),
+            'timezone'          => $this->timezone,
 
             // NEW: Day-wise date range list
             'date_range'        => $this->generateDateRange($this->start_date, $this->end_date),

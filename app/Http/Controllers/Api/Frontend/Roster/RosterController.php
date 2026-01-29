@@ -27,9 +27,11 @@ class RosterController extends Controller
                 'schedule.gameSlots.slotAssignments.assignable',
                 'checkedInReferees',
                 'evaluations.evaluator',
-                'crews.members'
+                'crews.members',
             ])
             ->first();
+
+            // return ($camp);exit();
 
         if (!$camp) {
             return $this->error([], 'Camp not found.', 404);
@@ -203,7 +205,7 @@ class RosterController extends Controller
                                         'email' => $member->email,
                                         'phone' => $member->phone ?? null,
                                         'address' => $member->address ?? null,
-                                        'jourcy_number' => $jerseyNumber,
+                                        'jersey_number' => $jerseyNumber,
                                         'biography' => $member->biography ?? null,
                                     ];
                                 })

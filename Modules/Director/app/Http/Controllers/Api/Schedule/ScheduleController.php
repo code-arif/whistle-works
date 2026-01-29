@@ -11,6 +11,7 @@ use Modules\Director\Models\Crew;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\CampRefereeJearsyNumber;
 use App\Models\CampEvaluatorRegistration;
 use Illuminate\Support\Facades\Notification;
 use Modules\Director\Models\CampRefereeCheckin;
@@ -336,6 +337,9 @@ class ScheduleController extends Controller
 
         $camp = Camp::where('director_id', $user->id)->find($campId);
 
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)
+            ->pluck('jersey_number', 'referee_id');
+
         if (!$camp) {
             return $this->error('Camp not found.', null, 404);
         }
@@ -462,12 +466,14 @@ class ScheduleController extends Controller
                                     'members' => $members
                                 ];
                             } else {
+                                $jerseyNumber = $jerseyNumbers[$assignment->assignable->id] ?? null;
+
                                 return [
                                     'type' => 'individual',
                                     'assignment_id' => $assignment->id,
                                     'referee_id' => $assignment->assignable->id,
                                     'referee_name' => ($assignment->assignable->first_name ?? '') . ' ' . ($assignment->assignable->last_name ?? ''),
-                                    'jourcy_number' => $assignment->assignable->jourcy_number,
+                                    'jourcy_number' => $jerseyNumber,
                                     'avatar' => $assignment->assignable->avatar
                                         ? asset($assignment->assignable->avatar)
                                         : asset('default/profile.jpg'),
