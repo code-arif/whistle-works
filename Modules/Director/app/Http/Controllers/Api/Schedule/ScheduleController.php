@@ -337,12 +337,13 @@ class ScheduleController extends Controller
 
         $camp = Camp::where('director_id', $user->id)->find($campId);
 
-        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)
-            ->pluck('jersey_number', 'referee_id');
-
         if (!$camp) {
             return $this->error('Camp not found.', null, 404);
         }
+
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)
+            ->pluck('jersey_number', 'referee_id');
+
 
         $schedule = $camp->schedule;
         if (!$schedule) {
@@ -422,68 +423,70 @@ class ScheduleController extends Controller
         ];
 
         // Group by time and format
-        $timeSlots = $gameSlots->groupBy('start_time')->map(function ($slots, $time) use ($campTimezone) {
-            $timeCarbon = Carbon::parse($time, $campTimezone);
+        $timeSlots = $gameSlots->groupBy('start_time')
+            ->map(function ($slots, $time) use ($campTimezone, $jerseyNumbers) {
 
-            return [
-                'time' => $timeCarbon->format('h:i A'),
-                'time_24h' => $time,
-                'courts' => $slots->map(function ($slot) use ($campTimezone) {
-                    $startTime = Carbon::parse($slot->start_time, $campTimezone);
-                    $endTime = Carbon::parse($slot->end_time, $campTimezone);
+                $timeCarbon = Carbon::parse($time, $campTimezone);
 
-                    return [
-                        'slot_id' => $slot->id,
-                        'court_name' => $slot->court_name,
-                        'court_number' => $slot->court_number,
-                        'location' => $slot->location->location_name,
-                        'location_id' => $slot->location->id,
-                        'status' => $slot->status,
-                        'is_blocked' => $slot->is_block,
-                        'start_time' => $startTime->format('H:i'),
-                        'end_time' => $endTime->format('H:i'),
-                        'start_time_display' => $startTime->format('h:i A'),
-                        'end_time_display' => $endTime->format('h:i A'),
-                        'assignments_count' => $slot->slotAssignments->count(),
-                        'assignments' => $slot->slotAssignments->map(function ($assignment) {
-                            if ($assignment->assignment_type === 'crew') {
-                                $crew = $assignment->assignable;
-                                $members = $crew->members->map(function ($member) {
+                return [
+                    'time' => $timeCarbon->format('h:i A'),
+                    'time_24h' => $time,
+                    'courts' => $slots->map(function ($slot) use ($campTimezone, $jerseyNumbers) {
+                        $startTime = Carbon::parse($slot->start_time, $campTimezone);
+                        $endTime = Carbon::parse($slot->end_time, $campTimezone);
+
+                        return [
+                            'slot_id' => $slot->id,
+                            'court_name' => $slot->court_name,
+                            'court_number' => $slot->court_number,
+                            'location' => $slot->location->location_name,
+                            'location_id' => $slot->location->id,
+                            'status' => $slot->status,
+                            'is_blocked' => $slot->is_block,
+                            'start_time' => $startTime->format('H:i'),
+                            'end_time' => $endTime->format('H:i'),
+                            'start_time_display' => $startTime->format('h:i A'),
+                            'end_time_display' => $endTime->format('h:i A'),
+                            'assignments_count' => $slot->slotAssignments->count(),
+                            'assignments' => $slot->slotAssignments->map(function ($assignment) use ($jerseyNumbers) {
+                                if ($assignment->assignment_type === 'crew') {
+                                    $crew = $assignment->assignable;
+                                    $members = $crew->members->map(function ($member) {
+                                        return [
+                                            'referee_id' => $member->id,
+                                            'referee_name' => $member->first_name . ' ' . $member->last_name,
+                                            'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                                            'email' => $member->email,
+                                        ];
+                                    });
+
                                     return [
-                                        'referee_id' => $member->id,
-                                        'referee_name' => $member->first_name . ' ' . $member->last_name,
-                                        'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
-                                        'email' => $member->email,
+                                        'assignment_id' => $assignment->id,
+                                        'type' => 'crew',
+                                        'crew_id' => $crew->id,
+                                        'crew_name' => $crew->name ?? 'Unknown',
+                                        'member_count' => $crew->members->count(),
+                                        'members' => $members
                                     ];
-                                });
+                                } else {
+                                    $jerseyNumber = $jerseyNumbers[$assignment->assignable->id] ?? null;
 
-                                return [
-                                    'assignment_id' => $assignment->id,
-                                    'type' => 'crew',
-                                    'crew_id' => $crew->id,
-                                    'crew_name' => $crew->name ?? 'Unknown',
-                                    'member_count' => $crew->members->count(),
-                                    'members' => $members
-                                ];
-                            } else {
-                                $jerseyNumber = $jerseyNumbers[$assignment->assignable->id] ?? null;
-
-                                return [
-                                    'type' => 'individual',
-                                    'assignment_id' => $assignment->id,
-                                    'referee_id' => $assignment->assignable->id,
-                                    'referee_name' => ($assignment->assignable->first_name ?? '') . ' ' . ($assignment->assignable->last_name ?? ''),
-                                    'jourcy_number' => $jerseyNumber,
-                                    'avatar' => $assignment->assignable->avatar
-                                        ? asset($assignment->assignable->avatar)
-                                        : asset('default/profile.jpg'),
-                                ];
-                            }
-                        })
-                    ];
-                })->values()
-            ];
-        })->values();
+                                    return [
+                                        'type' => 'individual',
+                                        'assignment_id' => $assignment->id,
+                                        'referee_id' => $assignment->assignable->id,
+                                        'referee_name' => ($assignment->assignable->first_name ?? '') . ' ' . ($assignment->assignable->last_name ?? ''),
+                                        'jourcy_number' => $jerseyNumber,
+                                        'avatar' => $assignment->assignable->avatar
+                                            ? asset($assignment->assignable->avatar)
+                                            : asset('default/profile.jpg'),
+                                    ];
+                                }
+                            })
+                        ];
+                    })->values()
+                ];
+            })->values();
 
         // Get unique court headers
         $courtHeaders = $gameSlots->unique(function ($slot) {

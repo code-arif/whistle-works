@@ -8,6 +8,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\CampRefereeJearsyNumber;
 use Exception;
 use Modules\Director\Models\{
     Camp,
@@ -696,6 +697,10 @@ class CourtAssignController extends Controller
             return $this->error([], 'Game court not found!', 404);
         }
 
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $slot->schedule->camp->id)
+            ->pluck('jersey_number', 'referee_id');
+
+
         if ($slot->schedule->camp->director_id !== $user->id) {
             return $this->error([], 'Unauthorized.', 403);
         }
@@ -715,7 +720,7 @@ class CourtAssignController extends Controller
             ->toArray();
 
         // Prepare referees with availability status
-        $refereesWithStatus = $allReferees->map(function ($referee) use ($slot, $assignedRefereeIds) {
+        $refereesWithStatus = $allReferees->map(function ($referee) use ($slot, $assignedRefereeIds, $jerseyNumbers) {
             // Check various conditions
             $isAssignedToThisSlot = in_array($referee->id, $assignedRefereeIds);
 
@@ -775,7 +780,7 @@ class CourtAssignController extends Controller
                 'email' => $referee->email,
                 'avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
                 'status' => $status,
-                'jourcy_number' => $referee->jourcy_number,
+                'jourcy_number' => $jerseyNumbers[$referee->id] ?? null,
                 'status_message' => $statusMessage,
                 'can_assign' => $canAssign,
                 'conflict_details' => $conflictDetails,
@@ -822,45 +827,6 @@ class CourtAssignController extends Controller
         );
     }
 
-    /**
-     * Remove assignment (individual referee or entire crew)
-     */
-    // public function removeAssignment($assignmentId)
-    // {
-    //     $user = auth('api')->user();
-
-    //     $assignment = GameSlotAssignment::with('gameSlot.schedule.camp')
-    //         ->find($assignmentId);
-
-    //     if (!$assignment) {
-    //         return $this->error([], 'Assignment not found.', 404);
-    //     }
-
-    //     // Authorization check
-    //     if ($assignment->gameSlot->schedule->camp->director_id !== $user->id) {
-    //         return $this->error('Unauthorized.', null, 403);
-    //     }
-
-    //     DB::beginTransaction();
-    //     try {
-    //         $gameSlot = $assignment->gameSlot;
-    //         $assignment->delete();
-
-    //         // Update slot status if no more assignments
-    //         $remainingAssignments = GameSlotAssignment::where('game_slot_id', $gameSlot->id)->count();
-
-    //         if ($remainingAssignments === 0) {
-    //             $gameSlot->update(['status' => 'available']);
-    //         }
-
-    //         DB::commit();
-
-    //         return $this->success('Assignment removed successfully.', null, 200);
-    //     } catch (Exception $e) {
-    //         DB::rollBack();
-    //         return $this->error('Failed to remove assignment: ' . $e->getMessage(), null, 500);
-    //     }
-    // }
 
     /**
      * Remove assignment (individual referee or entire crew)
