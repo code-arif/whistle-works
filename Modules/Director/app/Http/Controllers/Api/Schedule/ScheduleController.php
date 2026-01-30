@@ -72,8 +72,8 @@ class ScheduleController extends Controller
                 'camp_name' => $camp->camp_name,
                 'timezone' => $campTimezone,
                 'timezone_name' => $camp->timezone_display_name,
-                'start_date' => $startDate->format('Y-m-d'),
-                'end_date' => $endDate->format('Y-m-d'),
+                'start_date' => $startDate->toDateString(),
+                'end_date' => $endDate->toDateString(),
                 'total_days' => count($dates),
                 'checked_in_referees_count' => $camp->checked_in_referees_count,
                 'dates' => $dates
