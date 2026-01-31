@@ -218,7 +218,7 @@ Route::controller(ProfileController::class)->group(function () {
     Route::get('setting/profile', 'index')->name('setting.profile.index');
     Route::put('setting/profile/update', 'UpdateProfile')->name('setting.profile.update');
     Route::put('setting/profile/update/Password', 'UpdatePassword')->name('setting.profile.update.Password');
-    Route::post('setting/profile/update/Picture', 'UpdateProfilePicture')->name('update.profile.picture');
+    Route::post('setting/profile/update/avatar', 'UpdateProfilePicture')->name('update.profile.picture');
 });
 
 //! Route for Mail Settings

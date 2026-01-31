@@ -13,8 +13,8 @@ class CampEvaluatorRegistrationSeeder extends Seeder
     {
         $camps = Camp::pluck('id')->toArray();
 
-        if (count($camps) < 10) {
-            dd("You must have at least 10 camps to seed evaluator registrations.");
+        if (count($camps) < 3) {
+            dd("You must have at least 3 camps to seed evaluator registrations.");
         }
 
         // Spatie Role Query
@@ -29,7 +29,7 @@ class CampEvaluatorRegistrationSeeder extends Seeder
 
         foreach ($evaluators as $evaluator) {
 
-            $assignedCampIds = collect($camps)->random(10); // each evaluator -> min 10 camps
+            $assignedCampIds = collect($camps)->random(3); // each evaluator -> min 10 camps
 
             foreach ($assignedCampIds as $campId) {
 

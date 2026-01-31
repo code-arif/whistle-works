@@ -21,10 +21,14 @@ class ProfileController extends Controller
         return view('backend.layouts.settings.profile_settings', compact('user'));
     }
 
+    /**
+     * Update user email and name
+     */
     public function UpdateProfile(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'  => 'nullable|max:100|min:2',
+            'first_name'  => 'nullable|max:100|min:2',
+            'last_name'  => 'nullable|max:100|min:2',
             'email' => 'nullable|email|unique:users,email,' . auth()->user()->id,
         ]);
 
@@ -32,8 +36,9 @@ class ProfileController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
         try {
-            $user        = User::find(auth()->user()->id);
-            $user->name  = $request->name;
+            $user = User::find(auth()->user()->id);
+            $user->first_name  = $request->first_name;
+            $user->last_name  = $request->last_name;
             $user->email = $request->email;
 
             $user->save();
@@ -43,6 +48,11 @@ class ProfileController extends Controller
         }
         return redirect()->back();
     }
+
+
+    /**
+     * Update admin password
+     */
     public function UpdatePassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -67,6 +77,10 @@ class ProfileController extends Controller
             return redirect()->back()->with('t-error', 'Something went wrong');
         }
     }
+
+    /**
+     * Update admin profile image
+     */
     public function UpdateProfilePicture(Request $request)
     {
         $request->validate([
@@ -95,7 +109,8 @@ class ProfileController extends Controller
             $user->save();
 
             return response()->json([
-                't-success'   => true,
+                'success'   => true,
+                'message'   => 'Profile picture updated successfully.',
                 'image_url' => asset($imagePath),
             ]);
         } catch (Exception $e) {

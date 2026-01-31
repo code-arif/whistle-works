@@ -55,19 +55,46 @@ class UserSeeder extends Seeder
         $id = 1;
 
         /* =======================
-         * Admin (1)
-         * ======================= */
+ * Admins (2)
+ * ======================= */
+
+        // Admin 1
         $users[] = [
             'id' => $id,
-            'first_name' => 'Admin',
-            'last_name'  => 'User',
+            'first_name' => 'Site',
+            'last_name'  => 'Admin',
             'address'    => 'USA',
             'username'   => '@admin',
             'slug'       => 'admin',
-            'email'      => 'admin@admin.com',
+            'email'      => 'admin@gmail.com',
             'phone'      => '1000000000',
             'password'   => Hash::make('12345678'),
-            'stripe_account_id' => 'acct_test_admin',
+            'stripe_account_id' => 'acct_test_admin1',
+            'otp_verified_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now()
+        ];
+
+        $modelRoles[] = [
+            'role_id' => 1,
+            'model_id' => $id,
+            'model_type' => 'App\Models\User',
+        ];
+
+        $id++;
+
+        // Admin 2
+        $users[] = [
+            'id' => $id,
+            'first_name' => 'Drew',
+            'last_name'  => 'Bontrager',
+            'address'    => 'USA',
+            'username'   => '@drewbontrager',
+            'slug'       => 'drewbontrager',
+            'email'      => 'drew@whistleworks.org.com',
+            'phone'      => '1000000001',
+            'password'   => Hash::make('password123'),
+            'stripe_account_id' => 'acct_test_admin2',
             'otp_verified_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
@@ -81,8 +108,9 @@ class UserSeeder extends Seeder
 
         $id++;
 
+
         /* =======================
-         * Directors (5)
+         * Directors (3)
          * ======================= */
         for ($i = 1; $i <= 3; $i++) {
             $users[] = [
@@ -140,9 +168,9 @@ class UserSeeder extends Seeder
         }
 
         /* =======================
-         * Referees (50)
+         * Referees (80)
          * ======================= */
-        for ($i = 1; $i <= 50; $i++) {
+        for ($i = 1; $i <= 80; $i++) {
             $users[] = [
                 'id' => $id,
                 'first_name' => "Referee{$i}",
