@@ -9,7 +9,8 @@ class Slider extends Model
     protected $fillable = [
         'image',
         'status',
-        'order'
+        'order',
+        'link'
     ];
 
     protected $casts = [

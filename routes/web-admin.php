@@ -14,11 +14,13 @@ use App\Http\Controllers\Web\Backend\Access\UserController;
 use App\Http\Controllers\Web\Backend\CMS\FeaturesController;
 use App\Http\Controllers\Web\Backend\CMS\HomePageController;
 use App\Http\Controllers\Web\Backend\Settings\EnvController;
+use App\Http\Controllers\Web\Backend\CMS\AboutPageController;
 use App\Http\Controllers\Web\Backend\Settings\LogoController;
 use App\Http\Controllers\Web\Backend\Settings\OtherController;
 use App\Http\Controllers\Web\Backend\CMS\TestimonialController;
 use App\Http\Controllers\Web\Backend\Settings\SocialController;
 use App\Http\Controllers\Web\Backend\Settings\StripeController;
+use App\Http\Controllers\Web\Backend\User\UserManageController;
 use App\Http\Controllers\Web\Backend\Settings\CaptchaController;
 use App\Http\Controllers\Web\Backend\Settings\ProfileController;
 use App\Http\Controllers\Web\Backend\Settings\SettingController;
@@ -26,10 +28,11 @@ use App\Http\Controllers\Web\Backend\Access\PermissionController;
 use App\Http\Controllers\Web\Backend\Settings\FirebaseController;
 use App\Http\Controllers\Web\Backend\Settings\GoogleMapController;
 use App\Http\Controllers\Web\Backend\Settings\SignatureController;
+use App\Http\Controllers\Web\Backend\CMS\AboutPageOurTeamController;
+use App\Http\Controllers\Web\Backend\CMS\GettingStartedController;
 use App\Http\Controllers\Web\Backend\Settings\MailSettingController;
 use App\Http\Controllers\Web\Backend\SportsType\SportsTypeController;
 use App\Http\Controllers\Web\Backend\CMS\Web\PrivacyTerms\PrivacAndTermsController;
-use App\Http\Controllers\Web\Backend\User\UserManageController;
 
 Route::get("dashboard", [DashboardController::class, 'index'])->name('dashboard');
 
@@ -131,6 +134,64 @@ Route::prefix('cms')->name('cms.')->group(function () {
     Route::get('/reviews/show/{id}', [TestimonialController::class, 'showReview'])->name('home.testimonial.item.show');
     Route::post('/reviews/update/{id}', [TestimonialController::class, 'updateReview'])->name('home.testimonial.item.update');
     Route::delete('/reviews/delete/{id}', [TestimonialController::class, 'destroyReview'])->name('home.testimonial.item.delete');
+
+
+    // About Page CMS
+    // ================================
+    // ABOUT PAGE CMS ROUTES
+    // ================================
+    Route::prefix('/about')->name('about.')->group(function () {
+
+        // Main Index
+        Route::get('/', [AboutPageController::class, 'index'])->name('index');
+
+        // Page Title Section
+        Route::post('/page-title/store', [AboutPageController::class, 'storePageTitle'])->name('page-title.store');
+
+        // Mission Section
+        Route::post('/mission/store', [AboutPageController::class, 'storeMission'])->name('mission.store');
+
+        // Key to Excellence Section
+        Route::post('/key-to-excellence/store', [AboutPageController::class, 'storeKeyToExcellence'])->name('key-to-excellence.store');
+
+        // Bottom Description Section
+        Route::post('/bottom-description/store', [AboutPageController::class, 'storeBottomDescription'])->name('bottom-description.store');
+
+        // Owner Info Section
+        Route::post('/owner-info/store', [AboutPageController::class, 'storeOwnerInfo'])->name('owner-info.store');
+
+        // Feature Items
+        Route::get('/items', [AboutPageController::class, 'items'])->name('items.index');
+        Route::post('/items/store', [AboutPageController::class, 'storeItem'])->name('item.store');
+        Route::get('/items/{id}/edit', [AboutPageController::class, 'editItem'])->name('item.edit');
+        Route::post('/items/{id}/update', [AboutPageController::class, 'updateItem'])->name('item.update');
+        Route::delete('/items/{id}/destroy', [AboutPageController::class, 'destroyItem'])->name('item.destroy');
+
+
+        // ================================
+        // OUR TEAM SECTION
+        // ================================
+
+        // Team Section Header
+        Route::get('/team', [AboutPageOurTeamController::class, 'index'])->name('team.index');
+        Route::post('/team-header/store', [AboutPageOurTeamController::class, 'storeTeamHeader'])->name('team-header.store');
+
+        // Team Members CRUD
+        Route::get('/team-members', [AboutPageOurTeamController::class, 'teamMembers'])->name('team-members.index');
+        Route::post('/team-members/store', [AboutPageOurTeamController::class, 'storeTeamMember'])->name('team-member.store');
+        Route::get('/team-members/{id}/edit', [AboutPageOurTeamController::class, 'editTeamMember'])->name('team-member.edit');
+        Route::post('/team-members/{id}/update', [AboutPageOurTeamController::class, 'updateTeamMember'])->name('team-member.update');
+        Route::delete('/team-members/{id}/destroy', [AboutPageOurTeamController::class, 'destroyTeamMember'])->name('team-member.destroy');
+
+
+        // ================================
+        // OUR TEAM SECTION
+        // ================================
+
+        // Team Section Header
+        Route::get('/getting-started', [GettingStartedController::class, 'index'])->name('getting-started.index');
+        Route::post('/getting-started-header/store', [GettingStartedController::class, 'storePageTitle'])->name('getting-started-header.store');
+    });
 });
 
 

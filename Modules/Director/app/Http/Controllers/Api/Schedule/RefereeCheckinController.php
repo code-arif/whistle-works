@@ -274,30 +274,57 @@ class RefereeCheckinController extends Controller
         }
 
         // Check if camp has started
-        $today = now()->toDateString();
+        // $today = now()->toDateString();
 
-        if ($camp->start_date > $today) {
-            $daysRemaining = now()->diffInDays($camp->start_date, false);
+        // if ($camp->start_date > $today) {
+        //     $daysRemaining = now()->diffInDays($camp->start_date, false);
+        //     return $this->error(
+        //         [
+        //             'camp_starts_on' => $camp->start_date->toDateString(),
+        //             'days_remaining' => ceil($daysRemaining),
+        //         ],
+        //         "Camp has not started yet. Check-in will be available from {$camp->start_date->toDateString()}.",
+        //         400
+        //     );
+        // }
+
+        // // Check if camp has ended
+        // if ($camp->end_date < $today) {
+        //     return $this->error(
+        //         [
+        //             'camp_ended_on' => $camp->end_date->toDateString(),
+        //         ],
+        //         'This camp has already ended. Check-in is no longer available.',
+        //         400
+        //     );
+        // }
+
+        $now = now();
+        $checkinStartTime = $camp->start_date->subHours(24);
+
+        // Too early
+        if ($now->lt($checkinStartTime)) {
             return $this->error(
                 [
-                    'camp_starts_on' => $camp->start_date->toDateString(),
-                    'days_remaining' => ceil($daysRemaining),
+                    'checkin_available_from' => $checkinStartTime->format('Y-m-d H:i:s'),
+                    'camp_starts_on' => $camp->start_date->format('Y-m-d H:i:s'),
                 ],
-                "Camp has not started yet. Check-in will be available from {$camp->start_date->toDateString()}.",
+                'Check-in will be available 24 hours before the camp starts.',
                 400
             );
         }
 
-        // Check if camp has ended
-        if ($camp->end_date < $today) {
+        // Camp already ended
+        if ($now->gt($camp->end_date)) {
             return $this->error(
                 [
-                    'camp_ended_on' => $camp->end_date->toDateString(),
+                    'camp_ended_on' => $camp->end_date->format('Y-m-d H:i:s'),
                 ],
                 'This camp has already ended. Check-in is no longer available.',
                 400
             );
         }
+
 
         // All checks passed - Update to checked-in
         $registration->update([

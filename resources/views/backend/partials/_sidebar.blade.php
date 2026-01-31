@@ -65,10 +65,11 @@
                     <h3>CMS</h3>
                 </li>
 
+                {{-- home page --}}
                 <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.setting.*') ? 'has-link active' : '' }}"
+                    <a class="side-menu__item {{ request()->routeIs('admin.cms.home*') ? 'has-link active' : '' }}"
                         data-bs-toggle="slide" href="#">
-                        <i class="side-menu__icon fa fa-file-contract"></i>
+                        <i class="side-menu__icon fa fa-home"></i>
                         <span class="side-menu__label">Home Page</span>
                         <i class="angle fa fa-angle-right"></i>
                     </a>
@@ -86,6 +87,24 @@
                                 Section</a></li>
                         <li><a href="{{ route('admin.cms.home.testimonial.index') }}" class="slide-item">Testimonial
                                 Section</a></li>
+                    </ul>
+                </li>
+
+                {{-- About page --}}
+                <li class="slide">
+                    <a class="side-menu__item {{ request()->routeIs('admin.cms.about*') ? 'has-link active' : '' }}"
+                        data-bs-toggle="slide" href="/">
+                        <i class="side-menu__icon fa fa-user"></i>
+                        <span class="side-menu__label">About Page</span>
+                        <i class="angle fa fa-angle-right"></i>
+                    </a>
+
+                    <ul class="slide-menu">
+                        <li><a href="{{ route('admin.cms.about.index') }}" class="slide-item">About Us</a>
+                        </li>
+                        <li><a href="{{ route('admin.cms.about.team.index') }}" class="slide-item">Our Team</a></li>
+                        <li><a href="{{ route('admin.cms.about.getting-started.index') }}" class="slide-item">Get
+                                Started</a></li>
                     </ul>
                 </li>
                 <li>

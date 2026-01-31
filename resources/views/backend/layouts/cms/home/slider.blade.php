@@ -5,7 +5,7 @@
 @section('content')
     <!--app-content open-->
     <div class="app-content main-content mt-0">
-        <div class="side-app">
+        <div class="side-app" style="margin-bottom:50px">
 
             <!-- CONTAINER -->
             <div class="main-container container-fluid">
@@ -83,6 +83,12 @@
                                             <img src="" id="previewImg" class="img-fluid border"
                                                 style="max-height: 200px; width: 100%; object-fit: cover;">
                                         </div>
+                                    </div>
+
+                                    {{-- Partner web link --}}
+                                    <div class="mb-3">
+                                        <label for="link">Pertner Link (optional)</label>
+                                        <input type="link" name="link" class="form-control" id="link">
                                     </div>
 
                                     <div class="mb-3" style="margin-left: 12px">

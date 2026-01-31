@@ -58,7 +58,8 @@ class SliderController extends Controller
     {
         $request->validate([
             'image' => 'required|image|mimes:png,jpg,jpeg,webp|max:2048',
-            'status' => 'nullable|boolean'
+            'status' => 'nullable|boolean',
+            'link' => 'nullable|url'
         ]);
 
         try {
@@ -71,6 +72,7 @@ class SliderController extends Controller
 
             $data['status'] = $request->has('status') ? true : false;
             $data['order'] = Slider::max('order') + 1;
+            $data['link'] = $request->input('link');
 
             Slider::create($data);
 
