@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\Frontend\Referee\EvaluatedRefereeController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentCrewController;
 use App\Http\Controllers\Api\Frontend\CampRanking\CampRankingSettingsController;
+use App\Http\Controllers\Api\Frontend\CMS\AboutPageController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegistrationController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegisterManageForDirectorController;
 
@@ -203,6 +204,7 @@ Route::post('/contact-form', [ContactController::class, 'submitContact']);
 
 // get home page cms data
 Route::get('/cms/home', [HomePageController::class, 'home']);
+Route::get('/cms/about', [AboutPageController::class, 'about']);
 
 // get privacy policy data
 Route::get('/privacy-policy', [PrivecyPolicyController::class, 'privecyPolicy']);

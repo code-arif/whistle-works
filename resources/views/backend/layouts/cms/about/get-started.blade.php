@@ -41,12 +41,12 @@
                                     <div class="form-group mb-3">
                                         <label>Section Title <span class="text-danger">*</span></label>
                                         <input type="text" name="title" class="form-control"
-                                            value="{{ old('title', $teamHeader->title ?? 'Ready to Elevate Your Officiating Career?') }}" required>
+                                            value="{{ old('title', $data->title ?? 'Ready to Elevate Your Officiating Career?') }}" required>
                                     </div>
 
                                     <div class="form-group mb-3">
                                         <label>Section Description</label>
-                                        <textarea name="description" class="form-control" rows="3">{{ old('description', $teamHeader->description ?? '') }}</textarea>
+                                        <textarea name="description" class="form-control" rows="3">{{ old('description', $data->description ?? '') }}</textarea>
                                         <small class="text-muted">This appears below the "Meet Our Team" heading</small>
                                     </div>
 

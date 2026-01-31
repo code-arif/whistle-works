@@ -16,13 +16,13 @@ class GettingStartedController extends Controller
     public function index()
     {
         // Team Section Header
-        $teamHeader = CMS::where('page', 'about')
+        $data = CMS::where('page', 'about')
             ->where('section', 'getting_started')
             ->where('name', 'item')
             ->first();
 
         return view('backend.layouts.cms.about.get-started', compact(
-            'teamHeader'
+            'data'
         ));
     }
 
