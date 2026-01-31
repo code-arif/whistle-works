@@ -22,7 +22,7 @@ class CampTableSeeder extends Seeder
 
         $camps = [];
 
-        for ($i = 1; $i <= 3; $i++) {
+        for ($i = 1; $i <= 9; $i++) {
 
             // Fixed date range
             $startDate = Carbon::create(2026, rand(1, 2), rand(1, 28));
