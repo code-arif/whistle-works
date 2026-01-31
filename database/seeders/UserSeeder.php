@@ -91,7 +91,7 @@ class UserSeeder extends Seeder
             'address'    => 'USA',
             'username'   => '@drewbontrager',
             'slug'       => 'drewbontrager',
-            'email'      => 'drew@whistleworks.org.com',
+            'email'      => 'drew@whistleworks.org',
             'phone'      => '1000000001',
             'password'   => Hash::make('password123'),
             'stripe_account_id' => 'acct_test_admin2',
