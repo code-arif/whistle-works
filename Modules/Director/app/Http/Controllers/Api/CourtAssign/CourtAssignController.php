@@ -37,9 +37,15 @@ class CourtAssignController extends Controller
 
     public function assignIndividualReferees(Request $request, $slotId)
     {
+        // $request->validate([
+        //     'referee_ids' => 'required|array',
+        //     'referee_ids.*' => 'exists:users,id',
+        // ]);
+
         $request->validate([
             'referee_ids' => 'required|array',
             'referee_ids.*' => 'exists:users,id',
+            'override_restrictions' => 'sometimes|boolean',
         ]);
 
         $user = auth('api')->user();
@@ -161,12 +167,17 @@ class CourtAssignController extends Controller
                 }
 
                 // Check for time conflicts (overlapping games) - CANNOT BE OVERRIDDEN
-                // This checks if referee is assigned to a DIFFERENT slot at the SAME TIME
                 $hasConflict = GameSlotAssignment::hasTimeConflict(
                     $refereeId,
                     User::class,
                     $slot
                 );
+                // This checks if referee is assigned to a DIFFERENT slot at the SAME TIME
+                // $hasConflict = GameSlotAssignment::hasTimeConflict(
+                //     $refereeId,
+                //     User::class,
+                //     $slot
+                // );
 
                 if ($hasConflict) {
                     $conflictingSlots = GameSlotAssignment::getConflictingSlots(

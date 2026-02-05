@@ -67,6 +67,36 @@ class GameSlotAssignment extends Model
     /**
      * Check if a referee/crew has time conflict with a given slot
      */
+    // public static function hasTimeConflict($assignableId, $assignableType, GameSlot $targetSlot): bool
+    // {
+    //     return self::where('assignable_id', $assignableId)
+    //         ->where('assignable_type', $assignableType)
+    //         ->whereHas('gameSlot', function ($query) use ($targetSlot) {
+    //             $query->where('game_date', $targetSlot->game_date)
+    //                 ->where('schedule_id', $targetSlot->schedule_id)
+    //                 ->where('id', '!=', $targetSlot->id) // Exclude the target slot itself
+    //                 ->where(function ($q) use ($targetSlot) {
+    //                     // Check for time overlap
+    //                     $q->where(function ($subQ) use ($targetSlot) {
+    //                         // Case 1: New slot starts during existing slot
+    //                         $subQ->where('start_time', '<=', $targetSlot->start_time)
+    //                             ->where('end_time', '>', $targetSlot->start_time);
+    //                     })
+    //                         ->orWhere(function ($subQ) use ($targetSlot) {
+    //                             // Case 2: New slot ends during existing slot
+    //                             $subQ->where('start_time', '<', $targetSlot->end_time)
+    //                                 ->where('end_time', '>=', $targetSlot->end_time);
+    //                         })
+    //                         ->orWhere(function ($subQ) use ($targetSlot) {
+    //                             // Case 3: New slot completely contains existing slot
+    //                             $subQ->where('start_time', '>=', $targetSlot->start_time)
+    //                                 ->where('end_time', '<=', $targetSlot->end_time);
+    //                         });
+    //                 });
+    //         })
+    //         ->exists();
+    // }
+
     public static function hasTimeConflict($assignableId, $assignableType, GameSlot $targetSlot): bool
     {
         return self::where('assignable_id', $assignableId)
@@ -74,28 +104,18 @@ class GameSlotAssignment extends Model
             ->whereHas('gameSlot', function ($query) use ($targetSlot) {
                 $query->where('game_date', $targetSlot->game_date)
                     ->where('schedule_id', $targetSlot->schedule_id)
-                    ->where('id', '!=', $targetSlot->id) // Exclude the target slot itself
+                    ->where('court_name', $targetSlot->court_name) // ✅ SAME COURT ONLY
+                    ->where('id', '!=', $targetSlot->id)
                     ->where(function ($q) use ($targetSlot) {
-                        // Check for time overlap
-                        $q->where(function ($subQ) use ($targetSlot) {
-                            // Case 1: New slot starts during existing slot
-                            $subQ->where('start_time', '<=', $targetSlot->start_time)
-                                ->where('end_time', '>', $targetSlot->start_time);
-                        })
-                            ->orWhere(function ($subQ) use ($targetSlot) {
-                                // Case 2: New slot ends during existing slot
-                                $subQ->where('start_time', '<', $targetSlot->end_time)
-                                    ->where('end_time', '>=', $targetSlot->end_time);
-                            })
-                            ->orWhere(function ($subQ) use ($targetSlot) {
-                                // Case 3: New slot completely contains existing slot
-                                $subQ->where('start_time', '>=', $targetSlot->start_time)
-                                    ->where('end_time', '<=', $targetSlot->end_time);
-                            });
+                        // STRICT time overlap
+                        $q->where('start_time', '<', $targetSlot->end_time)
+                            ->where('end_time', '>', $targetSlot->start_time);
                     });
             })
             ->exists();
     }
+
+
 
     /**
      * Get all conflicting slots for a referee/crew

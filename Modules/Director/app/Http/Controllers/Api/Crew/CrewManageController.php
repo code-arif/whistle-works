@@ -161,7 +161,7 @@ class CrewManageController extends Controller
         $crews = Crew::where('camp_id', $campId)
             ->withCount('members')
             ->with(['members' => function ($query) {
-                $query->select('users.id', 'users.first_name', 'users.last_name', 'users.email', 'users.avatar');
+                $query->select('users.id', 'users.first_name', 'users.last_name', 'users.email', 'users.avatar', 'users.address', 'users.phone');
             }])
             ->get();
 
@@ -178,7 +178,9 @@ class CrewManageController extends Controller
                         'name' => $member->first_name . ' ' . $member->last_name,
                         'email' => $member->email,
                         'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
-                        'joined_at' => $member->pivot->joined_at
+                        'joined_at' => $member->pivot->joined_at,
+                        'address' => $member->address,
+                        'phone' => $member->phone,
                     ];
                 }),
                 'created_at' => $crew->created_at->format('Y-m-d H:i:s')
@@ -216,9 +218,8 @@ class CrewManageController extends Controller
         }
 
         // Get camp-specific jersey number
-        $jerseyNumber = CampRefereeJearsyNumber::where('camp_id', $crew->camp->id)
-            ->where('referee_id', $crew->member->id)
-            ->value('jersey_number');
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $crew->camp->id)
+            ->pluck('jersey_number', 'referee_id');
 
         return $this->success(
             'Crew details fetched successfully.',
@@ -228,14 +229,16 @@ class CrewManageController extends Controller
                 'description' => $crew->description,
                 'status' => $crew->status,
                 'member_count' => $crew->members_count,
-                'members' => $crew->members->map(function ($member, $jerseyNumber) {
+                'members' => $crew->members->map(function ($member) use ($jerseyNumbers) {
                     return [
                         'id' => $member->id,
                         'name' => $member->first_name . ' ' . $member->last_name ?? null,
                         'email' => $member->email,
                         'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
                         'joined_at' => $member->pivot->joined_at,
-                        'jearsey_number' => $jerseyNumber
+                        'jersey_number' => $jerseyNumbers->get($member->id) ?? null,
+                        'address' => $member->address,
+                        'phone' => $member->phone
                     ];
                 }),
                 'assigned_games' => $crew->gameSlots->count(),
@@ -734,6 +737,9 @@ class CrewManageController extends Controller
             return $this->error('Camp not found.', null, 404);
         }
 
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)
+            ->pluck('jersey_number', 'referee_id');
+
         // Get all checked-in referee IDs
         $checkedInRefereeIds = CampRefereeCheckin::where('camp_id', $campId)
             ->pluck('referee_id');
@@ -749,7 +755,7 @@ class CrewManageController extends Controller
         $perPage = request()->get('per_page', 15); // default 15
 
         $availableReferees = User::whereIn('id', $availableRefereeIds)
-            ->select('id', 'first_name', 'last_name', 'email', 'phone', 'avatar')
+            ->select('id', 'first_name', 'last_name', 'email', 'phone', 'avatar', 'phone', 'address')
             ->orderBy('first_name')
             ->paginate($perPage);
 
@@ -757,7 +763,11 @@ class CrewManageController extends Controller
             'total_checked_in' => $checkedInRefereeIds->count(),
             'in_crews'         => $assignedRefereeIds->count(),
             'available'        => $availableReferees->total(),
-            'referees' => AvailableRefereeResource::collection($availableReferees),
+            // 'referees' => AvailableRefereeResource::collection($availableReferees, $jerseyNumbers),
+            'referees' => $availableReferees->getCollection()->map(function ($referee) use ($jerseyNumbers) {
+                return new AvailableRefereeResource($referee, $jerseyNumbers);
+            }),
+
             'pagination'       => [
                 'total'         => $availableReferees->total(),
                 'per_page'      => $availableReferees->perPage(),
