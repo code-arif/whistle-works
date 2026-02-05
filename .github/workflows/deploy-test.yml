@@ -21,7 +21,6 @@ jobs:
           server: ${{ secrets.FTP_SERVER_TEST }}
           username: ${{ secrets.FTP_USERNAME_TEST }}
           password: ${{ secrets.FTP_PASSWORD_TEST }}
-          server-dir: /public_html/
           exclude: |
             **/public/uploads/**
             **/storage/**
