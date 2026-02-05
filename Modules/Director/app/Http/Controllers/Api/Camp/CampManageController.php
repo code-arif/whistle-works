@@ -126,6 +126,7 @@ class CampManageController extends Controller
             'latitude'         => $request->latitude,
             'longitude'        => $request->longitude,
             'timezone'         => $campTimezone,
+            'status'           => 'inactive',
         ]);
 
         return $this->success(
