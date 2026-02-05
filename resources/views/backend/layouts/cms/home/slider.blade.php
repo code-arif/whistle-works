@@ -88,7 +88,7 @@
                                     {{-- Partner web link --}}
                                     <div class="mb-3">
                                         <label for="link">Pertner Link (optional)</label>
-                                        <input type="link" name="link" class="form-control" id="link">
+                                        <input type="text" name="link" class="form-control" id="link" placeholder="Enter full url (e.g https://domain.com)">
                                     </div>
 
                                     <div class="mb-3" style="margin-left: 12px">

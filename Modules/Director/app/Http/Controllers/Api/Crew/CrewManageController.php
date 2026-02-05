@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\CampRefereeJearsyNumber;
 use Modules\Director\Transformers\Referee\AvailableRefereeResource;
 use Modules\Director\Transformers\Referee\CheckedInRefereeResource;
 use Modules\Director\Models\{Camp, Crew, CrewMember, CampRefereeCheckin, GameSlot, RefereeAssignment};
@@ -214,6 +215,11 @@ class CrewManageController extends Controller
             return $this->error('Unauthorized.', null, 403);
         }
 
+        // Get camp-specific jersey number
+        $jerseyNumber = CampRefereeJearsyNumber::where('camp_id', $crew->camp->id)
+            ->where('referee_id', $crew->member->id)
+            ->value('jersey_number');
+
         return $this->success(
             'Crew details fetched successfully.',
             [
@@ -222,13 +228,14 @@ class CrewManageController extends Controller
                 'description' => $crew->description,
                 'status' => $crew->status,
                 'member_count' => $crew->members_count,
-                'members' => $crew->members->map(function ($member) {
+                'members' => $crew->members->map(function ($member, $jerseyNumber) {
                     return [
                         'id' => $member->id,
                         'name' => $member->first_name . ' ' . $member->last_name ?? null,
                         'email' => $member->email,
                         'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
-                        'joined_at' => $member->pivot->joined_at
+                        'joined_at' => $member->pivot->joined_at,
+                        'jearsey_number' => $jerseyNumber
                     ];
                 }),
                 'assigned_games' => $crew->gameSlots->count(),

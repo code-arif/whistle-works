@@ -18,6 +18,7 @@ class HomePagePartnerResource extends JsonResource
             'id'    => $this->id,
             'image' => $this->image ? asset($this->image) : null,
             'order' => $this->order,
+            'link' => $this->link,
         ];
     }
 }
