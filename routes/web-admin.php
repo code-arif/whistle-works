@@ -33,6 +33,7 @@ use App\Http\Controllers\Web\Backend\CMS\GettingStartedController;
 use App\Http\Controllers\Web\Backend\Settings\MailSettingController;
 use App\Http\Controllers\Web\Backend\SportsType\SportsTypeController;
 use App\Http\Controllers\Web\Backend\CMS\Web\PrivacyTerms\PrivacAndTermsController;
+use Modules\Director\Http\Controllers\Api\Camp\CampManageController;
 
 Route::get("dashboard", [DashboardController::class, 'index'])->name('dashboard');
 
@@ -49,6 +50,20 @@ Route::group(['prefix' => 'sports-type', 'as' => 'sports-type.'], function () {
     Route::post('/update/{id}', [SportsTypeController::class, 'update'])->name('update');
     Route::delete('/delete/{id}', [SportsTypeController::class, 'destroy'])->name('destroy');
     Route::get('/status/{id}', [SportsTypeController::class, 'status'])->name('status');
+});
+
+/**
+ * Sports Type Management Routes
+ */
+Route::group(['prefix' => 'camp', 'as' => 'camps.'], function () {
+    Route::get('/', [CampManageController::class, 'index'])->name('index');
+    Route::get('/create', [CampManageController::class, 'create'])->name('create');
+    Route::post('/store', [CampManageController::class, 'store'])->name('store');
+    Route::get('/show/{id}', [CampManageController::class, 'show'])->name('show');
+    Route::get('/edit/{id}', [CampManageController::class, 'edit'])->name('edit');
+    Route::post('/update/{id}', [CampManageController::class, 'update'])->name('update');
+    Route::delete('/delete/{id}', [CampManageController::class, 'destroy'])->name('destroy');
+    Route::get('/status/{id}', [CampManageController::class, 'status'])->name('status');
 });
 
 /**
