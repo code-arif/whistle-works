@@ -44,6 +44,17 @@
 
                     </a>
                 </li>
+
+                {{-- manage camps --}}
+                <li class="slide">
+                    <a class="side-menu__item {{ request()->routeIs('admin.camps.index.*') ? 'has-link active' : '' }}"
+                        href="{{ route('admin.camps.index') }}">
+                        <i class="fa-solid fa-tent side-menu__icon"></i>
+                        {{-- <i class="fa-solid fa-tent"></i> --}}
+                        <span class="side-menu__label">Manage Camps</span>
+
+                    </a>
+                </li>
                 <li class="slide">
                     <a class="side-menu__item {{ request()->routeIs('admin.setting.*') ? 'has-link active' : '' }}"
                         data-bs-toggle="slide" href="#">

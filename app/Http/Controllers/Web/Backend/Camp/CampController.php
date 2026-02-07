@@ -116,7 +116,7 @@ class CampController extends Controller
         $directors = User::role('director')->where('status', 'active')->get();
         $sportsTypes = SportsType::where('status', 'active')->get();
 
-        return view("backend.layouts.camp.index", compact('directors', 'sportsTypes'));
+        return view("backend.layouts.camps.index", compact('directors', 'sportsTypes'));
     }
 
     /**

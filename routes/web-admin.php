@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Web\Backend\Camp\CampController;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
@@ -55,15 +56,13 @@ Route::group(['prefix' => 'sports-type', 'as' => 'sports-type.'], function () {
 /**
  * Sports Type Management Routes
  */
-Route::group(['prefix' => 'camp', 'as' => 'camps.'], function () {
-    Route::get('/', [CampManageController::class, 'index'])->name('index');
-    Route::get('/create', [CampManageController::class, 'create'])->name('create');
-    Route::post('/store', [CampManageController::class, 'store'])->name('store');
-    Route::get('/show/{id}', [CampManageController::class, 'show'])->name('show');
-    Route::get('/edit/{id}', [CampManageController::class, 'edit'])->name('edit');
-    Route::post('/update/{id}', [CampManageController::class, 'update'])->name('update');
-    Route::delete('/delete/{id}', [CampManageController::class, 'destroy'])->name('destroy');
-    Route::get('/status/{id}', [CampManageController::class, 'status'])->name('status');
+Route::prefix('camps')->name('camps.')->group(function () {
+    Route::get('/', [CampController::class, 'index'])->name('index');
+    Route::post('/', [CampController::class, 'store'])->name('store');
+    Route::get('/{id}', [CampController::class, 'show'])->name('show');
+    Route::post('/{id}', [CampController::class, 'update'])->name('update');
+    Route::delete('/{id}', [CampController::class, 'destroy'])->name('destroy');
+    Route::get('/{id}/status', [CampController::class, 'status'])->name('status');
 });
 
 /**

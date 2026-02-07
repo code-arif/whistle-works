@@ -409,7 +409,7 @@
                         <div class="card">
                             <div class="card-header border-bottom">
                                 <h4 class="card-title fw-semibold">Recent Camps</h4>
-                                <a href="#" class="ms-auto">View All</a>
+                                <a href="{{ route('admin.camps.index') }}" class="ms-auto">View All</a>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
