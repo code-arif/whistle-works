@@ -36,7 +36,7 @@ use App\Http\Controllers\Web\Backend\SportsType\SportsTypeController;
 use App\Http\Controllers\Web\Backend\CMS\Web\PrivacyTerms\PrivacAndTermsController;
 use Modules\Director\Http\Controllers\Api\Camp\CampManageController;
 
-Route::get("dashboard", [DashboardController::class, 'index'])->name('dashboard');
+Route::get("dashboard", [DashboardController::class, 'index'])->name('dashboard'); //done
 
 
 /**
