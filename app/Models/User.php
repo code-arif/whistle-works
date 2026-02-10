@@ -61,7 +61,10 @@ class User extends Authenticatable implements JWTSubject
         'stripe_customer_id',
         'stripe_account_id',
 
-        'status'
+        'status',
+
+        'email_verification_token',
+        'email_verification_token_expires_at',
     ];
 
 

@@ -11,11 +11,14 @@ use App\Http\Controllers\Api\Auth\SocialLoginController;
 use App\Http\Controllers\Api\Frontend\ContactController;
 use App\Http\Controllers\Api\Frontend\SettingsController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
+use App\Http\Controllers\Api\Auth\V2\V2RegisterController;
 use App\Http\Controllers\Api\Frontend\AnnouncementController;
 use App\Http\Controllers\Api\Frontend\CMS\HomePageController;
 use App\Http\Controllers\Api\Frontend\NotificationController;
+use App\Http\Controllers\Api\Frontend\CMS\AboutPageController;
 use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
 use App\Http\Controllers\Api\Frontend\Roster\RosterController;
+use App\Http\Controllers\Api\Auth\V2\V2ResetPasswordController;
 use App\Http\Controllers\Api\Frontend\RefereeEvaluationController;
 use App\Http\Controllers\Api\Frontend\Evaluator\EvaluatorController;
 use App\Http\Controllers\Api\Frontend\Evaluator\GameOverviewController;
@@ -23,7 +26,6 @@ use App\Http\Controllers\Api\Frontend\Referee\EvaluatedRefereeController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentCrewController;
 use App\Http\Controllers\Api\Frontend\CampRanking\CampRankingSettingsController;
-use App\Http\Controllers\Api\Frontend\CMS\AboutPageController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegistrationController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegisterManageForDirectorController;
 
@@ -56,6 +58,25 @@ Route::group(['middleware' => 'guest:api'], function ($router) {
 
     //social login
     Route::post('/social-login', [SocialLoginController::class, 'SocialLogin']);
+});
+
+// V2 API Routes
+Route::prefix('v2')->group(function () {
+    Route::group(['middleware' => 'guest:api'], function () {
+        // Registration with Email Verification Token
+        Route::post('/register', [V2RegisterController::class, 'register']); // done
+        Route::post('/verify-email', [V2RegisterController::class, 'verifyEmail']);
+        Route::post('/resend-verification', [V2RegisterController::class, 'resendVerification']);
+
+        // Login (can use existing V1 or create V2)
+        Route::post('/login', [LoginController::class, 'login']);
+
+        // Password Reset with Token
+        Route::post('/forgot-password', [V2ResetPasswordController::class, 'forgotPassword']);
+        Route::post('/resend-reset-link', [V2ResetPasswordController::class, 'resendResetLink']);
+        Route::post('/verify-reset-token', [V2ResetPasswordController::class, 'verifyResetToken']);
+        Route::post('/reset-password', [V2ResetPasswordController::class, 'resetPassword']);
+    });
 });
 
 /*
