@@ -206,7 +206,7 @@ class CrewManageController extends Controller
                             ? asset($member->avatar)
                             : asset('default/profile.jpg'),
 
-                        // ✅ jersey number here
+                        // jersey number here
                         'jersey_number' => $jerseyNumbers[$member->id] ?? null,
 
                         'joined_at' => $member->pivot->joined_at,
