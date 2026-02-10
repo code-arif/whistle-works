@@ -158,6 +158,9 @@ class CrewManageController extends Controller
             return $this->error('Camp not found.', null, 404);
         }
 
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $campId)
+            ->pluck('jersey_number', 'referee_id');
+
         $crews = Crew::where('camp_id', $campId)
             ->withCount('members')
             ->with(['members' => function ($query) {
@@ -165,19 +168,47 @@ class CrewManageController extends Controller
             }])
             ->get();
 
-        $formatted = $crews->map(function ($crew) {
+        // $formatted = $crews->map(function ($crew) {
+        //     return [
+        //         'id' => $crew->id,
+        //         'name' => $crew->name,
+        //         'description' => $crew->description,
+        //         'status' => $crew->status,
+        //         'member_count' => $crew->members_count,
+        //         'members' => $crew->members->map(function ($member) {
+        //             return [
+        //                 'id' => $member->id,
+        //                 'name' => $member->first_name . ' ' . $member->last_name,
+        //                 'email' => $member->email,
+        //                 'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+        //                 'joined_at' => $member->pivot->joined_at,
+        //                 'address' => $member->address,
+        //                 'phone' => $member->phone,
+        //             ];
+        //         }),
+        //         'created_at' => $crew->created_at->format('Y-m-d H:i:s')
+        //     ];
+        // });
+
+        $formatted = $crews->map(function ($crew) use ($jerseyNumbers) {
             return [
                 'id' => $crew->id,
                 'name' => $crew->name,
                 'description' => $crew->description,
                 'status' => $crew->status,
                 'member_count' => $crew->members_count,
-                'members' => $crew->members->map(function ($member) {
+                'members' => $crew->members->map(function ($member) use ($jerseyNumbers) {
                     return [
                         'id' => $member->id,
                         'name' => $member->first_name . ' ' . $member->last_name,
                         'email' => $member->email,
-                        'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                        'avatar' => $member->avatar
+                            ? asset($member->avatar)
+                            : asset('default/profile.jpg'),
+
+                        // ✅ jersey number here
+                        'jersey_number' => $jerseyNumbers[$member->id] ?? null,
+
                         'joined_at' => $member->pivot->joined_at,
                         'address' => $member->address,
                         'phone' => $member->phone,
@@ -186,6 +217,7 @@ class CrewManageController extends Controller
                 'created_at' => $crew->created_at->format('Y-m-d H:i:s')
             ];
         });
+
 
         return $this->success(
             'Crews fetched successfully.',
