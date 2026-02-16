@@ -172,12 +172,6 @@ class CourtAssignController extends Controller
                     User::class,
                     $slot
                 );
-                // This checks if referee is assigned to a DIFFERENT slot at the SAME TIME
-                // $hasConflict = GameSlotAssignment::hasTimeConflict(
-                //     $refereeId,
-                //     User::class,
-                //     $slot
-                // );
 
                 if ($hasConflict) {
                     $conflictingSlots = GameSlotAssignment::getConflictingSlots(
@@ -909,7 +903,7 @@ class CourtAssignController extends Controller
             }
 
             // Send notifications to affected referees
-            if ($refereesToNotify->isNotEmpty()) {
+            if ($refereesToNotify->isNotEmpty() && $assignment->gameSlot->schedule->status === 'published') {
                 Notification::send(
                     $refereesToNotify,
                     new RefereeRemoveFromCourtNotification(
