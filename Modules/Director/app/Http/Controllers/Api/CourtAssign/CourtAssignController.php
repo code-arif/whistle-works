@@ -372,12 +372,12 @@ class CourtAssignController extends Controller
             $slot->update(['status' => 'assigned']);
 
             // Send notifications to all crew members
-            // if ($crew->members->isNotEmpty()) {
-            //     Notification::send(
-            //         $crew->members,
-            //         new RefereeAssignedNotification($slot, $slot->schedule->camp, $user, 'crew', $crew->name)
-            //     );
-            // }
+            if ($crew->members->isNotEmpty() && $slot->schedule->status === 'published') {
+                Notification::send(
+                    $crew->members,
+                    new RefereeAssignedNotification($slot, $slot->schedule->camp, $user, 'crew', $crew->name)
+                );
+            }
 
             DB::commit();
 
