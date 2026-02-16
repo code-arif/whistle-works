@@ -59,7 +59,8 @@ class LoginController extends Controller
             // Check Email Verification
             if (!$user->otp_verified_at) {
                 return $this->error(
-                    ['is_otp_verified' => false],
+                    ['is_otp_verified' => false,
+                    'email' => $request->email],
                     'Email not verified. Please verify your email before logging in.',
                     403
                 );

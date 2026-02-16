@@ -83,7 +83,7 @@ class AboutPageController extends Controller
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
-                    'designation' => $item->designation,
+                    'designation' => $item->sub_title,
                     'image' => $item->image ? asset($item->image) : asset('default/profile.jpg'),
                 ];
             }),

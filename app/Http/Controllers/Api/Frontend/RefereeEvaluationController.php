@@ -745,8 +745,8 @@ class RefereeEvaluationController extends Controller
                 'private_comments' => $evaluation->private_comments,
                 'referee_feedback' => $evaluation->referee_feedback,
                 'status' => $evaluation->status,
-                'submitted_at' => $evaluation->submitted_at ? $evaluation->submitted_at->format('Y-m-d H:i:s') : null,
-                'created_at' => $evaluation->created_at->format('Y-m-d H:i:s'),
+                'submitted_at' => $evaluation->submitted_at ? $evaluation->submitted_at->todateString() : null,
+                'created_at' => $evaluation->created_at->todateString(),
             ];
         });
 
