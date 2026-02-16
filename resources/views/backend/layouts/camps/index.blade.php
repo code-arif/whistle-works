@@ -379,7 +379,6 @@
                         [10, 25, 50, 100, "All"]
                     ],
                     processing: true,
-                    responsive: true,
                     serverSide: true,
 
                     language: {

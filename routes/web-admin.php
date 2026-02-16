@@ -54,7 +54,7 @@ Route::group(['prefix' => 'sports-type', 'as' => 'sports-type.'], function () {
 });
 
 /**
- * Sports Type Management Routes
+ * Camp Management Routes
  */
 Route::prefix('camps')->name('camps.')->group(function () {
     Route::get('/', [CampController::class, 'index'])->name('index');
