@@ -29,7 +29,9 @@
                             <div class="card-header border-bottom">
                                 <h3 class="card-title mb-0">Camps List</h3>
                                 <div class="card-options ms-auto">
-                                    <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center me-2" onclick="showCreateModal()">
+                                    <button type="button"
+                                        class="btn btn-primary btn-sm d-inline-flex align-items-center me-2"
+                                        onclick="showCreateModal()">
                                         <i class="fe fe-plus"></i> Add Camp
                                     </button>
                                 </div>
@@ -116,13 +118,20 @@
                             </div>
 
                             <!-- Location Search with Google Maps -->
-                            <div class="col-12">
+                            <div class="col-md-6">
                                 <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="location" name="location"
                                     placeholder="Search location or click on map..." required>
                                 <small class="text-muted">Search for a location or click on the map to set
                                     coordinates</small>
                             </div>
+
+                            {{-- address --}}
+                            <div class="col-md-6">
+                                <label for="address" class="form-label"> Address </label>
+                                <input type="text" class="form-control" id="address" name="address">
+                            </div>
+
 
                             <!-- Google Map Container -->
                             <div class="col-12">
@@ -541,6 +550,7 @@
                         $('#sports_type_id').val(camp.sports_type_id);
                         $('#camp_name').val(camp.camp_name);
                         $('#location').val(camp.location);
+                        $('#address').val(camp.address);
                         $('#start_date').val(camp.start_date);
                         $('#end_date').val(camp.end_date);
                         $('#price').val(camp.price);
@@ -619,138 +629,152 @@
 
                         // Generate clean HTML
                         let html = `
-                    <div class="camp-details-container">
-                        <!-- Camp Information -->
-                        <div class="camp-info-card">
-                            <h4 class="section-title"><i class="fe fe-map-pin me-2"></i>Camp Information</h4>
+                        <div class="camp-details-container">
+                            <!-- Camp Information -->
+                            <div class="camp-info-card">
+                                <h4 class="section-title"><i class="fe fe-map-pin me-2"></i>Camp Information</h4>
 
-                            <div class="text-center mb-4">
-                                ${logoHtml}
-                            </div>
-
-                            <div class="info-grid">
-                                <div class="info-item">
-                                    <div class="info-label">Camp Name</div>
-                                    <div class="info-value">${camp.camp_name || 'N/A'}</div>
+                                <div class="text-center mb-4">
+                                    ${logoHtml}
                                 </div>
 
-                                <div class="info-item">
-                                    <div class="info-label">Sports Type</div>
-                                    <div class="info-value">${camp.sports_type_name || 'N/A'}</div>
-                                </div>
-
-                                <div class="info-item">
-                                    <div class="info-label">Location</div>
-                                    <div class="info-value">${camp.location || 'N/A'}</div>
-                                </div>
-
-                                <div class="info-item">
-                                    <div class="info-label">Price</div>
-                                    <div class="info-value">
-                                        <strong>$${parseFloat(camp.price || 0).toFixed(2)} USD</strong>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">Camp Name</div>
+                                        <div class="info-value">${camp.camp_name || 'N/A'}</div>
                                     </div>
-                                </div>
 
-                                <div class="info-item">
-                                    <div class="info-label">Status</div>
-                                    <div class="info-value">
-                                        <span class="badge badge-custom ${camp.status === 'active' ? 'badge-active' : 'badge-inactive'}">
-                                            ${camp.status ? camp.status.toUpperCase() : 'N/A'}
-                                        </span>
+                                    <div class="info-item">
+                                        <div class="info-label">Sports Type</div>
+                                        <div class="info-value">${camp.sports_type_name || 'N/A'}</div>
                                     </div>
-                                </div>
+
+                                    <div class="info-item">
+                                        <div class="info-label">Location</div>
+                                        <div class="info-value">${camp.location || 'N/A'}</div>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <div class="info-label">Location</div>
+                                        <div class="info-value">${camp.address || 'N/A'}</div>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <div class="info-label">Price</div>
+                                        <div class="info-value">
+                                            <strong>$${parseFloat(camp.price || 0).toFixed(2)} USD</strong>
+                                        </div>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <div class="info-label">Status</div>
+                                        <div class="info-value">
+                                            <span class="badge badge-custom ${camp.status === 'active' ? 'badge-active' : 'badge-inactive'}">
+                                                ${camp.status ? camp.status.toUpperCase() : 'N/A'}
+                                            </span>
+                                        </div>
+                                    </div>
 
                                 ${camp.latitude && camp.longitude ? `
-                                            <div class="info-item">
-                                                <div class="info-label">Coordinates</div>
-                                                <div class="info-value">${camp.latitude}, ${camp.longitude}</div>
+                                        <div class="info-item">
+                                            <div class="info-label">Coordinates</div>
+                                            <div class="info-value">
+                                                <a href="https://www.google.com/maps?q=${camp.latitude},${camp.longitude}"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style="color: #0d6efd; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                                    <i class="fe fe-map-pin"></i>
+                                                    ${camp.latitude}, ${camp.longitude}
+                                                    <i class="fe fe-external-link" style="font-size: 0.8rem;"></i>
+                                                </a>
                                             </div>
-                                        ` : ''}
-                            </div>
-
-                            <!-- Duration -->
-                            <div class="duration-box">
-                                <div class="info-label">Duration</div>
-                                <div class="mb-2">
-                                    <div class="mb-1"><strong>Start:</strong> ${startDate}</div>
-                                    <div><strong>End:</strong> ${endDate}</div>
+                                        </div>
+                                    ` : ''}
                                 </div>
-                                ${duration !== 'N/A' ? `
-                                            <div class="duration-days">${duration} Days</div>
-                                        ` : ''}
+
+                                <!-- Duration -->
+                                <div class="duration-box">
+                                    <div class="info-label">Duration</div>
+                                    <div class="mb-2">
+                                        <div class="mb-1"><strong>Start:</strong> ${startDate}</div>
+                                        <div><strong>End:</strong> ${endDate}</div>
+                                    </div>
+                                    ${duration !== 'N/A' ? `
+                                                        <div class="duration-days">${duration} Days</div>
+                                                    ` : ''}
+                                </div>
+
+                                ${camp.camp_details ? `
+                                                    <div class="info-item mt-3">
+                                                        <div class="info-label">Camp Details</div>
+                                                        <div class="info-value" style="line-height: 1.6;">${camp.camp_details}</div>
+                                                    </div>
+                                                ` : ''}
                             </div>
 
-                            ${camp.camp_details ? `
+
+                            <div class="director-info-card">
+                                ${director ? `
+                                                    <h4 class="section-title"><i class="fe fe-user me-2"></i>Director Information</h4>
+
+                                                    <div class="text-center mb-4">
+                                                        ${directorAvatar}
+                                                    </div>
+
+                                                    <div class="info-grid">
+                                                        <div class="info-item">
+                                                            <div class="info-label">Full Name</div>
+                                                            <div class="info-value">${directorName}</div>
+                                                        </div>
+
+                                                        <div class="info-item">
+                                                            <div class="info-label">Username</div>
+                                                            <div class="info-value">${director.username ? '' + director.username : 'N/A'}</div>
+                                                        </div>
+
+                                                        <div class="info-item">
+                                                            <div class="info-label">Email Address</div>
+                                                            <div class="info-value">${director.email || 'N/A'}</div>
+                                                        </div>
+
+                                                        ${director.phone ? `
+                                            <div class="info-item">
+                                                <div class="info-label">Phone Number</div>
+                                                <div class="info-value">${director.phone}</div>
+                                            </div>
+                                        ` : ''}
+
+                                                        ${director.address ? `
+                                            <div class="info-item">
+                                                <div class="info-label">Address</div>
+                                                <div class="info-value">${director.address}</div>
+                                            </div>
+                                        ` : ''}
+
+                                                        <div class="info-item">
+                                                            <div class="info-label">Account Status</div>
+                                                            <div class="info-value">
+                                                                <span class="badge badge-custom ${director.status === 'active' ? 'badge-active' : 'badge-inactive'}">
+                                                                    ${director.status ? director.status.toUpperCase() : 'N/A'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    ${director.biography ? `
                                         <div class="info-item mt-3">
-                                            <div class="info-label">Camp Details</div>
-                                            <div class="info-value" style="line-height: 1.6;">${camp.camp_details}</div>
+                                            <div class="info-label">Biography</div>
+                                            <div class="info-value" style="line-height: 1.6;">${director.biography}</div>
                                         </div>
                                     ` : ''}
+                                                ` : `
+                                                    <div class="alert alert-warning">
+                                                        <i class="fe fe-alert-triangle me-2"></i>Director information not available
+                                                    </div>
+                                                `}
+                            </div>
                         </div>
-
-                        <!-- Director Information -->
-                        <div class="director-info-card">
-                            ${director ? `
-                                        <h4 class="section-title"><i class="fe fe-user me-2"></i>Director Information</h4>
-
-                                        <div class="text-center mb-4">
-                                            ${directorAvatar}
-                                        </div>
-
-                                        <div class="info-grid">
-                                            <div class="info-item">
-                                                <div class="info-label">Full Name</div>
-                                                <div class="info-value">${directorName}</div>
-                                            </div>
-
-                                            <div class="info-item">
-                                                <div class="info-label">Username</div>
-                                                <div class="info-value">${director.username ? '@' + director.username : 'N/A'}</div>
-                                            </div>
-
-                                            <div class="info-item">
-                                                <div class="info-label">Email Address</div>
-                                                <div class="info-value">${director.email || 'N/A'}</div>
-                                            </div>
-
-                                            ${director.phone ? `
-                                        <div class="info-item">
-                                            <div class="info-label">Phone Number</div>
-                                            <div class="info-value">${director.phone}</div>
-                                        </div>
-                                    ` : ''}
-
-                                            ${director.address ? `
-                                        <div class="info-item">
-                                            <div class="info-label">Address</div>
-                                            <div class="info-value">${director.address}</div>
-                                        </div>
-                                    ` : ''}
-
-                                            <div class="info-item">
-                                                <div class="info-label">Account Status</div>
-                                                <div class="info-value">
-                                                    <span class="badge badge-custom ${director.status === 'active' ? 'badge-active' : 'badge-inactive'}">
-                                                        ${director.status ? director.status.toUpperCase() : 'N/A'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        ${director.biography ? `
-                                    <div class="info-item mt-3">
-                                        <div class="info-label">Biography</div>
-                                        <div class="info-value" style="line-height: 1.6;">${director.biography}</div>
-                                    </div>
-                                ` : ''}
-                                    ` : `
-                                        <div class="alert alert-warning">
-                                            <i class="fe fe-alert-triangle me-2"></i>Director information not available
-                                        </div>
-                                    `}
-                        </div>
-                    </div>
-                `;
+                    `;
 
                         $('#viewCampContent').html(html);
                         $('#viewCampModal').modal('show');

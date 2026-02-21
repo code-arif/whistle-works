@@ -137,6 +137,7 @@ class CampController extends Controller
             'camp_logo'        => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
             'latitude'         => 'nullable|numeric|between:-90,90',
             'longitude'        => 'nullable|numeric|between:-180,180',
+            'address'          => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -182,6 +183,7 @@ class CampController extends Controller
                 'latitude'         => $data['latitude'] ?? null,
                 'longitude'        => $data['longitude'] ?? null,
                 'status'           => 'inactive', // Default status
+                'address'          => $data['address'] ?? null,
             ]);
 
             return response()->json([
@@ -234,6 +236,7 @@ class CampController extends Controller
             'camp_logo'        => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
             'latitude'         => 'nullable|numeric|between:-90,90',
             'longitude'        => 'nullable|numeric|between:-180,180',
+            'address'          => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -279,6 +282,7 @@ class CampController extends Controller
                 'camp_logo'        => $data['camp_logo'] ?? $camp->camp_logo,
                 'latitude'         => $data['latitude'] ?? $camp->latitude,
                 'longitude'        => $data['longitude'] ?? $camp->longitude,
+                'address'          => $data['address'] ?? $camp->address,
             ]);
 
             return response()->json([
