@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers\Web\Backend\Camp;
 
-use App\Helpers\Helper;
-use App\Http\Controllers\Controller;
-use App\Models\SportsType;
-use App\Models\User;
 use Exception;
-use Illuminate\Http\JsonResponse;
+use App\Models\User;
+use App\Helpers\Helper;
+use App\Models\SportsType;
 use Illuminate\Http\Request;
+use Yajra\DataTables\DataTables;
+use Illuminate\Http\JsonResponse;
+use Modules\Director\Models\Camp;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Modules\Director\Models\Camp;
-use Yajra\DataTables\DataTables;
 
 class CampController extends Controller
 {
@@ -64,7 +64,7 @@ class CampController extends Controller
 
                     return '<div class="d-flex align-items-center">
                                 <img src="' . $icon . '" alt="icon" width="30" height="30" class="rounded me-2">
-                                <span>' . Str::limit($data->sportsType ? $data->sportsType->name : 'N/A', 30) . '</span>
+                                <span>' . Str::limit($data->sports_type_name ?? 'N/A', 20) . '</span>
                             </div>';
                 })
                 ->addColumn('dates', function ($data) {
