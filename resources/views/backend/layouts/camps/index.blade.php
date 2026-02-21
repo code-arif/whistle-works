@@ -473,10 +473,10 @@
             e.preventDefault();
 
             // Validate coordinates
-            if (!$('#latitude').val() || !$('#longitude').val()) {
-                toastr.error('Please select a location on the map');
-                return;
-            }
+            // if (!$('#latitude').val() || !$('#longitude').val()) {
+            //     toastr.error('Please select a location on the map');
+            //     return;
+            // }
 
             NProgress.start();
 
