@@ -47,6 +47,9 @@ class RosterController extends Controller
                 'camp_name' => $camp->camp_name,
                 'camp_logo' => $camp->camp_logo ? asset('' . $camp->camp_logo) : asset('default/no_image.webp'),
                 'location' => $camp->location,
+                'address' => $camp->address ?? null,
+                'latitude' => $camp->latitude,
+                'longitude' => $camp->longitude,
                 'price' => $camp->price,
                 'sports_type' => [
                     'id' => $camp->sportsType->id,
@@ -68,7 +71,8 @@ class RosterController extends Controller
                             'id' => $location->id,
                             'name' => $location->location_name,
                             'latitude' => $location->latitude,
-                            'longitude' => $location->longitude
+                            'longitude' => $location->longitude,
+                            'address' => $location->address ?? null,
                         ];
                     }) ?? collect(),
                     'game_courts' => $camp->schedule?->gameSlots->map(function ($gameSlot) use ($camp) {
@@ -81,6 +85,7 @@ class RosterController extends Controller
                             'status' => $gameSlot->status,
                             'is_block' => $gameSlot->is_block,
                             'location' => $gameSlot->location->location_name ?? 'N/A',
+                            'address' => $gameSlot->location->address ?? null,
 
                             // Slot Assignments (Referees/Crew) - SORTED ALPHABETICALLY
                             'assignments' => $gameSlot->slotAssignments

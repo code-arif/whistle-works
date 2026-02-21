@@ -66,6 +66,7 @@ class RefereeRemoveFromCourtNotification extends Notification
                 'name' => $this->gameSlot->location->location_name ?? 'N/A',
                 'latitude' => $this->gameSlot->location->latitude ?? null,
                 'longitude' => $this->gameSlot->location->longitude ?? null,
+                'address' => $this->gameSlot->location->address ?? null,
             ],
 
             'camp' => [

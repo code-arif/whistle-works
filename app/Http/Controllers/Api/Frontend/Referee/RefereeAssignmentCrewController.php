@@ -108,6 +108,7 @@ class RefereeAssignmentCrewController extends Controller
                     'name' => $camp->camp_name,
                     'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
                     'location' => $camp->location,
+                    'address' => $camp->address,
                     'start_date' => $camp->start_date,
                     'end_date' => $camp->end_date,
                     'status' => $camp->status
@@ -171,6 +172,7 @@ class RefereeAssignmentCrewController extends Controller
                         'location' => $camp->location,
                         'start_date' => $camp->start_date,
                         'end_date' => $camp->end_date,
+                        'address' => $camp->address,
                     ],
                     'total_crews' => 0,
                     'crews' => []
@@ -206,6 +208,7 @@ class RefereeAssignmentCrewController extends Controller
                     'court_name' => $slot->court_name,
                     'court_number' => $slot->court_number,
                     'location_name' => $slot->location->location_name ?? 'N/A',
+                    'address' => $slot->location->address ?? null,
                     'status' => $slot->status,
                     'is_blocked' => (bool) $slot->is_block,
                     'assigned_at' => $assignment->assigned_at->format('Y-m-d H:i:s')
@@ -283,6 +286,7 @@ class RefereeAssignmentCrewController extends Controller
                     'location' => $camp->location,
                     'start_date' => $camp->start_date,
                     'end_date' => $camp->end_date,
+                    'address' => $camp->address,
                 ],
                 'total_crews' => $crews->count(),
                 'crews' => $crews
@@ -345,6 +349,7 @@ class RefereeAssignmentCrewController extends Controller
                         'court_name' => $slot->court_name,
                         'court_number' => $slot->court_number,
                         'location_name' => $slot->location->location_name ?? 'N/A',
+                        'address' => $slot->location->address ?? null,
                         'status' => $slot->status,
                         'assigned_at' => $assignment->assigned_at->format('Y-m-d H:i:s')
                     ];
@@ -393,6 +398,7 @@ class RefereeAssignmentCrewController extends Controller
                     'name' => $camp->camp_name,
                     'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
                     'location' => $camp->location,
+                    'address' => $camp->address,
                     'start_date' => $camp->start_date,
                     'end_date' => $camp->end_date,
                 ],
@@ -463,6 +469,7 @@ class RefereeAssignmentCrewController extends Controller
                 'court_name' => $slot->court_name,
                 'court_number' => $slot->court_number,
                 'location_name' => $slot->location->location_name ?? 'N/A',
+                'address' => $slot->location->address ?? null,
                 'crew' => [
                     'id' => $crew->id,
                     'name' => $crew->name,
@@ -471,7 +478,8 @@ class RefereeAssignmentCrewController extends Controller
                 'camp' => [
                     'id' => $camp->id,
                     'name' => $camp->camp_name,
-                    'location' => $camp->location
+                    'location' => $camp->location,
+                    'address' => $camp->address ?? null,
                 ]
             ];
         })->values();

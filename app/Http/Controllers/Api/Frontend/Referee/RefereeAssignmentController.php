@@ -85,6 +85,7 @@ class RefereeAssignmentController extends Controller
                     'location' => $camp->location,
                     'start_date' => $camp->start_date->toDateString(),
                     'end_date' => $camp->end_date->toDateString(),
+                    'address' => $camp->address,
                 ],
                 'total_assignments' => 0,
                 'game_slots' => []
@@ -158,6 +159,7 @@ class RefereeAssignmentController extends Controller
                     'name' => $gameSlot->location->location_name ?? 'N/A',
                     'latitude' => $gameSlot->location->latitude ?? null,
                     'longitude' => $gameSlot->location->longitude ?? null,
+                    'address' => $gameSlot->location->address ?? null,
                 ],
                 'my_position' => $assignment->position,
                 'assigned_at' => $assignment->assigned_at->format('Y-m-d H:i:s'),
@@ -191,6 +193,7 @@ class RefereeAssignmentController extends Controller
                     'start_date' => $camp->start_date->toDateString(),
                     'end_date' => $camp->end_date->toDateString(),
                     'timezone' => $camp->timezone,
+                    'address' => $camp->address,
                 ],
                 'statistics' => [
                     'total_assigned_slots' => $totalSlots,
@@ -307,6 +310,7 @@ class RefereeAssignmentController extends Controller
                     'location' => $camp->location,
                     'start_date' => $camp->start_date->toDateString(),
                     'end_date' => $camp->end_date->toDateString(),
+                    'address' => $camp->address,
                 ],
                 'game_details' => [
                     'date' => $gameSlot->game_date->toDateString(),
@@ -321,6 +325,7 @@ class RefereeAssignmentController extends Controller
                     'name' => $gameSlot->location->location_name ?? 'N/A',
                     'latitude' => $gameSlot->location->latitude ?? null,
                     'longitude' => $gameSlot->location->longitude ?? null,
+                    'address' => $gameSlot->location->address ?? null,
                 ],
                 'my_position' => $assignment->position,
                 'assigned_at' => $assignment->assigned_at->format('Y-m-d H:i:s'),
@@ -438,11 +443,13 @@ class RefereeAssignmentController extends Controller
                 'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
                 'location' => $camp->location,
                 'details' => $camp->camp_details,
+                'address' => $camp->address,
             ],
             'location' => [
                 'name' => $gameSlot->location->location_name ?? 'N/A',
                 'latitude' => $gameSlot->location->latitude ?? null,
                 'longitude' => $gameSlot->location->longitude ?? null,
+                'address' => $gameSlot->location->address ?? null,
             ],
             'assigned_referees' => [
                 'total' => count($allReferees),
@@ -500,6 +507,7 @@ class RefereeAssignmentController extends Controller
                 'location' => $gameSlot->location->location_name ?? 'N/A',
                 'my_position' => $assignment->position,
                 'total_referees' => $totalReferees,
+                'address' => $gameSlot->location->address ?? null,
             ];
         })->unique('game_slot_id')->values();
 
@@ -537,7 +545,8 @@ class RefereeAssignmentController extends Controller
                     'camp_logo' => $checkin->camp->camp_logo ? asset($checkin->camp->camp_logo) : asset('default/no_image.webp'),
                     'start_date' => $checkin->camp->start_date->toDateString(),
                     'end_date' => $checkin->camp->end_date->toDateString(),
-                    'price' => $checkin->camp->price
+                    'price' => $checkin->camp->price,
+                    'address' => $checkin->camp->address,
                 ],
                 'payment' => $checkin->payment ? [
                     'amount' => $checkin->payment->amount,

@@ -41,6 +41,7 @@ class SchedulePublishNotification extends Notification
                 'location' => $this->camp->location,
                 'start_date' => $this->camp->start_date,
                 'end_date' => $this->camp->end_date,
+                'address' => $this->camp->address ?? null,
             ],
 
             'schedule' => [

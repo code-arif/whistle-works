@@ -30,6 +30,7 @@ class RefereeEvaluationResource extends JsonResource
                 'id' => $this->camp_id,
                 'name' => $this->camp->camp_name,
                 'location' => $this->camp->location,
+                'address' => $this->camp->address ?? null,
             ],
             'game_slot' => $this->when($this->game_slot_id, [
                 'id' => $this->gameSlot?->id,

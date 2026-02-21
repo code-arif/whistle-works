@@ -64,6 +64,7 @@ class EvaluatedRefereeController extends Controller
                         'location' => $camp->location,
                         'start_date' => $camp->start_date,
                         'end_date' => $camp->end_date,
+                        'address' => $camp->address,
                     ],
                     'overall_performance' => null,
                     'performance_breakdown' => null,
@@ -155,6 +156,7 @@ class EvaluatedRefereeController extends Controller
                 'location' => $camp->location,
                 'start_date' => $camp->start_date,
                 'end_date' => $camp->end_date,
+                'address' => $camp->address,
             ],
             'overall_performance' => [
                 'score' => $overallAvg,
