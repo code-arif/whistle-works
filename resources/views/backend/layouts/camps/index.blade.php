@@ -486,8 +486,8 @@
             let url = campId ? "{{ route('admin.camps.update', ':id') }}".replace(':id', campId) :
                 "{{ route('admin.camps.store') }}";
 
-            if (method === 'PUT') {
-                formData.append('_method', 'PUT');
+            if (method === 'POST') {
+                formData.append('_method', 'POST');
             }
 
             $.ajax({
