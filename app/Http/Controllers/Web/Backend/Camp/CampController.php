@@ -45,22 +45,22 @@ class CampController extends Controller
                 ->addColumn('camp_info', function ($data) {
                     $logo = $data->camp_logo
                         ? asset($data->camp_logo)
-                        : asset('default/logo.svg');
+                        : asset('default/no_image.webp');
 
                     return '<div class="d-flex align-items-center">
                                 <img src="' . $logo . '" alt="logo" width="40" height="40" class="rounded me-2">
                                 <div>
-                                    <h6 class="mb-0 fs-14 fw-semibold">' . $data->camp_name . '</h6>
+                                    <h6 class="mb-0 fs-14 fw-semibold">' . $data->camp_name . '<span class="badge bg-primary text-white" style="margin-left: 5px;"> ' . Str::limit($data->address ?? 'N/A', 20) . '</span>' . '</h6>
                                     <small class="text-muted"><i class="fe fe-map-pin"></i> ' .
                         Str::limit($data->location, 30) .
                         '</small>
                                 </div>
-                            </div>';
+                        </div>';
                 })
                 ->addColumn('sports_type', function ($data) {
                     $icon = $data->sportsType && $data->sportsType->icon
                         ? asset($data->sportsType->icon)
-                        : asset('default/logo.svg');
+                        : asset('default/no_image.webp');
 
                     return '<div class="d-flex align-items-center">
                                 <img src="' . $icon . '" alt="icon" width="30" height="30" class="rounded me-2">
