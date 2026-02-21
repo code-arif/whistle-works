@@ -385,6 +385,7 @@ class RefereeEvaluationController extends Controller
                     'location' => $camp->location,
                     'start_date' => $camp->start_date,
                     'end_date' => $camp->end_date,
+                    'address' => $camp->address,
                 ],
                 'evaluations' => RefereeEvaluationListResource::collection($evaluations),
                 'overall_level_summary' => $overallSummary,
@@ -759,6 +760,7 @@ class RefereeEvaluationController extends Controller
                     'location' => $camp->location,
                     'start_date' => $camp->start_date,
                     'end_date' => $camp->end_date,
+                    'address' => $camp->address,
                 ],
                 'referee' => [
                     'id' => $referee->id,

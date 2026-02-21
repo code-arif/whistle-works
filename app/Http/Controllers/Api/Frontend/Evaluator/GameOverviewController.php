@@ -37,6 +37,9 @@ class GameOverviewController extends Controller
                         return [
                             'id' => $location->id,
                             'name' => $location->location_name,
+                            'latitude' => $location->latitude,
+                            'longitude' => $location->longitude,
+                            'address' => $location->address,
                         ] ?? null;
                     }) ?? collect(),
                     'game_courts' => [

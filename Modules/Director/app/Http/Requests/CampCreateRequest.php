@@ -32,6 +32,7 @@ class CampCreateRequest extends FormRequest
             'latitude'         => 'nullable|numeric|between:-90,90',
             'longitude'        => 'nullable|numeric|between:-180,180',
             'timezone' => 'nullable|string|timezone', // Optional, auto-detected from coordinates
+            'address' => 'nullable|string|max:255',
         ];
     }
 

@@ -26,6 +26,7 @@ class ScheduleCreateRequest extends FormRequest
             'locations.*.court_count' => 'required|integer|min:1|max:20',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
+            'address' => 'nullable|string|max:255',
         ];
     }
 

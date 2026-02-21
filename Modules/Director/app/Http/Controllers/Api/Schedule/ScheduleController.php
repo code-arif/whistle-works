@@ -177,6 +177,7 @@ class ScheduleController extends Controller
                 $locationName = $location['location_name'] ?? null;
                 $latitude = $location['latitude'] ?? null;
                 $longitude = $location['longitude'] ?? null;
+                $address = $location['address'] ?? null;
 
                 // If lat/long provided, fetch accurate location name from Google
                 if ($latitude && $longitude) {
@@ -224,7 +225,8 @@ class ScheduleController extends Controller
                     'location_name' => $locationName,
                     'latitude' => $latitude,
                     'longitude' => $longitude,
-                    'court_count' => $location['court_count'] ?? 1
+                    'court_count' => $location['court_count'] ?? 1,
+                    'address' => $address ?? null
                 ]);
 
                 $locationMap[] = $scheduleLocation;
@@ -767,6 +769,9 @@ class ScheduleController extends Controller
                     'id' => $location->id,
                     'name' => $location->location_name,
                     'court_count' => $location->court_count,
+                    'latitude' => $location->latitude,
+                    'longitude' => $location->longitude,
+                    'address' => $location->address,
                 ];
             }),
             'total_game_slots' => $schedule->gameSlots()->count(),

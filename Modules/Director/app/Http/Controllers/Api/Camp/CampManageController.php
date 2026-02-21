@@ -127,6 +127,7 @@ class CampManageController extends Controller
             'longitude'        => $request->longitude,
             'timezone'         => $campTimezone,
             'status'           => 'inactive',
+            'address'          => $request->address,
         ]);
 
         return $this->success(
@@ -164,6 +165,7 @@ class CampManageController extends Controller
             'latitude'        => 'sometimes|numeric',
             'longitude'       => 'sometimes|numeric',
             'timezone'        => 'sometimes|string|timezone',
+            'address'         => 'sometimes|string|max:255',
         ]);
 
         // Update Sports Type
@@ -240,6 +242,11 @@ class CampManageController extends Controller
             }
 
             $camp->location = $locationName;
+        }
+
+        // address update
+        if ($request->filled('address')) {
+            $camp->address = $request->address;
         }
 
         /**
