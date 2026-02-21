@@ -29,7 +29,7 @@ class CampController extends Controller
                         $fullName = trim($data->director->first_name . ' ' . $data->director->last_name);
                         $avatar = $data->director->avatar
                             ? asset($data->director->avatar)
-                            : asset('default/avatar.png');
+                            : asset('default/profile.jpg');
 
                         return '<div class="d-flex align-items-center">
                                     <img src="' . $avatar . '" alt="avatar" width="35" height="35" class="rounded-circle me-2">
