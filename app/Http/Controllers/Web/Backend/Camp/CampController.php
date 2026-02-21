@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Web\Backend\Camp;
 
-use Exception;
-use App\Models\User;
 use App\Helpers\Helper;
-use App\Models\SportsType;
-use Illuminate\Http\Request;
-use Yajra\DataTables\DataTables;
-use Illuminate\Http\JsonResponse;
-use Modules\Director\Models\Camp;
 use App\Http\Controllers\Controller;
+use App\Models\SportsType;
+use App\Models\User;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Modules\Director\Models\Camp;
+use Yajra\DataTables\DataTables;
 
 class CampController extends Controller
 {
@@ -51,7 +52,7 @@ class CampController extends Controller
                                 <div>
                                     <h6 class="mb-0 fs-14 fw-semibold">' . $data->camp_name . '</h6>
                                     <small class="text-muted"><i class="fe fe-map-pin"></i> ' .
-                        \Illuminate\Support\Str::limit($data->location, 30) .
+                        Str::limit($data->location, 30) .
                         '</small>
                                 </div>
                             </div>';
@@ -63,7 +64,7 @@ class CampController extends Controller
 
                     return '<div class="d-flex align-items-center">
                                 <img src="' . $icon . '" alt="icon" width="30" height="30" class="rounded me-2">
-                                <span>' . ($data->sports_type_name ?? 'N/A') . '</span>
+                                <span>' . Str::limit($data->sportsType ? $data->sportsType->name : 'N/A', 30) . '</span>
                             </div>';
                 })
                 ->addColumn('dates', function ($data) {
