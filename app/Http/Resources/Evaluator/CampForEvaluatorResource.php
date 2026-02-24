@@ -19,6 +19,10 @@ class CampForEvaluatorResource extends JsonResource
             'end_date' => $this->end_date->toDateString(),
             'price' => $this->price,
             'status' => $this->status,
+            'location' => $this->location ?? null,
+            'latitude' => $this->latitude ?? null,
+            'longitude' => $this->longitude ?? null,
+            'address' => $this->address ?? null,
 
             // Add director information
             'director' => $this->when($this->relationLoaded('director'), function () {
