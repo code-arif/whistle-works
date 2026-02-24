@@ -325,20 +325,17 @@ class AutoCourtAssignController extends Controller
         $conflictSkips       = 0;
         $restSkips           = 0;
 
-        foreach ($slotsByTimeWindow as $timeKey => [$date, $startTime] = explode('|', $timeKey) + [null, null]) {
+        foreach ($slotsByTimeWindow as $timeKey => $windowSlots) {
 
-            // Re-fetch the window slots (already ordered by court_number)
-            $windowSlots = $slotsByTimeWindow[$timeKey];
+            // timeKey থেকে date ও startTime বের করো loop-এর ভেতরে
+            [$date, $startTime] = explode('|', $timeKey);
 
-            // Track which referees were already assigned in THIS time window
-            // to prevent same-time multi-court assignment within the loop itself
-            $assignedInThisWindow = []; // refereeId → true
+            $assignedInThisWindow = [];
 
             foreach ($windowSlots as $slot) {
                 $assignedToThisSlot = 0;
                 $maxPerSlot         = $slot->schedule->max_referees_per_slot ?? 3;
 
-                // Sort referees: least assigned first, then shuffle within same count
                 $sortedReferees = $this->getSortedReferees($refereeStats);
 
                 foreach ($sortedReferees as $refereeId => $stats) {
@@ -346,26 +343,21 @@ class AutoCourtAssignController extends Controller
                         break;
                     }
 
-                    // Skip if this referee was already used in this time window
-                    // (handles the case where assignment happened earlier in this loop iteration)
                     if (isset($assignedInThisWindow[$refereeId])) {
                         $conflictSkips++;
                         continue;
                     }
 
-                    // DB-level time conflict check (covers manual assignments too)
-                    if (GameSlotAssignment::hasNewTimeConflict($refereeId, User::class, $slot)) {
+                    if (GameSlotAssignment::hasTimeConflict($refereeId, User::class, $slot)) {
                         $conflictSkips++;
                         continue;
                     }
 
-                    // Back-to-back rest rule
                     if (GameSlotAssignment::needsRest($refereeId, User::class, $slot)) {
                         $restSkips++;
                         continue;
                     }
 
-                    // ── Assign ──────────────────────────────────────────────
                     GameSlotAssignment::create([
                         'game_slot_id'     => $slot->id,
                         'assignable_type'  => User::class,
@@ -375,9 +367,8 @@ class AutoCourtAssignController extends Controller
                         'assigned_at'      => now(),
                     ]);
 
-                    // Update in-memory stats
                     $refereeStats[$refereeId]['assignment_count']++;
-                    $refereeStats[$refereeId]['last_slot_key'] = $slot->game_date . '|' . $slot->start_time;
+                    $refereeStats[$refereeId]['last_slot_key'] = $timeKey;
                     $assignedInThisWindow[$refereeId]          = true;
 
                     $assignedToThisSlot++;
