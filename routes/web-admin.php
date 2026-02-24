@@ -208,8 +208,6 @@ Route::prefix('cms')->name('cms.')->group(function () {
     });
 });
 
-
-
 /*
 * Users Access Route
 */
@@ -222,10 +220,6 @@ Route::controller(UserController::class)->prefix('users')->name('users.')->group
 });
 Route::resource('permissions', PermissionController::class);
 Route::resource('roles', RoleController::class);
-
-/*
-*settings
-*/
 
 //! Route for Profile Settings
 Route::controller(ProfileController::class)->group(function () {

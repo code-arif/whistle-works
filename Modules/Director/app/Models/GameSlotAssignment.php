@@ -97,6 +97,27 @@ class GameSlotAssignment extends Model
     //         ->exists();
     // }
 
+    /**
+     * Check if a referee/crew has time conflict with a given slot
+     * A referee can only be on ONE court at any given time — check across ALL courts.
+     */
+    public static function hasNewTimeConflict($assignableId, $assignableType, GameSlot $targetSlot): bool
+    {
+        return self::where('assignable_id', $assignableId)
+            ->where('assignable_type', $assignableType)
+            ->whereHas('gameSlot', function ($query) use ($targetSlot) {
+                $query->where('game_date', $targetSlot->game_date)
+                    ->where('schedule_id', $targetSlot->schedule_id)
+                    ->where('id', '!=', $targetSlot->id)
+                    // ❌ court_name filter removed — same time on ANY court is a conflict
+                    ->where(function ($q) use ($targetSlot) {
+                        $q->where('start_time', '<', $targetSlot->end_time)
+                            ->where('end_time', '>', $targetSlot->start_time);
+                    });
+            })
+            ->exists();
+    }
+
     public static function hasTimeConflict($assignableId, $assignableType, GameSlot $targetSlot): bool
     {
         return self::where('assignable_id', $assignableId)
