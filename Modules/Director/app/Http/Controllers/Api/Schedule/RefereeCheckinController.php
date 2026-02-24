@@ -679,7 +679,7 @@ class RefereeCheckinController extends Controller
                     'name' => $camp->camp_name,
                     'location' => $camp->location,
                     'address' => $camp->address ?? null,
-                    'sports_type' => $camp->sportsType->sports_type_name,
+                    'sports_type' => $camp->sportsType->sports_name ?? null,
                     'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
                     'start_date' => $camp->start_date->toDateString(),
                     'end_date' => $camp->end_date->toDateString(),
