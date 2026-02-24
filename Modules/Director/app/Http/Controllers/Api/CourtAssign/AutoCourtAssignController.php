@@ -264,7 +264,7 @@ class AutoCourtAssignController extends Controller
             return $this->error('Camp not found.', null, 404);
         }
 
-        // ── 1. Fetch all available (non-blocked, non-crew) slots ─────────────
+        // 1. Fetch all available (non-blocked, non-crew) slots
         $availableSlots = GameSlot::with('schedule')
             ->whereHas('schedule', fn($q) => $q->where('camp_id', $campId))
             ->where('is_block', false)
@@ -278,7 +278,7 @@ class AutoCourtAssignController extends Controller
             return $this->error('No available slots found.', null, 404);
         }
 
-        // ── 2. Fetch checked-in referees ──────────────────────────────────────
+        // 2. Fetch checked-in referees
         $checkedInReferees = User::whereIn('id', function ($query) use ($campId) {
             $query->select('referee_id')
                 ->from('camp_referee_checkins')
@@ -289,7 +289,7 @@ class AutoCourtAssignController extends Controller
             return $this->error('No checked-in referees available.', null, 404);
         }
 
-        // ── 3. Clear previous auto-assignments only ───────────────────────────
+        // 3. Clear previous auto-assignments only
         $slotIds = $availableSlots->pluck('id');
 
         GameSlotAssignment::whereIn('game_slot_id', $slotIds)
@@ -300,7 +300,7 @@ class AutoCourtAssignController extends Controller
         GameSlot::whereIn('id', $slotIds)
             ->update(['status' => 'available']);
 
-        // ── 4. Build in-memory referee state ─────────────────────────────────
+        // 4. Build in-memory referee state
         // assignment_count → for fair distribution
         // last_played_key  → "date|start_time" of last slot played (for rest rule)
         $refereeStats = [];
@@ -311,12 +311,12 @@ class AutoCourtAssignController extends Controller
             ];
         }
 
-        // ── 5. Group slots by time window (date + start_time) ────────────────
+        // 5. Group slots by time window (date + start_time)
         $slotsByTimeWindow = $availableSlots->groupBy(
             fn($slot) => $slot->game_date . '|' . $slot->start_time
         );
 
-        // ── 6. Main assignment loop ───────────────────────────────────────────
+        // 6. Main assignment loop
         $assignmentsCreated = 0;
         $slotsAssigned      = 0;
         $restSkips          = 0;
@@ -326,7 +326,7 @@ class AutoCourtAssignController extends Controller
             $firstSlot  = $windowSlots->first();
             $maxPerSlot = $firstSlot->schedule->max_referees_per_slot ?? 3;
 
-            // ── 6a. Find ALL eligible referees for this time window ───────────
+            // 6a. Find ALL eligible referees for this time window
             // Eligible = not resting (didn't play in immediately previous slot)
             // We check rest using our in-memory last_played_key to avoid DB calls.
             $eligibleRefereeIds = [];
@@ -339,7 +339,7 @@ class AutoCourtAssignController extends Controller
                 $eligibleRefereeIds[] = $refereeId;
             }
 
-            // ── 6b. Distribute eligible referees across courts in this window ─
+            // 6b. Distribute eligible referees across courts in this window ─
             // Each referee gets at most ONE court per window.
             // We walk through eligibleRefereeIds sequentially and fill courts one by one.
             $refQueue = $eligibleRefereeIds; // already sorted: least assigned first, shuffled within ties
@@ -378,7 +378,7 @@ class AutoCourtAssignController extends Controller
             }
         }
 
-        // ── 7. Build stats ────────────────────────────────────────────────────
+        // 7. Build stats
         $counts = array_column($refereeStats, 'assignment_count');
         $min    = $counts ? min($counts) : 0;
         $max    = $counts ? max($counts) : 0;
