@@ -429,17 +429,20 @@ class AutoCourtAssignController extends Controller
 
         [$lastDate, $lastStartTime] = explode('|', $lastPlayedKey);
 
-        // Only block if last game was on the same date
+        // Different date → no rest needed (new day)
         if ($lastDate !== $currentSlot->game_date) {
             return false;
         }
 
-        $gameDuration      = $currentSlot->schedule->game_duration; // minutes
-        $currentStart      = Carbon::parse($currentSlot->start_time);
-        $previousSlotStart = $currentStart->copy()->subMinutes($gameDuration)->format('H:i:s');
+        $gameDuration = $currentSlot->schedule->game_duration; // in minutes
 
-        // Needs rest if they played in the immediately previous slot
-        return $lastStartTime === $previousSlotStart;
+        $lastStart  = Carbon::parse($lastStartTime);
+        $lastEnd    = $lastStart->copy()->addMinutes($gameDuration);
+        $currentStart = Carbon::parse($currentSlot->start_time);
+
+        // Needs rest if last game hasn't finished before current slot starts
+        // i.e., back-to-back → lastEnd == currentStart → blocked
+        return $lastEnd->gte($currentStart);
     }
 
     /**
