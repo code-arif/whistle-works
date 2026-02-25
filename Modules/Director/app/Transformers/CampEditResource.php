@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Resources\Camp;
+namespace Modules\Director\Transformers;
 
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class CampEditResource extends JsonResource
@@ -11,6 +12,10 @@ class CampEditResource extends JsonResource
     {
         $checkin = null;
         $evaluatorRegistration = null;
+
+        $adminPercentage = ENV('ADMIN_PERCENTAGE');
+
+        $finalPrice = ($this->price) - ($adminPercentage);
 
         if (auth('api')->check()) {
             $user = auth('api')->user();
@@ -35,7 +40,9 @@ class CampEditResource extends JsonResource
             'start_date'        => $this->start_date->todateString(),
             'end_date'          => $this->end_date->todateString(),
             'camp_details'      => $this->camp_details,
-            'price'             => number_format($this->price - ENV('ADMIN_PERCENTAGE'), 2),
+            // 'price'             => number_format($this->price - ENV('ADMIN_PERCENTAGE'), 2),
+
+            'price' => number_format($finalPrice, 2),
             'sports_type_id'    => $this->sports_type_id,
             'sports_type_name'  => $this->sports_type_name,
             'status'            => $this->status,

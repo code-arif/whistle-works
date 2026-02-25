@@ -10,7 +10,6 @@ use App\Helpers\HandlesTimezones;
 use App\Services\LocationService;
 use Modules\Director\Models\Camp;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Camp\CampEditResource;
 use Modules\Director\Helpers\UploadFile;
 use Modules\Director\Transformers\CampResource;
 use Modules\Director\Http\Requests\CampCreateRequest;
@@ -534,7 +533,7 @@ class CampManageController extends Controller
 
         return $this->success(
             'Camp details fetched successfully.',
-            new CampEditResource($camp),
+            new \Modules\Director\Transformers\CampEditResource($camp),
             200
         );
     }

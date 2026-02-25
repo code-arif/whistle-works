@@ -130,7 +130,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
  */
 Route::get('v1/camp/details/{id}', [CampManageController::class, 'campDetails'])->middleware('auth:api', 'role:director|referee|evaluator,api');
 Route::get('no-auth/camp/details/{id}', [CampManageController::class, 'noAuthCampDetails']); // no auth camp details
-Route::get('v1/camp/edit/{id}', [CampManageController::class, 'campEdit']); // camp edit
+Route::get('v1/camp/edit/{id}', [CampManageController::class, 'campEdit'])->middleware('auth:api', 'role:director|referee|evaluator,api'); // camp edit
 
 // ==========================================
 // REFEREE ROUTES (Auth Required)
