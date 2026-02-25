@@ -73,6 +73,7 @@ class RegisterController extends Controller
                 'status'                   => 'active',
                 'last_activity_at'         => Carbon::now(),
                 'biography'               => $request->input('biography'),
+                'phone'                    => $request->input('phone')
             ]);
 
             DB::table('model_has_roles')->insert([

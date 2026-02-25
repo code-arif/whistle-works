@@ -496,7 +496,7 @@ class CampManageController extends Controller
     public function getAdminFee()
     {
         $adminFee = config('camp.extra_price');
-        // অথবা config('app.camp_extra_price')
+        //config('app.camp_extra_price')
 
         return $this->success(
             'Admin fee fetched successfully.',
