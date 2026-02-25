@@ -13,7 +13,7 @@ class CampEditResource extends JsonResource
         $checkin = null;
         $evaluatorRegistration = null;
 
-        $adminPercentage = ENV('ADMIN_PERCENTAGE');
+        $adminPercentage = ENV('CAMP_EXTRA_PRICE');
 
         $finalPrice = ($this->price) - ($adminPercentage);
 
