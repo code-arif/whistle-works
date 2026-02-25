@@ -96,7 +96,6 @@ Route::controller(ContactController::class)->prefix('contact')->name('contact.')
 });
 
 
-
 /*
 * CMS
 */
