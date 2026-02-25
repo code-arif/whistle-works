@@ -10,6 +10,7 @@ use App\Helpers\HandlesTimezones;
 use App\Services\LocationService;
 use Modules\Director\Models\Camp;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Camp\CampEditResource;
 use Modules\Director\Helpers\UploadFile;
 use Modules\Director\Transformers\CampResource;
 use Modules\Director\Http\Requests\CampCreateRequest;
@@ -501,6 +502,39 @@ class CampManageController extends Controller
         return $this->success(
             'Admin fee fetched successfully.',
             ['admin_fee' => $adminFee],
+            200
+        );
+    }
+
+
+    /**
+     * Get camp details
+     */
+    public function campEdit($id)
+    {
+        $user = auth('api')->user();
+
+        $camp = Camp::with(['sportsType'])
+            ->when($user->hasRole('referee'), function ($query) use ($user) {
+                $query->with(['checkedInReferees' => function ($q) use ($user) {
+                    $q->where('referee_id', $user->id);
+                }]);
+            })
+
+            ->when($user->hasRole('evaluator'), function ($query) use ($user) {
+                $query->with(['evaluatorRegistrations' => function ($q) use ($user) {
+                    $q->where('evaluator_id', $user->id);
+                }]);
+            })
+            ->find($id);
+
+        if (!$camp) {
+            return $this->error(null, 'Camp not found.', 404);
+        }
+
+        return $this->success(
+            'Camp details fetched successfully.',
+            new CampEditResource($camp),
             200
         );
     }
