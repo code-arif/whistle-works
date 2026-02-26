@@ -443,6 +443,7 @@ class ScheduleController extends Controller
                             'court_name' => $slot->court_name,
                             'court_number' => $slot->court_number,
                             'location' => $slot->location->location_name,
+                            'address' => $slot->location->address,
                             'location_id' => $slot->location->id,
                             'status' => $slot->status,
                             'is_blocked' => $slot->is_block,
