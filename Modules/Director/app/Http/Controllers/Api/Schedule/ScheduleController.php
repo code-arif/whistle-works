@@ -379,6 +379,7 @@ class ScheduleController extends Controller
                     'location_id' => $location->id,
                     'location_name' => $location->location_name,
                     'court_count' => $location->court_count,
+                    'address' => $location->address ?? null
                 ];
             });
 
@@ -500,7 +501,8 @@ class ScheduleController extends Controller
                     'location' => $slot->location->location_name,
                     'location_id' => $slot->location->id,
                     'court_name' => $slot->court_name,
-                    'court_number' => $slot->court_number
+                    'court_number' => $slot->court_number,
+                    'address' => $slot->location->address
                 ];
             })
             ->values();
