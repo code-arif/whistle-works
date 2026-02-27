@@ -22,7 +22,7 @@ class CheckedInRefereeResource extends JsonResource
             'avatar' => $this->referee->avatar
                 ? asset('' . $this->referee->avatar)
                 : asset('default/profile.jpg'),
-            'jersey_number' => $jerseyNumbers[$this->referee->id] ?? null,
+            'jersey_number' => $this->jersey_number,
         ];
     }
 }

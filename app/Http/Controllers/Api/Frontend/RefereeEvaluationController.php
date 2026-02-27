@@ -571,16 +571,21 @@ class RefereeEvaluationController extends Controller
             }
         }
 
+        // $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
+        //     ->with('referee')
+        //     ->get();
+
         $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
             ->with('referee')
-            ->get();
+            ->get()
+            ->map(function ($checkin) use ($jerseyNumbers) {
+                $checkin->jersey_number = $jerseyNumbers[$checkin->referee_id] ?? null;
+                return $checkin;
+            });
 
         return $this->success('Registered referees fetched successfully.', [
             'total' => $checkedInReferees->count(),
-            'referees' => CheckedInRefereeResource::collection($checkedInReferees)
-                ->additional([
-                    'jersey_numbers' => $jerseyNumbers
-                ]),
+            'referees' => CheckedInRefereeResource::collection($checkedInReferees),
         ], 200);
     }
 
