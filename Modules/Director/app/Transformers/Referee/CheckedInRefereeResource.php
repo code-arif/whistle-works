@@ -14,7 +14,7 @@ class CheckedInRefereeResource extends JsonResource
     {
         return [
             'id'     => $this->id,
-            'referee_id' =>$this->referee->id,
+            'referee_id' => $this->referee->id,
             'name'   => $this->referee->first_name . ' ' . $this->referee->last_name,
             'email'  => $this->referee->email,
             'phone'  => $this->referee->phone,
@@ -22,6 +22,7 @@ class CheckedInRefereeResource extends JsonResource
             'avatar' => $this->referee->avatar
                 ? asset('' . $this->referee->avatar)
                 : asset('default/profile.jpg'),
+            'jersey_number' => $jerseyNumbers[$this->referee->id] ?? null,
         ];
     }
 }

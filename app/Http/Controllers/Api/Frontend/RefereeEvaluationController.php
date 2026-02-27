@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers\Api\Frontend;
 
-use Exception;
-use App\Models\User;
-use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\RefereeEvaluationRequest;
+use App\Http\Resources\RefereeEvaluationListResource;
+use App\Http\Resources\RefereeEvaluationResource;
+use App\Models\CampEvaluatorRegistration;
+use App\Models\CampRefereeJearsyNumber;
 use App\Models\RecommendedLevel;
 use App\Models\RefereeEvaluation;
-use Modules\Director\Models\Camp;
+use App\Models\User;
+use App\Traits\ApiResponse;
+use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Http\Controllers\Controller;
-use App\Models\CampEvaluatorRegistration;
-use App\Http\Requests\RefereeEvaluationRequest;
+use Modules\Director\Models\Camp;
 use Modules\Director\Models\CampRefereeCheckin;
-use App\Http\Resources\RefereeEvaluationResource;
-use App\Http\Resources\RefereeEvaluationListResource;
 use Modules\Director\Transformers\Referee\CheckedInRefereeResource;
 
 class RefereeEvaluationController extends Controller
@@ -553,9 +554,13 @@ class RefereeEvaluationController extends Controller
 
         // Check if camp exists
         $camp = Camp::find($campId);
+
         if (!$camp) {
             return $this->error('Camp not found.', null, 404);
         }
+
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)
+            ->pluck('jersey_number', 'referee_id');
 
         // **NEW: Check if user can evaluate in this camp**
         if (!RefereeEvaluation::canEvaluateInCamp($user, $campId)) {
@@ -572,7 +577,10 @@ class RefereeEvaluationController extends Controller
 
         return $this->success('Registered referees fetched successfully.', [
             'total' => $checkedInReferees->count(),
-            'referees' => CheckedInRefereeResource::collection($checkedInReferees),
+            'referees' => CheckedInRefereeResource::collection($checkedInReferees)
+                ->additional([
+                    'jersey_numbers' => $jerseyNumbers
+                ]),
         ], 200);
     }
 
