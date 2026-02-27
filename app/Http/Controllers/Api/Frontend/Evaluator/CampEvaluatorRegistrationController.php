@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers\Api\Frontend\Evaluator;
 
-use App\Models\User;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\Evaluator\CampEvaluatorRegistrationResource;
+use App\Mail\Evaluator\Registration\CampRegistrationConfirmationForEvaluator;
+use App\Mail\Evaluator\Registration\NewCampRegistrationNotificationForDirector;
+use App\Models\CampEvaluatorRegistration;
 use App\Models\CampPayment;
+use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Modules\Director\Models\Camp;
-use App\Http\Controllers\Controller;
-use App\Models\CampEvaluatorRegistration;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
-use App\Http\Resources\Evaluator\CampEvaluatorRegistrationResource;
+use Modules\Director\Models\Camp;
 
 class CampEvaluatorRegistrationController extends Controller
 {
@@ -19,6 +22,84 @@ class CampEvaluatorRegistrationController extends Controller
     /**
      * Evaluator registers for a camp
      */
+    // public function register(Request $request)
+    // {
+    //     $user = auth('api')->user();
+
+    //     // Only evaluators can register
+    //     if (!$user->hasRole('evaluator')) {
+    //         return $this->error([], 'Only evaluators can register for camps.', 403);
+    //     }
+
+    //     $validator = Validator::make($request->all(), [
+    //         'camp_id' => 'required|exists:camps,id',
+    //         'registration_note' => 'nullable|string|max:1000',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return $this->error($validator->errors(), 'Validation failed.', 422);
+    //     }
+
+    //     $campId = $request->camp_id;
+
+    //     // Check if camp exists and is active
+    //     $camp = Camp::where('id', $campId)->where('status', 'active')->first();
+    //     if (!$camp) {
+    //         return $this->error([], 'Camp not found or inactive.', 404);
+    //     }
+
+    //     // Check if already registered
+    //     $existingRegistration = CampEvaluatorRegistration::where('camp_id', $campId)
+    //         ->where('evaluator_id', $user->id)
+    //         ->first();
+
+    //     if ($existingRegistration) {
+    //         if ($existingRegistration->status === 'pending') {
+    //             return $this->error([], 'Your registration is already pending approval.', 409);
+    //         } elseif ($existingRegistration->status === 'approved') {
+    //             return $this->error([], 'You are already registered and approved for this camp.', 409);
+    //         } elseif ($existingRegistration->status === 'rejected') {
+    //             // Allow re-registration if previously rejected
+    //             $existingRegistration->update([
+    //                 'status' => 'pending',
+    //                 'registration_note' => $request->registration_note,
+    //                 'rejection_reason' => null,
+    //                 'registered_at' => now(),
+    //                 'rejected_at' => null,
+    //             ]);
+
+    //             $existingRegistration->load(['camp', 'evaluator']);
+
+    //             return $this->success(
+    //                 'Re-registration submitted successfully. Waiting for director approval.',
+    //                 [
+    //                     'registration' => new CampEvaluatorRegistrationResource($existingRegistration),
+    //                 ]
+    //             );
+    //         }
+    //     }
+
+    //     // Create new registration
+    //     $registration = CampEvaluatorRegistration::create([
+    //         'camp_id' => $campId,
+    //         'evaluator_id' => $user->id,
+    //         'status' => 'pending',
+    //         'registration_note' => $request->registration_note,
+    //         'registered_at' => now(),
+    //     ]);
+
+    //     $registration->load(['camp', 'evaluator']);
+
+    //     return $this->success(
+    //         'Registration submitted successfully. Waiting for director approval.',
+    //         [
+    //             'registration' => new CampEvaluatorRegistrationResource($registration),
+    //         ],
+    //         201
+    //     );
+    // }
+
+
     public function register(Request $request)
     {
         $user = auth('api')->user();
@@ -40,7 +121,11 @@ class CampEvaluatorRegistrationController extends Controller
         $campId = $request->camp_id;
 
         // Check if camp exists and is active
-        $camp = Camp::where('id', $campId)->where('status', 'active')->first();
+        $camp = Camp::where('id', $campId)
+            ->where('status', 'active')
+            ->with('director')
+            ->first();
+
         if (!$camp) {
             return $this->error([], 'Camp not found or inactive.', 404);
         }
@@ -50,13 +135,21 @@ class CampEvaluatorRegistrationController extends Controller
             ->where('evaluator_id', $user->id)
             ->first();
 
+        // ===============================
+        // RE-REGISTRATION (IF REJECTED)
+        // ===============================
         if ($existingRegistration) {
+
             if ($existingRegistration->status === 'pending') {
                 return $this->error([], 'Your registration is already pending approval.', 409);
-            } elseif ($existingRegistration->status === 'approved') {
+            }
+
+            if ($existingRegistration->status === 'approved') {
                 return $this->error([], 'You are already registered and approved for this camp.', 409);
-            } elseif ($existingRegistration->status === 'rejected') {
-                // Allow re-registration if previously rejected
+            }
+
+            if ($existingRegistration->status === 'rejected') {
+
                 $existingRegistration->update([
                     'status' => 'pending',
                     'registration_note' => $request->registration_note,
@@ -67,6 +160,23 @@ class CampEvaluatorRegistrationController extends Controller
 
                 $existingRegistration->load(['camp', 'evaluator']);
 
+                // Queue Director Mail Immediately
+                $camp->loadMissing('director');
+
+                // Director mail (instant)
+                Mail::to($camp->director->email)
+                    ->queue(
+                        new NewCampRegistrationNotificationForDirector($user, $camp)
+                    );
+
+                // sleep(3);
+
+                // Evaluator mail (30 seconds delay to avoid Mailtrap limit)
+                // Mail::to($user->email)
+                //     ->queue(
+                //         (new CampRegistrationConfirmationForEvaluator($user, $camp))
+                //     );
+
                 return $this->success(
                     'Re-registration submitted successfully. Waiting for director approval.',
                     [
@@ -76,7 +186,10 @@ class CampEvaluatorRegistrationController extends Controller
             }
         }
 
-        // Create new registration
+        // ===============================
+        // NEW REGISTRATION
+        // ===============================
+
         $registration = CampEvaluatorRegistration::create([
             'camp_id' => $campId,
             'evaluator_id' => $user->id,
@@ -86,6 +199,17 @@ class CampEvaluatorRegistrationController extends Controller
         ]);
 
         $registration->load(['camp', 'evaluator']);
+
+        // Queue Director Mail Immediately
+        Mail::to($camp->director->email)
+            ->queue(new NewCampRegistrationNotificationForDirector($user, $camp));
+
+        // Queue Evaluator Mail After 5 Seconds
+        Mail::to($user->email)
+            ->later(
+                now()->addSeconds(5),
+                new CampRegistrationConfirmationForEvaluator($user, $camp)
+            );
 
         return $this->success(
             'Registration submitted successfully. Waiting for director approval.',
