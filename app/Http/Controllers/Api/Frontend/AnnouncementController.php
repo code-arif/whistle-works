@@ -22,36 +22,66 @@ class AnnouncementController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'subject' => 'required|string|max:255',
-            'message' => 'required|string',
-            'announcement_to' => 'required|in:all,referees,evaluators,specific',
+            'camp_id'           => 'required|integer|exists:camps,id',
+            'subject'           => 'required|string|max:255',
+            'message'           => 'required|string',
+            'announcement_to'   => 'required|in:all,referees,evaluators,specific',
             'specific_user_ids' => 'required_if:announcement_to,specific|array'
         ]);
+
+        $director = auth()->user();
+
+        // Verify if this camp belongs to this director.
+        $camp = DB::table('camps')
+            ->where('id', $request->camp_id)
+            ->where('director_id', $director->id)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$camp) {
+            return $this->error([], 'Camp not found or you are not authorized for this camp', 403);
+        }
 
         DB::beginTransaction();
 
         try {
-            // Create announcement
             $announcement = Announcement::create([
-                'created_by' => auth()->id(),
-                'subject' => $request->subject,
-                'message' => $request->message,
+                'created_by'      => $director->id,
+                'subject'         => $request->subject,
+                'message'         => $request->message,
                 'announcement_to' => $request->announcement_to,
-                'status' => 'sent',
-                'sent_at' => now()
+                'status'          => 'sent',
+                'sent_at'         => now()
             ]);
 
-            // Get recipients
-            $recipients = $this->getRecipients($request->announcement_to, $request->specific_user_ids);
+            $recipients = $this->getCampRecipients(
+                $request->announcement_to,
+                $request->camp_id,
+                $request->specific_user_ids ?? []
+            );
 
-            // Send notifications to all recipients
+            if ($recipients->isEmpty()) {
+                DB::rollBack();
+                return $this->error([], 'No recipients found for this announcement', 404);
+            }
+
+            $recipientData = $recipients->map(fn($user) => [
+                'announcement_id' => $announcement->id,
+                'user_id'         => $user->id,
+                'is_read'         => false,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ])->toArray();
+
+            DB::table('announcement_recipients')->insert($recipientData);
+
             Notification::send($recipients, new AnnouncementNotification($announcement));
 
             DB::commit();
 
             return $this->success('Announcement sent successfully', [
-                'announcement' => $announcement,
-                'recipients_count' => count($recipients)
+                'announcement'     => $announcement,
+                'recipients_count' => $recipients->count()
             ], 201);
         } catch (Exception $e) {
             DB::rollBack();
@@ -60,22 +90,57 @@ class AnnouncementController extends Controller
     }
 
     /**
-     * Get recipients based on announcement type
+     * Get recipients with single camp_id
      */
-    private function getRecipients($announcementTo, $specificUserIds = [])
+    private function getCampRecipients($announcementTo, $campId, $specificUserIds = [])
     {
         switch ($announcementTo) {
+
             case 'all':
-                return User::all();
+                $refereeIds = DB::table('camp_referee_checkins')
+                    ->where('camp_id', $campId)
+                    ->pluck('referee_id');
+
+                $evaluatorIds = DB::table('camp_evaluator_registrations')
+                    ->where('camp_id', $campId)
+                    ->where('status', 'approved')
+                    ->pluck('evaluator_id');
+
+                $allIds = $refereeIds->merge($evaluatorIds)->unique();
+                return User::whereIn('id', $allIds)->get();
 
             case 'referees':
-                return User::role('referee')->get();
+                $refereeIds = DB::table('camp_referee_checkins')
+                    ->where('camp_id', $campId)
+                    ->pluck('referee_id');
+
+                return User::whereIn('id', $refereeIds)->get();
 
             case 'evaluators':
-                return User::role('evaluator')->get();
+                $evaluatorIds = DB::table('camp_evaluator_registrations')
+                    ->where('camp_id', $campId)
+                    ->where('status', 'approved')
+                    ->pluck('evaluator_id');
+
+                return User::whereIn('id', $evaluatorIds)->get();
 
             case 'specific':
-                return User::whereIn('id', $specificUserIds)->get();
+                $refereeIds = DB::table('camp_referee_checkins')
+                    ->where('camp_id', $campId)
+                    ->pluck('referee_id');
+
+                $evaluatorIds = DB::table('camp_evaluator_registrations')
+                    ->where('camp_id', $campId)
+                    ->where('status', 'approved')
+                    ->pluck('evaluator_id');
+
+                $validCampUserIds = $refereeIds->merge($evaluatorIds)->unique();
+
+                // Only include members of this camp among the requested specific users.
+                $filteredIds = collect($specificUserIds)
+                    ->filter(fn($id) => $validCampUserIds->contains($id));
+
+                return User::whereIn('id', $filteredIds)->get();
 
             default:
                 return collect([]);
@@ -83,7 +148,7 @@ class AnnouncementController extends Controller
     }
 
     /**
-     * Delete announcement - only creator/director can delete
+     * Delete announcement
      */
     public function destroy($id)
     {
@@ -93,7 +158,6 @@ class AnnouncementController extends Controller
             return $this->error([], 'Announcement not found', 404);
         }
 
-        // Check if user is creator or has director role
         if ($announcement->created_by !== auth()->id() && !auth()->user()->hasRole('director')) {
             return $this->error([], 'Unauthorized to delete this announcement', 403);
         }
@@ -105,6 +169,11 @@ class AnnouncementController extends Controller
             DB::table('notifications')
                 ->where('type', 'App\Notifications\AnnouncementNotification')
                 ->whereJsonContains('data->announcement_id', $announcement->id)
+                ->delete();
+
+            // announcement_recipients delete
+            DB::table('announcement_recipients')
+                ->where('announcement_id', $announcement->id)
                 ->delete();
 
             // Soft delete announcement
