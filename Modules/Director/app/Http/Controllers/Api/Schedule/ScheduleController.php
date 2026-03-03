@@ -461,6 +461,9 @@ class ScheduleController extends Controller
                                             'referee_name' => $member->first_name . ' ' . $member->last_name,
                                             'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
                                             'email' => $member->email,
+
+                                            // Add jersey number here
+                                            'jersey_number' => $jerseyNumbers[$member->id] ?? null,
                                         ];
                                     });
 

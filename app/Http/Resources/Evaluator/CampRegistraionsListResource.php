@@ -25,7 +25,7 @@ class CampRegistraionsListResource extends JsonResource
                 'email' => $this->evaluator->email,
                 'phone' => $this->evaluator->phone,
                 'address' => $this->evaluator->address,
-                'avatar' => $this->avatar ? asset('' . $this->avatar) : asset('default/profile.jpg'),
+                'avatar' => $this->evaluator->avatar ? asset('' . $this->evaluator->avatar) : asset('default/profile.jpg'),
             ],
         ];
     }

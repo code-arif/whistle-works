@@ -825,17 +825,21 @@ class CrewManageController extends Controller
             return $this->error('Camp not found.', null, 404);
         }
 
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)
+            ->pluck('jersey_number', 'referee_id');
+
         $perPage = request()->get('per_page', 15); // default 15
 
         $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
             ->with('referee')
             ->paginate($perPage);
 
-        // return $checkedInReferees;exit();
-
         return $this->success('Checked-in referees fetched successfully.', [
             'total' => $checkedInReferees->total(),
-            'referees' => CheckedInRefereeResource::collection($checkedInReferees),
+            'referees' => CheckedInRefereeResource::collectionWithJersey(
+                $checkedInReferees,
+                $jerseyNumbers
+            ),
             'pagination' => [
                 'total'         => $checkedInReferees->total(),
                 'per_page'      => $checkedInReferees->perPage(),

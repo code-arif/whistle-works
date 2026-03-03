@@ -7,9 +7,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class CheckedInRefereeResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     */
+    protected $jerseyNumbers;
+
+    public function __construct($resource, $jerseyNumbers = [])
+    {
+        parent::__construct($resource);
+        $this->jerseyNumbers = $jerseyNumbers;
+    }
+
+    public static function collectionWithJersey($resource, $jerseyNumbers)
+    {
+        return $resource->getCollection()->map(function ($item) use ($jerseyNumbers) {
+            return new self($item, $jerseyNumbers);
+        });
+    }
+
     public function toArray($request)
     {
         return [
@@ -20,9 +32,11 @@ class CheckedInRefereeResource extends JsonResource
             'phone'  => $this->referee->phone,
             'address'  => $this->referee->address,
             'avatar' => $this->referee->avatar
-                ? asset('' . $this->referee->avatar)
+                ? asset($this->referee->avatar)
                 : asset('default/profile.jpg'),
-            'jersey_number' => $this->jersey_number,
+
+            // correct jersey number
+            'jersey_number' => $this->jerseyNumbers[$this->referee->id] ?? null,
         ];
     }
 }

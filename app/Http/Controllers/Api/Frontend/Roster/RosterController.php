@@ -31,7 +31,7 @@ class RosterController extends Controller
             ])
             ->first();
 
-            // return ($camp);exit();
+        // return ($camp);exit();
 
         if (!$camp) {
             return $this->error([], 'Camp not found.', 404);
@@ -44,6 +44,7 @@ class RosterController extends Controller
 
         $response = [
             'camp' => [
+                'camp_id' => $camp->id,
                 'camp_name' => $camp->camp_name,
                 'camp_logo' => $camp->camp_logo ? asset('' . $camp->camp_logo) : asset('default/no_image.webp'),
                 'location' => $camp->location,
@@ -169,7 +170,8 @@ class RosterController extends Controller
                     ->values(),
 
                 // EVALUATORS - SORTED ALPHABETICALLY
-                'evaluators' => $camp->evaluations
+                'evaluators' => $camp->evaluatorRegistrations
+                    ->where('status', 'approved')
                     ->pluck('evaluator')
                     ->unique('id')
                     ->map(function ($evaluator) {
