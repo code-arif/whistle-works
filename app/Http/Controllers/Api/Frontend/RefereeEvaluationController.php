@@ -272,6 +272,7 @@ class RefereeEvaluationController extends Controller
                 'referee_id' => $referee->id,
                 'referee_name' => $referee->first_name . ' ' . $referee->last_name,
                 'referee_email' => $referee->email,
+                'referee_avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
                 'total_evaluations' => $refereeEvaluations->count(),
                 'averages' => [
                     'overall' => $overallAvg,
