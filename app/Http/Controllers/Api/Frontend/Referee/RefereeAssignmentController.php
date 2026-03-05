@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\Api\Frontend\Referee;
 
+use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Modules\Director\Models\Camp;
-use App\Http\Controllers\Controller;
-use Modules\Director\Models\GameSlot;
 use Modules\Director\Models\CampRefereeCheckin;
+use Modules\Director\Models\GameSlot;
 use Modules\Director\Models\GameSlotAssignment;
 
 class RefereeAssignmentController extends Controller
