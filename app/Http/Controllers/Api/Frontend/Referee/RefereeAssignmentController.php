@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Modules\Director\Models\Camp;
 use Modules\Director\Models\CampRefereeCheckin;
+use Modules\Director\Models\Crew;
 use Modules\Director\Models\GameSlot;
 use Modules\Director\Models\GameSlotAssignment;
 
