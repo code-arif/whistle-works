@@ -11,6 +11,7 @@ class Announcement extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'camp_id',
         'created_by',
         'subject',
         'message',

@@ -31,7 +31,7 @@ class AnnouncementController extends Controller
 
         $director = auth()->user();
 
-        // Verify if this camp belongs to this director.
+        // Verify this camp belongs to this director and is active
         $camp = DB::table('camps')
             ->where('id', $request->camp_id)
             ->where('director_id', $director->id)
@@ -45,7 +45,9 @@ class AnnouncementController extends Controller
         DB::beginTransaction();
 
         try {
+            // Store camp_id on the announcement for proper scoping
             $announcement = Announcement::create([
+                'camp_id'         => $request->camp_id, // <-- required fix
                 'created_by'      => $director->id,
                 'subject'         => $request->subject,
                 'message'         => $request->message,
@@ -90,9 +92,9 @@ class AnnouncementController extends Controller
     }
 
     /**
-     * Get recipients with single camp_id
+     * Get recipients scoped strictly to this camp — directors are always excluded.
      */
-    private function getCampRecipients($announcementTo, $campId, $specificUserIds = [])
+    private function getCampRecipients(string $announcementTo, int $campId, array $specificUserIds = [])
     {
         switch ($announcementTo) {
 
@@ -107,14 +109,15 @@ class AnnouncementController extends Controller
                     ->pluck('evaluator_id');
 
                 $allIds = $refereeIds->merge($evaluatorIds)->unique();
-                return User::whereIn('id', $allIds)->get();
+
+                return $this->buildRecipientQuery($allIds);
 
             case 'referees':
                 $refereeIds = DB::table('camp_referee_checkins')
                     ->where('camp_id', $campId)
                     ->pluck('referee_id');
 
-                return User::whereIn('id', $refereeIds)->get();
+                return $this->buildRecipientQuery($refereeIds);
 
             case 'evaluators':
                 $evaluatorIds = DB::table('camp_evaluator_registrations')
@@ -122,7 +125,7 @@ class AnnouncementController extends Controller
                     ->where('status', 'approved')
                     ->pluck('evaluator_id');
 
-                return User::whereIn('id', $evaluatorIds)->get();
+                return $this->buildRecipientQuery($evaluatorIds);
 
             case 'specific':
                 $refereeIds = DB::table('camp_referee_checkins')
@@ -134,17 +137,31 @@ class AnnouncementController extends Controller
                     ->where('status', 'approved')
                     ->pluck('evaluator_id');
 
+                // Only allow IDs that actually belong to this camp
                 $validCampUserIds = $refereeIds->merge($evaluatorIds)->unique();
 
-                // Only include members of this camp among the requested specific users.
                 $filteredIds = collect($specificUserIds)
                     ->filter(fn($id) => $validCampUserIds->contains($id));
 
-                return User::whereIn('id', $filteredIds)->get();
+                return $this->buildRecipientQuery($filteredIds);
 
             default:
                 return collect([]);
         }
+    }
+
+    /**
+     * Build a recipient User query with directors strictly excluded.
+     * This prevents directors (of this or any other camp) from receiving
+     * announcements even if they appear in checkin/registration tables.
+     */
+    private function buildRecipientQuery($ids)
+    {
+        return User::whereIn('id', $ids)
+            ->whereDoesntHave('roles', function ($query) {
+                $query->where('name', 'director');
+            })
+            ->get();
     }
 
     /**
@@ -165,18 +182,15 @@ class AnnouncementController extends Controller
         DB::beginTransaction();
 
         try {
-            // Delete related notifications
             DB::table('notifications')
                 ->where('type', 'App\Notifications\AnnouncementNotification')
                 ->whereJsonContains('data->announcement_id', $announcement->id)
                 ->delete();
 
-            // announcement_recipients delete
             DB::table('announcement_recipients')
                 ->where('announcement_id', $announcement->id)
                 ->delete();
 
-            // Soft delete announcement
             $announcement->delete();
 
             DB::commit();

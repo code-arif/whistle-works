@@ -34,7 +34,6 @@ use App\Http\Controllers\Web\Backend\CMS\GettingStartedController;
 use App\Http\Controllers\Web\Backend\Settings\MailSettingController;
 use App\Http\Controllers\Web\Backend\SportsType\SportsTypeController;
 use App\Http\Controllers\Web\Backend\CMS\Web\PrivacyTerms\PrivacAndTermsController;
-use Modules\Director\Http\Controllers\Api\Camp\CampManageController;
 
 Route::get("dashboard", [DashboardController::class, 'index'])->name('dashboard'); //done
 
