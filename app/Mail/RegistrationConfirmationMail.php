@@ -3,12 +3,13 @@
 namespace App\Mail;
 
 
+use App\Models\CampPayment;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
-use Modules\Director\Models\Camp;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Mail\Mailable;
+use Illuminate\Queue\SerializesModels;
+use Modules\Director\Models\Camp;
 use Modules\Director\Models\CampRefereeCheckin;
 
 class RegistrationConfirmationMail extends Mailable implements ShouldQueue
@@ -20,22 +21,24 @@ class RegistrationConfirmationMail extends Mailable implements ShouldQueue
     public $registration;
     public $subject;
 
-    public function __construct(User $user, Camp $camp, CampRefereeCheckin $registration, $subject = null)
+    public $payment;
+
+    public function __construct(User $user, Camp $camp, CampRefereeCheckin $registration, CampPayment $payment)
     {
         $this->user = $user;
         $this->camp = $camp;
         $this->registration = $registration;
-        $this->subject = $subject ?? 'Registration Confirmed - Whistle Works';
+        $this->payment = $payment;
     }
 
     public function build()
     {
         return $this->subject($this->subject)
-                    ->view('emails.registration.confirmation')
-                    ->with([
-                        'user' => $this->user,
-                        'camp' => $this->camp,
-                        'registration' => $this->registration,
-                    ]);
+            ->view('emails.registration.confirmation')
+            ->with([
+                'user' => $this->user,
+                'camp' => $this->camp,
+                'registration' => $this->registration,
+            ]);
     }
 }

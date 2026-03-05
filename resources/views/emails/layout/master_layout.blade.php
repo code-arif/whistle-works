@@ -8,6 +8,8 @@
     <meta name="color-scheme" content="light">
     <meta name="supported-color-schemes" content="light">
     <title>{{ config('app.name') }} - {{ $subject ?? 'Notification' }}</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style type="text/css">
         /* Base Styles */
         * {
@@ -17,7 +19,7 @@
         }
 
         body {
-            font-family: Helvetica, Arial, sans-serif;
+            font-family: 'Poppins', Helvetica, Arial, sans-serif;
             background-color: #f5f5f5;
             margin: 0;
             padding: 0;
@@ -144,12 +146,6 @@
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
             <tr>
                 <td align="center" style="padding: 20px 0;">
-                    <!--[if mso]>
-                    <table role="presentation" border="0" cellspacing="0" cellpadding="0" width="600">
-                    <tr>
-                    <td width="600">
-                    <![endif]-->
-
                     <table class="email-container" role="presentation" cellspacing="0" cellpadding="0" border="0"
                         width="100%">
                         <!-- Header -->
@@ -165,12 +161,6 @@
                         <!-- Footer -->
                         @yield('footer')
                     </table>
-
-                    <!--[if mso]>
-                    </td>
-                    </tr>
-                    </table>
-                    <![endif]-->
                 </td>
             </tr>
         </table>

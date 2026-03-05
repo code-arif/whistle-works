@@ -406,21 +406,13 @@ class StripeWebhookController extends Controller
         if ($isNewRegistration && $registration) {
             try {
                 Mail::to($user->email)
-                    ->queue(new RegistrationConfirmationMail($user, $camp, $registration));
+                    ->queue(new RegistrationConfirmationMail($user, $camp, $registration, $payment));
             } catch (Exception $e) {
                 Log::error('Mail failed: RegistrationConfirmationMail', ['error' => $e->getMessage()]);
             }
         }
 
-        // 2️: Payment success — delay 5s
-        try {
-            Mail::to($user->email)
-                ->later(now()->addSeconds(5), new PaymentSuccessfulMail($user, $camp, $payment));
-        } catch (Exception $e) {
-            Log::error('Mail failed: PaymentSuccessfulMail', ['error' => $e->getMessage()]);
-        }
-
-        // 3️: Director notification — delay 10s
+        // 2: Director notification — delay 10s
         if ($director) {
             try {
                 Mail::to($director->email)
@@ -430,10 +422,10 @@ class StripeWebhookController extends Controller
             }
         }
 
-        // 4️: Admin notification — delay 15s
+        // 3: Admin notification — delay 15s
         if ($admin) {
             try {
-                Mail::to($admin->email)
+                Mail::to('niwoy82632@cslua.com')
                     ->later(now()->addSeconds(15), new AdminPaymentNotificationMail($user, $camp, $payment, $admin));
             } catch (Exception $e) {
                 Log::error('Mail failed: AdminPaymentNotificationMail', ['error' => $e->getMessage()]);
