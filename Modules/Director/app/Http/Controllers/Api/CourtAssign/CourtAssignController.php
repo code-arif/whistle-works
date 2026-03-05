@@ -983,7 +983,8 @@ class CourtAssignController extends Controller
         // Prepare crews with availability status
         $crewsWithStatus = $allCrews->map(function ($crew) use ($slot, $assignedCrewId) {
             // Check various conditions
-            $isAssignedToThisSlot = ($crew->id === $assignedCrewId);
+            // $isAssignedToThisSlot = ($crew->id === $assignedCrewId);
+            $isAssignedToThisSlot = ($assignedCrewId && $crew->id == (int) $assignedCrewId);
 
             $hasTimeConflict = GameSlotAssignment::hasTimeConflict(
                 $crew->id,
