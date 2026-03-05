@@ -181,7 +181,7 @@
                             <!-- Camp Details -->
                             <div class="col-12">
                                 <label for="camp_details" class="form-label">Camp Details</label>
-                                <textarea class="form-control" id="camp_details" name="camp_details" rows="4"></textarea>
+                                <textarea id="camp_details" name="camp_details"></textarea>
                             </div>
                         </div>
                     </div>
@@ -460,6 +460,22 @@
             }
         });
 
+        // Initialize Summernote
+        $('#camp_details').summernote({
+            placeholder: 'Enter camp details...',
+            tabsize: 2,
+            height: 200,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'underline', 'italic', 'clear']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['table', ['table']],
+                ['insert', ['link']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+            ]
+        });
+
         // Show Create Modal
         function showCreateModal() {
             $('#campModalLabel').text('Add New Camp');
@@ -469,7 +485,9 @@
             $('#current_logo').html('');
             $('#submitBtn').text('Save Camp');
 
-            // Reset map
+            // Reset Summernote
+            $('#camp_details').summernote('reset');
+
             setTimeout(function() {
                 resetMap();
             }, 300);
@@ -486,6 +504,9 @@
             //     toastr.error('Please select a location on the map');
             //     return;
             // }
+
+            // Sync Summernote content to textarea before serializing
+            $('#camp_details').val($('#camp_details').summernote('code'));
 
             NProgress.start();
 
@@ -554,7 +575,8 @@
                         $('#start_date').val(camp.start_date);
                         $('#end_date').val(camp.end_date);
                         $('#price').val(camp.price);
-                        $('#camp_details').val(camp.camp_details);
+                        // $('#camp_details').val(camp.camp_details);
+                        $('#camp_details').summernote('code', camp.camp_details || '');
 
                         // Show current logo
                         if (camp.camp_logo) {
@@ -676,20 +698,20 @@
                                     </div>
 
                                 ${camp.latitude && camp.longitude ? `
-                                        <div class="info-item">
-                                            <div class="info-label">Coordinates</div>
-                                            <div class="info-value">
-                                                <a href="https://www.google.com/maps?q=${camp.latitude},${camp.longitude}"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                style="color: #0d6efd; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
-                                                    <i class="fe fe-map-pin"></i>
-                                                    ${camp.latitude}, ${camp.longitude}
-                                                    <i class="fe fe-external-link" style="font-size: 0.8rem;"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    ` : ''}
+                                                            <div class="info-item">
+                                                                <div class="info-label">Coordinates</div>
+                                                                <div class="info-value">
+                                                                    <a href="https://www.google.com/maps?q=${camp.latitude},${camp.longitude}"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    style="color: #0d6efd; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                                                        <i class="fe fe-map-pin"></i>
+                                                                        ${camp.latitude}, ${camp.longitude}
+                                                                        <i class="fe fe-external-link" style="font-size: 0.8rem;"></i>
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        ` : ''}
                                 </div>
 
                                 <!-- Duration -->
@@ -700,78 +722,78 @@
                                         <div><strong>End:</strong> ${endDate}</div>
                                     </div>
                                     ${duration !== 'N/A' ? `
-                                                        <div class="duration-days">${duration} Days</div>
-                                                    ` : ''}
+                                                                            <div class="duration-days">${duration} Days</div>
+                                                                        ` : ''}
                                 </div>
 
                                 ${camp.camp_details ? `
-                                                    <div class="info-item mt-3">
-                                                        <div class="info-label">Camp Details</div>
-                                                        <div class="info-value" style="line-height: 1.6;">${camp.camp_details}</div>
-                                                    </div>
-                                                ` : ''}
+                                                                        <div class="info-item mt-3">
+                                                                            <div class="info-label">Camp Details</div>
+                                                                            <div class="info-value" style="line-height: 1.6;">${camp.camp_details}</div>
+                                                                        </div>
+                                                                    ` : ''}
                             </div>
 
 
                             <div class="director-info-card">
                                 ${director ? `
-                                                    <h4 class="section-title"><i class="fe fe-user me-2"></i>Director Information</h4>
+                                                                        <h4 class="section-title"><i class="fe fe-user me-2"></i>Director Information</h4>
 
-                                                    <div class="text-center mb-4">
-                                                        ${directorAvatar}
-                                                    </div>
+                                                                        <div class="text-center mb-4">
+                                                                            ${directorAvatar}
+                                                                        </div>
 
-                                                    <div class="info-grid">
-                                                        <div class="info-item">
-                                                            <div class="info-label">Full Name</div>
-                                                            <div class="info-value">${directorName}</div>
-                                                        </div>
+                                                                        <div class="info-grid">
+                                                                            <div class="info-item">
+                                                                                <div class="info-label">Full Name</div>
+                                                                                <div class="info-value">${directorName}</div>
+                                                                            </div>
 
-                                                        <div class="info-item">
-                                                            <div class="info-label">Username</div>
-                                                            <div class="info-value">${director.username ? '' + director.username : 'N/A'}</div>
-                                                        </div>
+                                                                            <div class="info-item">
+                                                                                <div class="info-label">Username</div>
+                                                                                <div class="info-value">${director.username ? '' + director.username : 'N/A'}</div>
+                                                                            </div>
 
-                                                        <div class="info-item">
-                                                            <div class="info-label">Email Address</div>
-                                                            <div class="info-value">${director.email || 'N/A'}</div>
-                                                        </div>
+                                                                            <div class="info-item">
+                                                                                <div class="info-label">Email Address</div>
+                                                                                <div class="info-value">${director.email || 'N/A'}</div>
+                                                                            </div>
 
-                                                        ${director.phone ? `
+                                                                            ${director.phone ? `
                                             <div class="info-item">
                                                 <div class="info-label">Phone Number</div>
                                                 <div class="info-value">${director.phone}</div>
                                             </div>
                                         ` : ''}
 
-                                                        ${director.address ? `
+                                                                            ${director.address ? `
                                             <div class="info-item">
                                                 <div class="info-label">Address</div>
                                                 <div class="info-value">${director.address}</div>
                                             </div>
                                         ` : ''}
 
-                                                        <div class="info-item">
-                                                            <div class="info-label">Account Status</div>
-                                                            <div class="info-value">
-                                                                <span class="badge badge-custom ${director.status === 'active' ? 'badge-active' : 'badge-inactive'}">
-                                                                    ${director.status ? director.status.toUpperCase() : 'N/A'}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                                            <div class="info-item">
+                                                                                <div class="info-label">Account Status</div>
+                                                                                <div class="info-value">
+                                                                                    <span class="badge badge-custom ${director.status === 'active' ? 'badge-active' : 'badge-inactive'}">
+                                                                                        ${director.status ? director.status.toUpperCase() : 'N/A'}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
 
-                                                    ${director.biography ? `
+                                                                        ${director.biography ? `
                                         <div class="info-item mt-3">
                                             <div class="info-label">Biography</div>
                                             <div class="info-value" style="line-height: 1.6;">${director.biography}</div>
                                         </div>
                                     ` : ''}
-                                                ` : `
-                                                    <div class="alert alert-warning">
-                                                        <i class="fe fe-alert-triangle me-2"></i>Director information not available
-                                                    </div>
-                                                `}
+                                                                    ` : `
+                                                                        <div class="alert alert-warning">
+                                                                            <i class="fe fe-alert-triangle me-2"></i>Director information not available
+                                                                        </div>
+                                                                    `}
                             </div>
                         </div>
                     `;
@@ -1230,6 +1252,21 @@
             .director-info-card {
                 padding: 1.25rem;
             }
+        }
+
+        /* Fix Summernote z-index inside Bootstrap modal */
+        .modal .note-editor.note-frame {
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+        }
+
+        .note-popover,
+        .note-editor .note-toolbar {
+            z-index: 1060 !important;
+        }
+
+        .note-dropdown-menu {
+            z-index: 1070 !important;
         }
     </style>
 @endpush
