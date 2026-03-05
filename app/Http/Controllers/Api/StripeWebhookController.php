@@ -71,42 +71,219 @@ class StripeWebhookController extends Controller
     /**
      * Handle successful checkout session
      */
+    // protected function handleCheckoutSessionCompleted($session)
+    // {
+    //     DB::beginTransaction();
+
+    //     try {
+    //         // Find payment attempt
+    //         $attempt = CampPaymentAttempt::where('stripe_session_id', $session->id)->first();
+
+    //         if (!$attempt) {
+    //             Log::warning('Stripe Webhook: Payment attempt not found', [
+    //                 'session_id' => $session->id
+    //             ]);
+    //             return;
+    //         }
+
+    //         // Check if already processed
+    //         if ($attempt->status === 'completed') {
+    //             Log::info('Stripe Webhook: Payment already processed', [
+    //                 'session_id' => $session->id,
+    //                 'attempt_id' => $attempt->id
+    //             ]);
+    //             DB::commit();
+    //             return;
+    //         }
+
+    //         // Verify payment status
+    //         if ($session->payment_status !== 'paid') {
+    //             Log::warning('Stripe Webhook: Payment not completed', [
+    //                 'session_id' => $session->id,
+    //                 'payment_status' => $session->payment_status
+    //             ]);
+    //             DB::commit();
+    //             return;
+    //         }
+
+    //         // Get user and camp
+    //         $user = User::find($attempt->referee_id);
+    //         $camp = Camp::find($attempt->camp_id);
+
+    //         if (!$user || !$camp) {
+    //             Log::error('Stripe Webhook: User or camp not found', [
+    //                 'user_id' => $attempt->referee_id,
+    //                 'camp_id' => $attempt->camp_id
+    //             ]);
+    //             DB::rollBack();
+    //             return;
+    //         }
+
+    //         // Check if payment record already exists
+    //         $existingPayment = CampPayment::where('stripe_session_id', $session->id)
+    //             ->where('status', 'succeeded')
+    //             ->first();
+
+    //         if ($existingPayment) {
+    //             Log::info('Stripe Webhook: Payment record already exists', [
+    //                 'payment_id' => $existingPayment->id
+    //             ]);
+
+    //             // Update attempt status
+    //             $attempt->update([
+    //                 'status' => 'completed',
+    //                 'completed_at' => now()
+    //             ]);
+
+    //             DB::commit();
+    //             return;
+    //         }
+
+    //         // Create payment record
+    //         $payment = CampPayment::create([
+    //             'camp_id' => $attempt->camp_id,
+    //             'referee_id' => $attempt->referee_id,
+    //             'payment_attempt_id' => $attempt->id,
+    //             'stripe_payment_intent_id' => $session->payment_intent,
+    //             'stripe_session_id' => $session->id,
+    //             'amount' => $attempt->amount,
+    //             'currency' => strtolower($session->currency ?? 'usd'),
+    //             'status' => 'succeeded',
+    //             'paid_at' => now(),
+    //             'metadata' => [
+    //                 'payment_method' => $session->payment_method_types[0] ?? null,
+    //                 'customer_email' => $session->customer_email ?? $session->customer_details->email ?? null
+    //             ]
+    //         ]);
+
+    //         // Update attempt status
+    //         $attempt->update([
+    //             'status' => 'completed',
+    //             'completed_at' => now()
+    //         ]);
+
+    //         // Check if registration already exists
+    //         $existingRegistration = CampRefereeCheckin::where('camp_id', $attempt->camp_id)
+    //             ->where('referee_id', $attempt->referee_id)
+    //             ->first();
+
+    //         if (!$existingRegistration) {
+    //             // Create automatic registration after successful payment
+    //             $registration = CampRefereeCheckin::create([
+    //                 'camp_id' => $attempt->camp_id,
+    //                 'referee_id' => $attempt->referee_id,
+    //                 'registration_status' => 'registered',
+    //                 'registered_at' => $payment->paid_at,
+    //                 'checked_in_at' => null,
+    //             ]);
+
+    //             Log::info('Stripe Webhook: Payment and registration completed', [
+    //                 'payment_id' => $payment->id,
+    //                 'registration_id' => $registration->id,
+    //                 'camp_id' => $attempt->camp_id,
+    //                 'referee_id' => $attempt->referee_id,
+    //                 'amount' => $payment->amount
+    //             ]);
+
+    //             // Send registration confirmation email to referee
+    //             try {
+    //                 Mail::to($user->email)->queue(new RegistrationConfirmationMail($user, $camp, $registration));
+    //             } catch (Exception $e) {
+    //                 Log::error('Stripe Webhook: Failed to send registration email', [
+    //                     'error' => $e->getMessage(),
+    //                     'user_id' => $user->id,
+    //                     'camp_id' => $camp->id
+    //                 ]);
+    //             }
+    //         } else {
+    //             Log::info('Stripe Webhook: Payment completed, registration already exists', [
+    //                 'payment_id' => $payment->id,
+    //                 'registration_id' => $existingRegistration->id,
+    //                 'camp_id' => $attempt->camp_id,
+    //                 'referee_id' => $attempt->referee_id
+    //             ]);
+    //         }
+
+    //         // Send payment success email to referee
+    //         try {
+    //             Mail::to($user->email)->queue(new PaymentSuccessfulMail($user, $camp, $payment));
+    //         } catch (Exception $e) {
+    //             Log::error('Stripe Webhook: Failed to send payment success email', [
+    //                 'error' => $e->getMessage(),
+    //                 'user_id' => $user->id,
+    //                 'camp_id' => $camp->id
+    //             ]);
+    //         }
+
+    //         // Send admin notification email
+    //         try {
+    //             $admin = User::role('admin')->first();
+    //             $director = User::find($camp->director_id);
+
+    //             // Director mail (queued)
+    //             if ($director) {
+    //                 Mail::to($director->email)
+    //                     ->queue(new NewCampRegistrationNorificationForDirector(
+    //                         $user,
+    //                         $camp,
+    //                         $payment
+    //                     ));
+    //             }
+
+    //             // Admin mails (queued)
+    //             Mail::to($admin->email)
+    //                 ->queue(new AdminPaymentNotificationMail(
+    //                     $user,
+    //                     $camp,
+    //                     $payment,
+    //                     $admin
+    //                 ));
+    //         } catch (Exception $e) {
+    //             Log::error('Stripe Webhook: Failed to send notification emails', [
+    //                 'error' => $e->getMessage()
+    //             ]);
+    //         }
+
+
+    //         DB::commit();
+    //     } catch (Exception $e) {
+    //         DB::rollBack();
+
+    //         Log::error('Stripe Webhook: Failed to process checkout session', [
+    //             'session_id' => $session->id,
+    //             'error' => $e->getMessage(),
+    //             'trace' => $e->getTraceAsString()
+    //         ]);
+    //     }
+    // }
+
     protected function handleCheckoutSessionCompleted($session)
     {
+        // We will collect the necessary data here to send mail.
+        $mailData = null;
+
         DB::beginTransaction();
 
         try {
-            // Find payment attempt
             $attempt = CampPaymentAttempt::where('stripe_session_id', $session->id)->first();
 
             if (!$attempt) {
-                Log::warning('Stripe Webhook: Payment attempt not found', [
-                    'session_id' => $session->id
-                ]);
+                Log::warning('Stripe Webhook: Payment attempt not found', ['session_id' => $session->id]);
                 return;
             }
 
-            // Check if already processed
             if ($attempt->status === 'completed') {
-                Log::info('Stripe Webhook: Payment already processed', [
-                    'session_id' => $session->id,
-                    'attempt_id' => $attempt->id
-                ]);
+                Log::info('Stripe Webhook: Payment already processed', ['session_id' => $session->id]);
                 DB::commit();
                 return;
             }
 
-            // Verify payment status
             if ($session->payment_status !== 'paid') {
-                Log::warning('Stripe Webhook: Payment not completed', [
-                    'session_id' => $session->id,
-                    'payment_status' => $session->payment_status
-                ]);
+                Log::warning('Stripe Webhook: Payment not paid', ['session_id' => $session->id]);
                 DB::commit();
                 return;
             }
 
-            // Get user and camp
             $user = User::find($attempt->referee_id);
             $camp = Camp::find($attempt->camp_id);
 
@@ -119,162 +296,148 @@ class StripeWebhookController extends Controller
                 return;
             }
 
-            // Check if payment record already exists
             $existingPayment = CampPayment::where('stripe_session_id', $session->id)
                 ->where('status', 'succeeded')
                 ->first();
 
             if ($existingPayment) {
-                Log::info('Stripe Webhook: Payment record already exists', [
-                    'payment_id' => $existingPayment->id
-                ]);
-
-                // Update attempt status
-                $attempt->update([
-                    'status' => 'completed',
-                    'completed_at' => now()
-                ]);
-
+                $attempt->update(['status' => 'completed', 'completed_at' => now()]);
                 DB::commit();
                 return;
             }
 
-            // Create payment record
+            // Payment record making
             $payment = CampPayment::create([
-                'camp_id' => $attempt->camp_id,
-                'referee_id' => $attempt->referee_id,
-                'payment_attempt_id' => $attempt->id,
+                'camp_id'                  => $attempt->camp_id,
+                'referee_id'               => $attempt->referee_id,
+                'payment_attempt_id'       => $attempt->id,
                 'stripe_payment_intent_id' => $session->payment_intent,
-                'stripe_session_id' => $session->id,
-                'amount' => $attempt->amount,
-                'currency' => strtolower($session->currency ?? 'usd'),
-                'status' => 'succeeded',
-                'paid_at' => now(),
-                'metadata' => [
+                'stripe_session_id'        => $session->id,
+                'amount'                   => $attempt->amount,
+                'currency'                 => strtolower($session->currency ?? 'usd'),
+                'status'                   => 'succeeded',
+                'paid_at'                  => now(),
+                'metadata'                 => [
                     'payment_method' => $session->payment_method_types[0] ?? null,
-                    'customer_email' => $session->customer_email ?? $session->customer_details->email ?? null
+                    'customer_email' => $session->customer_email
+                        ?? $session->customer_details->email
+                        ?? null
                 ]
             ]);
 
-            // Update attempt status
-            $attempt->update([
-                'status' => 'completed',
-                'completed_at' => now()
-            ]);
+            $attempt->update(['status' => 'completed', 'completed_at' => now()]);
 
-            // Check if registration already exists
+            //  Registration check ও create
             $existingRegistration = CampRefereeCheckin::where('camp_id', $attempt->camp_id)
                 ->where('referee_id', $attempt->referee_id)
                 ->first();
 
+            $registration = null;
+            $isNewRegistration = false;
+
             if (!$existingRegistration) {
-                // Create automatic registration after successful payment
                 $registration = CampRefereeCheckin::create([
-                    'camp_id' => $attempt->camp_id,
-                    'referee_id' => $attempt->referee_id,
+                    'camp_id'             => $attempt->camp_id,
+                    'referee_id'          => $attempt->referee_id,
                     'registration_status' => 'registered',
-                    'registered_at' => $payment->paid_at,
-                    'checked_in_at' => null,
+                    'registered_at'       => $payment->paid_at,
+                    'checked_in_at'       => null,
                 ]);
-
-                Log::info('Stripe Webhook: Payment and registration completed', [
-                    'payment_id' => $payment->id,
-                    'registration_id' => $registration->id,
-                    'camp_id' => $attempt->camp_id,
-                    'referee_id' => $attempt->referee_id,
-                    'amount' => $payment->amount
-                ]);
-
-                // Send registration confirmation email to referee
-                try {
-                    Mail::to($user->email)->queue(new RegistrationConfirmationMail($user, $camp, $registration));
-                } catch (Exception $e) {
-                    Log::error('Stripe Webhook: Failed to send registration email', [
-                        'error' => $e->getMessage(),
-                        'user_id' => $user->id,
-                        'camp_id' => $camp->id
-                    ]);
-                }
+                $isNewRegistration = true;
             } else {
-                Log::info('Stripe Webhook: Payment completed, registration already exists', [
-                    'payment_id' => $payment->id,
-                    'registration_id' => $existingRegistration->id,
-                    'camp_id' => $attempt->camp_id,
-                    'referee_id' => $attempt->referee_id
-                ]);
+                $registration = $existingRegistration;
             }
 
-            // Send payment success email to referee
-            try {
-                Mail::to($user->email)->queue(new PaymentSuccessfulMail($user, $camp, $payment));
-            } catch (Exception $e) {
-                Log::error('Stripe Webhook: Failed to send payment success email', [
-                    'error' => $e->getMessage(),
-                    'user_id' => $user->id,
-                    'camp_id' => $camp->id
-                ]);
-            }
+            // Collect data for mail — I won't mail right now.
+            $admin = User::role('admin', 'web')->first();
+            $director = User::find($camp->director_id);
 
-            // Send admin notification email
-            // try {
-            //     $admins = User::role('admin')->get();
-            //     $director = User::find($camp->director_id);
-            //     if ($director) {
-            //         Mail::to($director->email)
-            //             ->queue(new NewCampRegistrationNorificationForDirector(
-            //                 $user,
-            //                 $camp,
-            //                 $payment
-            //             ));
-            //     }
-            //     foreach ($admins as $admin) {
-            //         // Mail::to($admin->email)->send(new AdminPaymentNotificationMail($user, $camp, $payment, $admin));
-            //         Mail::to('drew@whistleworks.org')->send(new AdminPaymentNotificationMail($user, $camp, $payment, $admin));
-            //     }
-            // } catch (Exception $e) {
-            //     Log::error('Stripe Webhook: Failed to send admin notification', [
-            //         'error' => $e->getMessage()
-            //     ]);
-            // }
+            $mailData = [
+                'user'              => $user,
+                'camp'              => $camp,
+                'payment'           => $payment,
+                'registration'      => $registration,
+                'isNewRegistration' => $isNewRegistration,
+                'admin'             => $admin,
+                'director'          => $director,
+            ];
 
-            try {
-                $admin = User::role('admin')->first();
-                $director = User::find($camp->director_id);
+            Log::info('Stripe Webhook: DB operations completed, committing...', [
+                'payment_id'      => $payment->id,
+                'registration_id' => $registration->id,
+            ]);
 
-                // Director mail (queued)
-                if ($director) {
-                    Mail::to($director->email)
-                        ->queue(new NewCampRegistrationNorificationForDirector(
-                            $user,
-                            $camp,
-                            $payment
-                        ));
-                }
+            DB::commit(); // now commit
 
-                // Admin mails (queued)
-                Mail::to($admin->email)
-                    ->queue(new AdminPaymentNotificationMail(
-                        $user,
-                        $camp,
-                        $payment,
-                        $admin
-                    ));
-            } catch (Exception $e) {
-                Log::error('Stripe Webhook: Failed to send notification emails', [
-                    'error' => $e->getMessage()
-                ]);
-            }
-
-
-            DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
-
-            Log::error('Stripe Webhook: Failed to process checkout session', [
+            Log::error('Stripe Webhook: DB transaction failed', [
                 'session_id' => $session->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error'      => $e->getMessage(),
+                'trace'      => $e->getTraceAsString()
             ]);
+            return; // I will not send mail.
+        }
+
+        // Send mail after transaction commit
+        // Now all records are in DB, queue worker can read safely
+        if ($mailData) {
+            $this->dispatchPostPaymentEmails($mailData);
+        }
+    }
+
+    /**
+     * Dispatch all mails separately after commit
+     * Each mail in a separate try-catch — if one fails, the rest will go through
+     */
+    private function dispatchPostPaymentEmails(array $data): void
+    {
+        [
+            'user' => $user,
+            'camp' => $camp,
+            'payment' => $payment,
+            'registration' => $registration,
+            'isNewRegistration' => $isNewRegistration,
+            'admin' => $admin,
+            'director' => $director
+        ] = $data;
+
+        // 1️: Registration confirmation — delay 0s
+        if ($isNewRegistration && $registration) {
+            try {
+                Mail::to($user->email)
+                    ->queue(new RegistrationConfirmationMail($user, $camp, $registration));
+            } catch (Exception $e) {
+                Log::error('Mail failed: RegistrationConfirmationMail', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // 2️: Payment success — delay 5s
+        try {
+            Mail::to($user->email)
+                ->later(now()->addSeconds(5), new PaymentSuccessfulMail($user, $camp, $payment));
+        } catch (Exception $e) {
+            Log::error('Mail failed: PaymentSuccessfulMail', ['error' => $e->getMessage()]);
+        }
+
+        // 3️: Director notification — delay 10s
+        if ($director) {
+            try {
+                Mail::to($director->email)
+                    ->later(now()->addSeconds(10), new NewCampRegistrationNorificationForDirector($user, $camp, $payment));
+            } catch (Exception $e) {
+                Log::error('Mail failed: DirectorNotificationMail', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // 4️: Admin notification — delay 15s
+        if ($admin) {
+            try {
+                Mail::to($admin->email)
+                    ->later(now()->addSeconds(15), new AdminPaymentNotificationMail($user, $camp, $payment, $admin));
+            } catch (Exception $e) {
+                Log::error('Mail failed: AdminPaymentNotificationMail', ['error' => $e->getMessage()]);
+            }
         }
     }
 
