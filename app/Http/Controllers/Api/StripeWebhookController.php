@@ -425,7 +425,7 @@ class StripeWebhookController extends Controller
         // 3: Admin notification — delay 15s
         if ($admin) {
             try {
-                Mail::to('niwoy82632@cslua.com')
+                Mail::to('drewbontrager@gmail.com')
                     ->later(now()->addSeconds(15), new AdminPaymentNotificationMail($user, $camp, $payment, $admin));
             } catch (Exception $e) {
                 Log::error('Mail failed: AdminPaymentNotificationMail', ['error' => $e->getMessage()]);
