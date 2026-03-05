@@ -1062,9 +1062,9 @@ class CourtAssignController extends Controller
         $sorted = $crewsWithStatus->sort(function ($a, $b) {
             $order = [
                 'assigned_to_this_slot' => 1,
-                'available' => 2,
+                'time_conflict' => 2,
                 'needs_rest' => 3,
-                'time_conflict' => 4,
+                'available' => 4,
             ];
             return ($order[$a['status']] ?? 5) <=> ($order[$b['status']] ?? 5);
         })->values();
