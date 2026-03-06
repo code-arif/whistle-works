@@ -142,6 +142,7 @@ class RosterController extends Controller
 
                 // REFEREES - SORTED ALPHABETICALLY
                 'referees' => $camp->checkedInReferees
+                    ->sortBy(fn($checkin) => strtolower($checkin->referee->last_name)) // sort before map
                     ->map(function ($referee) use ($gameSlotAssignments, $camp) {
                         // Count how many games this referee is assigned to
                         $assignedGamesCount = $gameSlotAssignments->where('assignment_type', 'individual')
@@ -166,7 +167,6 @@ class RosterController extends Controller
                             'assigned_games_count' => $assignedGamesCount,
                         ];
                     })
-                    ->sortBy('name') // Sort alphabetically by name
                     ->values(),
 
                 // EVALUATORS - SORTED ALPHABETICALLY
@@ -174,6 +174,7 @@ class RosterController extends Controller
                     ->where('status', 'approved')
                     ->pluck('evaluator')
                     ->unique('id')
+                    ->sortBy(fn($evaluator) => strtolower($evaluator->last_name))
                     ->map(function ($evaluator) {
                         return [
                             'id' => $evaluator->id,
@@ -185,11 +186,10 @@ class RosterController extends Controller
                             'biography' => $evaluator->biography ?? null,
                         ];
                     })
-                    ->sortBy('name') // Sort alphabetically by name
                     ->values(),
 
-                // CREWS - SORTED ALPHABETICALLY
                 'crews' => $camp->crews
+                    ->sortBy(fn($crew) => strtolower($crew->name)) // crew name e last name concept nai, so name by
                     ->map(function ($crew) use ($camp) {
                         return [
                             'id' => $crew->id,
@@ -197,10 +197,10 @@ class RosterController extends Controller
                             'description' => $crew->description ?? "N/A",
                             'status' => $crew->status ?? "N/A",
 
-                            // CREW MEMBERS - SORTED ALPHABETICALLY
+                            // CREW MEMBERS - SORTED BY LAST NAME
                             'members' => $crew->members
+                                ->sortBy(fn($member) => strtolower($member->last_name)) // sort before map
                                 ->map(function ($member) use ($camp) {
-                                    // Get camp-specific jersey number for crew member
                                     $jerseyNumber = CampRefereeJearsyNumber::where('camp_id', $camp->id)
                                         ->where('referee_id', $member->id)
                                         ->value('jersey_number');
@@ -216,12 +216,45 @@ class RosterController extends Controller
                                         'biography' => $member->biography ?? null,
                                     ];
                                 })
-                                ->sortBy('name') // Sort crew members alphabetically
                                 ->values(),
                         ];
                     })
-                    ->sortBy('name') // Sort crews alphabetically
                     ->values(),
+
+                // CREWS - SORTED ALPHABETICALLY
+                // 'crews' => $camp->crews
+                //     ->map(function ($crew) use ($camp) {
+                //         return [
+                //             'id' => $crew->id,
+                //             'name' => $crew->name ?? 'N/A',
+                //             'description' => $crew->description ?? "N/A",
+                //             'status' => $crew->status ?? "N/A",
+
+                //             // CREW MEMBERS - SORTED ALPHABETICALLY
+                //             'members' => $crew->members
+                //                 ->map(function ($member) use ($camp) {
+                //                     // Get camp-specific jersey number for crew member
+                //                     $jerseyNumber = CampRefereeJearsyNumber::where('camp_id', $camp->id)
+                //                         ->where('referee_id', $member->id)
+                //                         ->value('jersey_number');
+
+                //                     return [
+                //                         'id' => $member->id,
+                //                         'name' => $member->first_name . ' ' . $member->last_name,
+                //                         'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                //                         'email' => $member->email,
+                //                         'phone' => $member->phone ?? null,
+                //                         'address' => $member->address ?? null,
+                //                         'jersey_number' => $jerseyNumber,
+                //                         'biography' => $member->biography ?? null,
+                //                     ];
+                //                 })
+                //                 ->sortBy('name') // Sort crew members alphabetically
+                //                 ->values(),
+                //         ];
+                //     })
+                //     ->sortBy('name') // Sort crews alphabetically
+                //     ->values(),
             ]
         ];
 
