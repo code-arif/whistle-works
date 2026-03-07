@@ -298,10 +298,9 @@ class RefereeAssignmentController extends Controller
         //     fn($a) => $a->gameSlot->start_time,
         // ]);
 
-        $allAssignments = $allAssignments->sortBy([
-            fn($a) => $a->gameSlot->game_date->toDateString(), // ascending date
-            fn($a) => $a->gameSlot->start_time,                // ascending time within same date
-        ]);
+        $allAssignments = $allAssignments->sortBy(
+            fn($a) => $a->gameSlot->game_date->toDateString() . ' ' . $a->gameSlot->start_time
+        );
 
         // Paginate manually
         $page        = $request->get('page', 1);
