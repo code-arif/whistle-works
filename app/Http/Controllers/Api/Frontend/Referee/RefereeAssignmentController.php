@@ -293,11 +293,6 @@ class RefereeAssignmentController extends Controller
         }
 
         // Sort merged collection: closest date to today first, then by start_time
-        // $allAssignments = $allAssignments->sortBy([
-        //     fn($a) => abs(strtotime($a->gameSlot->game_date) - strtotime($today)),
-        //     fn($a) => $a->gameSlot->start_time,
-        // ]);
-
         $allAssignments = $allAssignments->sortBy(
             fn($a) => $a->gameSlot->game_date->toDateString() . ' ' . $a->gameSlot->start_time
         );
