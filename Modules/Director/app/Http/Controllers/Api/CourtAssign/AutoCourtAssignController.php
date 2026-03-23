@@ -77,6 +77,7 @@ class AutoCourtAssignController extends Controller
         $totalCourts = $availableSlots->pluck('court_number')->unique()->count();
 
         // 5. Group slots by time window (date + start_time) and build an index map
+        //    timeWindowIndex: ['2024-04-03|07:00:00' => 0, '2024-04-03|08:00:00' => 1, ...]
         $slotsByTimeWindow = $availableSlots->groupBy(
             fn($slot) => $slot->game_date . '|' . $slot->start_time
         );
@@ -107,17 +108,39 @@ class AutoCourtAssignController extends Controller
             $maxPerSlot      = $firstSlot->schedule->max_referees_per_slot ?? 3;
             $currentWinIndex = $timeWindowIndex[$timeKey];
 
-            // 7a. Build eligible referee list for this time window
+            // 7a. Build eligible and resting referee lists for this time window
             $sortedRefereeIds   = $this->getSortedRefereeIds($refereeStats);
             $eligibleRefereeIds = [];
+            $restingRefereeIds  = [];   // played last window — need rest ideally
 
             foreach ($sortedRefereeIds as $refereeId) {
-                // Rule 1: block if they played in the immediately preceding window
                 if ($this->needsRest($refereeStats[$refereeId]['last_played_window_index'], $currentWinIndex)) {
-                    $restSkips++;
-                    continue;
+                    $restingRefereeIds[] = $refereeId; // collect, don't discard yet
+                } else {
+                    $eligibleRefereeIds[] = $refereeId;
                 }
-                $eligibleRefereeIds[] = $refereeId;
+            }
+
+            // How many referee slots do we need for this window?
+            $totalSlotsNeeded = $windowSlots->count() * $maxPerSlot;
+
+            // If eligible referees can't fill all slots, fall back to resting referees.
+            // Sort fallback by last_played_window_index ascending (longest rest first).
+            if (count($eligibleRefereeIds) < $totalSlotsNeeded && !empty($restingRefereeIds)) {
+                usort($restingRefereeIds, function ($a, $b) use ($refereeStats) {
+                    $ai = $refereeStats[$a]['last_played_window_index'] ?? -1;
+                    $bi = $refereeStats[$b]['last_played_window_index'] ?? -1;
+                    return $ai <=> $bi; // longest ago first
+                });
+
+                $shortfall    = $totalSlotsNeeded - count($eligibleRefereeIds);
+                $fallbackUsed = array_slice($restingRefereeIds, 0, $shortfall);
+                $restSkips   += count($restingRefereeIds) - count($fallbackUsed);
+
+                // Append fallback after fully-eligible refs (eligible still get priority)
+                $eligibleRefereeIds = array_merge($eligibleRefereeIds, $fallbackUsed);
+            } else {
+                $restSkips += count($restingRefereeIds);
             }
 
             // 7b. Track which referees have already been assigned in THIS window
@@ -170,6 +193,7 @@ class AutoCourtAssignController extends Controller
                         'assigned_at'     => now(),
                     ]);
 
+                    // Update in-memory state
                     $refereeStats[$refereeId]['assignment_count']++;
                     $refereeStats[$refereeId]['last_played_window_index'] = $currentWinIndex; // ← index
 
