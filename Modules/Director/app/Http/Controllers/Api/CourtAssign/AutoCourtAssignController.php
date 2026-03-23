@@ -5,7 +5,6 @@ namespace Modules\Director\Http\Controllers\Api\CourtAssign;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Traits\ApiResponse;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Modules\Director\Models\Camp;
 use Modules\Director\Models\GameSlot;
@@ -19,7 +18,8 @@ class AutoCourtAssignController extends Controller
      * Auto-assign referees to all available slots.
      *
      * Rules:
-     *  1. Back-to-back rest    → after playing slot X, referee sits out the immediately next time slot.
+     *  1. Minimum 1 window rest → after playing in window index N, referee is blocked from
+     *                              window N+1. They can play again at N+2 or later.
      *  2. Court rotation       → referee is NOT assigned to a previously used court unless all courts
      *                            have been exhausted in the current cycle (then cycle resets).
      *  3. Fair distribution    → least-assigned referees get priority.
@@ -76,23 +76,26 @@ class AutoCourtAssignController extends Controller
         // 4. Determine total distinct courts for cycle-reset logic (Rule 2)
         $totalCourts = $availableSlots->pluck('court_number')->unique()->count();
 
-        // 5. Build in-memory referee state
-        //    assignment_count → fair distribution (Rule 3)
-        //    last_played_key  → "date|start_time" for rest rule (Rule 1)
-        //    used_courts      → courts used in current rotation cycle (Rule 2)
-        $refereeStats = [];
-        foreach ($checkedInReferees as $referee) {
-            $refereeStats[$referee->id] = [
-                'assignment_count' => 0,
-                'last_played_key'  => null,
-                'used_courts'      => [],   // ← NEW: tracks court rotation
-            ];
-        }
-
-        // 6. Group slots by time window (date + start_time)
+        // 5. Group slots by time window (date + start_time) and build an index map
+        //    timeWindowIndex: ['2024-04-03|07:00:00' => 0, '2024-04-03|08:00:00' => 1, ...]
         $slotsByTimeWindow = $availableSlots->groupBy(
             fn($slot) => $slot->game_date . '|' . $slot->start_time
         );
+
+        $timeWindowIndex = array_flip(array_keys($slotsByTimeWindow->toArray()));
+
+        // 6. Build in-memory referee state
+        //    assignment_count         → fair distribution (Rule 3)
+        //    last_played_window_index → sequential window index for rest rule (Rule 1)
+        //    used_courts              → courts used in current rotation cycle (Rule 2)
+        $refereeStats = [];
+        foreach ($checkedInReferees as $referee) {
+            $refereeStats[$referee->id] = [
+                'assignment_count'          => 0,
+                'last_played_window_index'  => null,   // ← index-based, not time-based
+                'used_courts'               => [],
+            ];
+        }
 
         // 7. Main assignment loop
         $assignmentsCreated = 0;
@@ -101,16 +104,17 @@ class AutoCourtAssignController extends Controller
 
         foreach ($slotsByTimeWindow as $timeKey => $windowSlots) {
 
-            $firstSlot  = $windowSlots->first();
-            $maxPerSlot = $firstSlot->schedule->max_referees_per_slot ?? 3;
+            $firstSlot       = $windowSlots->first();
+            $maxPerSlot      = $firstSlot->schedule->max_referees_per_slot ?? 3;
+            $currentWinIndex = $timeWindowIndex[$timeKey];
 
             // 7a. Build eligible referee list for this time window
-            //     (sorted by assignment count, shuffled within ties)
-            $sortedRefereeIds  = $this->getSortedRefereeIds($refereeStats);
+            $sortedRefereeIds   = $this->getSortedRefereeIds($refereeStats);
             $eligibleRefereeIds = [];
 
             foreach ($sortedRefereeIds as $refereeId) {
-                if ($this->needsRestInMemory($refereeStats[$refereeId]['last_played_key'], $firstSlot)) {
+                // Rule 1: block if they played in the immediately preceding window
+                if ($this->needsRest($refereeStats[$refereeId]['last_played_window_index'], $currentWinIndex)) {
                     $restSkips++;
                     continue;
                 }
@@ -163,13 +167,13 @@ class AutoCourtAssignController extends Controller
                         'assignable_type' => User::class,
                         'assignable_id'   => $refereeId,
                         'assignment_type' => 'individual',
-                        'is_auto_assigned'=> true,
+                        'is_auto_assigned' => true,
                         'assigned_at'     => now(),
                     ]);
 
                     // Update in-memory state
                     $refereeStats[$refereeId]['assignment_count']++;
-                    $refereeStats[$refereeId]['last_played_key'] = $timeKey;
+                    $refereeStats[$refereeId]['last_played_window_index'] = $currentWinIndex; // ← index
 
                     // ── Rule 2: Record court usage ────────────────────────────
                     if (!in_array($slot->court_number, $refereeStats[$refereeId]['used_courts'])) {
@@ -229,30 +233,22 @@ class AutoCourtAssignController extends Controller
     }
 
     /**
-     * Check rest rule using in-memory data (no DB call needed).
-     * Returns true if referee must sit out this time window.
+     * Rule 1 — Minimum 1 window rest (index-based, duration-independent).
      *
-     * "last_played_key" format: "Y-m-d|H:i:s"
-     * Blocked only when the last game ends exactly when (or after) the current slot starts.
+     * A referee who played at window index N is blocked at window N+1.
+     * They become eligible again at N+2 or later.
+     *
+     * This is intentionally NOT time/duration based — it purely counts
+     * time-window slots, so it works regardless of game length or gap size.
      */
-    private function needsRestInMemory(?string $lastPlayedKey, GameSlot $currentSlot): bool
+    private function needsRest(?int $lastPlayedWindowIndex, int $currentWindowIndex): bool
     {
-        if ($lastPlayedKey === null) {
-            return false;
+        if ($lastPlayedWindowIndex === null) {
+            return false; // Never played → no rest needed
         }
 
-        [$lastDate, $lastStartTime] = explode('|', $lastPlayedKey);
-
-        if ($lastDate !== $currentSlot->game_date) {
-            return false;
-        }
-
-        $gameDuration = $currentSlot->schedule->game_duration;
-
-        $lastEnd      = Carbon::parse($lastStartTime)->addMinutes($gameDuration);
-        $currentStart = Carbon::parse($currentSlot->start_time);
-
-        return $lastEnd->gte($currentStart);
+        // Block only the immediately next window (distance == 1)
+        return ($currentWindowIndex - $lastPlayedWindowIndex) === 1;
     }
 
     /**
