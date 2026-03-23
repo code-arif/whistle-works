@@ -77,7 +77,6 @@ class AutoCourtAssignController extends Controller
         $totalCourts = $availableSlots->pluck('court_number')->unique()->count();
 
         // 5. Group slots by time window (date + start_time) and build an index map
-        //    timeWindowIndex: ['2024-04-03|07:00:00' => 0, '2024-04-03|08:00:00' => 1, ...]
         $slotsByTimeWindow = $availableSlots->groupBy(
             fn($slot) => $slot->game_date . '|' . $slot->start_time
         );
