@@ -133,8 +133,8 @@ class AutoCourtAssignController extends Controller
                     return $ai <=> $bi; // longest ago first
                 });
 
-                $shortfall    = $totalSlotsNeeded - count($eligibleRefereeIds);
-                $fallbackUsed = array_slice($restingRefereeIds, 0, $shortfall);
+                $shortfall    = max(0, $totalSlotsNeeded - count($eligibleRefereeIds));
+                $fallbackUsed = $shortfall > 0 ? array_slice($restingRefereeIds, 0, $shortfall) : [];
                 $restSkips   += count($restingRefereeIds) - count($fallbackUsed);
 
                 // Append fallback after fully-eligible refs (eligible still get priority)
@@ -189,7 +189,7 @@ class AutoCourtAssignController extends Controller
                         'assignable_type' => User::class,
                         'assignable_id'   => $refereeId,
                         'assignment_type' => 'individual',
-                        'is_auto_assigned' => true,
+                        'is_auto_assigned'=> true,
                         'assigned_at'     => now(),
                     ]);
 
