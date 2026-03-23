@@ -170,7 +170,6 @@ class AutoCourtAssignController extends Controller
                         'assigned_at'     => now(),
                     ]);
 
-                    // Update in-memory state
                     $refereeStats[$refereeId]['assignment_count']++;
                     $refereeStats[$refereeId]['last_played_window_index'] = $currentWinIndex; // ← index
 
