@@ -19,10 +19,11 @@ class AutoCourtAssignController extends Controller
      * Auto-assign referees to all available slots.
      *
      * Rules:
-     *  1. Back-to-back rest  → after playing slot X, referee sits out the immediately next time slot.
-     *  2. Same time window   → a referee can only be assigned to ONE court per time slot.
-     *  3. Fair distribution  → least-assigned referees get priority.
-     *  4. Randomness         → among equally-loaded referees the order is shuffled each round.
+     *  1. Back-to-back rest    → after playing slot X, referee sits out the immediately next time slot.
+     *  2. Court rotation       → referee is NOT assigned to a previously used court unless all courts
+     *                            have been exhausted in the current cycle (then cycle resets).
+     *  3. Fair distribution    → least-assigned referees get priority.
+     *  4. Randomness           → among equally-loaded referees the order is shuffled each round.
      */
     public function autoAssignReferees($campId)
     {
@@ -72,38 +73,43 @@ class AutoCourtAssignController extends Controller
         GameSlot::whereIn('id', $slotIds)
             ->update(['status' => 'available']);
 
-        // 4. Build in-memory referee state
-        // assignment_count → for fair distribution
-        // last_played_key  → "date|start_time" of last slot played (for rest rule)
+        // 4. Determine total distinct courts for cycle-reset logic (Rule 2)
+        $totalCourts = $availableSlots->pluck('court_number')->unique()->count();
+
+        // 5. Build in-memory referee state
+        //    assignment_count → fair distribution (Rule 3)
+        //    last_played_key  → "date|start_time" for rest rule (Rule 1)
+        //    used_courts      → courts used in current rotation cycle (Rule 2)
         $refereeStats = [];
         foreach ($checkedInReferees as $referee) {
             $refereeStats[$referee->id] = [
                 'assignment_count' => 0,
                 'last_played_key'  => null,
+                'used_courts'      => [],   // ← NEW: tracks court rotation
             ];
         }
 
-        // 5. Group slots by time window (date + start_time)
+        // 6. Group slots by time window (date + start_time)
         $slotsByTimeWindow = $availableSlots->groupBy(
             fn($slot) => $slot->game_date . '|' . $slot->start_time
         );
 
-        // 6. Main assignment loop
+        // 7. Main assignment loop
         $assignmentsCreated = 0;
-        $slotsAssigned = 0;
-        $restSkips = 0;
+        $slotsAssigned      = 0;
+        $restSkips          = 0;
 
         foreach ($slotsByTimeWindow as $timeKey => $windowSlots) {
 
             $firstSlot  = $windowSlots->first();
             $maxPerSlot = $firstSlot->schedule->max_referees_per_slot ?? 3;
 
-            // 6a. Find ALL eligible referees for this time window
-            // Eligible = not resting (didn't play in immediately previous slot)
-            // We check rest using our in-memory last_played_key to avoid DB calls.
+            // 7a. Build eligible referee list for this time window
+            //     (sorted by assignment count, shuffled within ties)
+            $sortedRefereeIds  = $this->getSortedRefereeIds($refereeStats);
             $eligibleRefereeIds = [];
 
-            foreach ($this->getSortedRefereeIds($refereeStats) as $refereeId) {
+            foreach ($sortedRefereeIds as $refereeId) {
                 if ($this->needsRestInMemory($refereeStats[$refereeId]['last_played_key'], $firstSlot)) {
                     $restSkips++;
                     continue;
@@ -111,34 +117,71 @@ class AutoCourtAssignController extends Controller
                 $eligibleRefereeIds[] = $refereeId;
             }
 
-            // 6b. Distribute eligible referees across courts in this window ─
-            // Each referee gets at most ONE court per window.
-            // We walk through eligibleRefereeIds sequentially and fill courts one by one.
-            $refQueue = $eligibleRefereeIds; // already sorted: least assigned first, shuffled within ties
-            $refIndex = 0;
+            // 7b. Track which referees have already been assigned in THIS window
+            //     (one court per referee per time window)
+            $assignedInWindow = [];
 
             foreach ($windowSlots as $slot) {
+
+                // Remove referees already used elsewhere in this same time window
+                $availableForCourt = array_values(array_filter(
+                    $eligibleRefereeIds,
+                    fn($id) => !in_array($id, $assignedInWindow)
+                ));
+
+                // ── Rule 2: Court-rotation priority ──────────────────────────
+                // Split into two buckets:
+                //   $freshForCourt   → haven't been on this court in current cycle (preferred)
+                //   $repeatForCourt  → already used this court (fallback only)
+                // Within each bucket the relative order from getSortedRefereeIds is preserved,
+                // so fair-distribution (Rule 3) still applies inside each bucket.
+                $freshForCourt  = [];
+                $repeatForCourt = [];
+
+                foreach ($availableForCourt as $refId) {
+                    if (in_array($slot->court_number, $refereeStats[$refId]['used_courts'])) {
+                        $repeatForCourt[] = $refId;
+                    } else {
+                        $freshForCourt[] = $refId;
+                    }
+                }
+
+                // Preferred referees first, fallback last
+                $sortedForCourt = array_merge($freshForCourt, $repeatForCourt);
+
+                // 7c. Fill this slot up to maxPerSlot
                 $assignedToThisSlot = 0;
 
-                while ($assignedToThisSlot < $maxPerSlot && $refIndex < count($refQueue)) {
+                foreach ($sortedForCourt as $refereeId) {
+                    if ($assignedToThisSlot >= $maxPerSlot) {
+                        break;
+                    }
 
-                    $refereeId = $refQueue[$refIndex];
-                    $refIndex++;
-
-                    // Assign
+                    // Persist assignment
                     GameSlotAssignment::create([
-                        'game_slot_id' => $slot->id,
+                        'game_slot_id'    => $slot->id,
                         'assignable_type' => User::class,
-                        'assignable_id' => $refereeId,
+                        'assignable_id'   => $refereeId,
                         'assignment_type' => 'individual',
-                        'is_auto_assigned' => true,
-                        'assigned_at' => now(),
+                        'is_auto_assigned'=> true,
+                        'assigned_at'     => now(),
                     ]);
 
                     // Update in-memory state
                     $refereeStats[$refereeId]['assignment_count']++;
                     $refereeStats[$refereeId]['last_played_key'] = $timeKey;
 
+                    // ── Rule 2: Record court usage ────────────────────────────
+                    if (!in_array($slot->court_number, $refereeStats[$refereeId]['used_courts'])) {
+                        $refereeStats[$refereeId]['used_courts'][] = $slot->court_number;
+                    }
+
+                    // Reset cycle when referee has now visited every distinct court
+                    if (count($refereeStats[$refereeId]['used_courts']) >= $totalCourts) {
+                        $refereeStats[$refereeId]['used_courts'] = [];
+                    }
+
+                    $assignedInWindow[]   = $refereeId;
                     $assignedToThisSlot++;
                     $assignmentsCreated++;
                 }
@@ -150,15 +193,15 @@ class AutoCourtAssignController extends Controller
             }
         }
 
-        // 7. Build stats
+        // 8. Build distribution stats
         $counts = array_column($refereeStats, 'assignment_count');
         $min    = $counts ? min($counts) : 0;
         $max    = $counts ? max($counts) : 0;
         $avg    = count($counts) ? round(array_sum($counts) / count($counts), 2) : 0;
 
         Log::info('Auto-assignment completed', [
-            'director_id' => $user->id,
-            'camp_id' => $campId,
+            'director_id'         => $user->id,
+            'camp_id'             => $campId,
             'assignments_created' => $assignmentsCreated,
             'slots_assigned'      => $slotsAssigned,
         ]);
@@ -190,50 +233,44 @@ class AutoCourtAssignController extends Controller
      * Returns true if referee must sit out this time window.
      *
      * "last_played_key" format: "Y-m-d|H:i:s"
-     * We only block if they played in the IMMEDIATELY previous time slot
-     * (i.e., their last slot ended exactly when this slot starts).
+     * Blocked only when the last game ends exactly when (or after) the current slot starts.
      */
     private function needsRestInMemory(?string $lastPlayedKey, GameSlot $currentSlot): bool
     {
         if ($lastPlayedKey === null) {
-            return false; // Never played → no rest needed
+            return false;
         }
 
         [$lastDate, $lastStartTime] = explode('|', $lastPlayedKey);
 
-        // Different date → no rest needed (new day)
         if ($lastDate !== $currentSlot->game_date) {
             return false;
         }
 
-        $gameDuration = $currentSlot->schedule->game_duration; // in minutes
+        $gameDuration = $currentSlot->schedule->game_duration;
 
-        $lastStart  = Carbon::parse($lastStartTime);
-        $lastEnd    = $lastStart->copy()->addMinutes($gameDuration);
+        $lastEnd      = Carbon::parse($lastStartTime)->addMinutes($gameDuration);
         $currentStart = Carbon::parse($currentSlot->start_time);
 
-        // Needs rest if last game hasn't finished before current slot starts
-        // i.e., back-to-back → lastEnd == currentStart → blocked
         return $lastEnd->gte($currentStart);
     }
 
     /**
      * Return referee IDs sorted by assignment count (ascending).
-     * Within the same count, shuffle for randomness.
+     * Within the same count, shuffle for randomness (Rule 4).
      */
     private function getSortedRefereeIds(array $refereeStats): array
     {
-        // Group referee IDs by their assignment count
         $grouped = [];
         foreach ($refereeStats as $id => $stats) {
             $grouped[$stats['assignment_count']][] = $id;
         }
 
-        ksort($grouped); // lowest count first
+        ksort($grouped);
 
         $sorted = [];
         foreach ($grouped as $ids) {
-            shuffle($ids); // random order within same count
+            shuffle($ids);
             foreach ($ids as $id) {
                 $sorted[] = $id;
             }
