@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
 use App\Http\Middleware\ApiAdminMiddleware;
 use App\Http\Middleware\WebAdminMiddleware;
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Auth\AuthenticationException;
 use App\Http\Middleware\ApiCustomerMiddleware;
 use App\Http\Middleware\ApiRetailerMiddleware;
