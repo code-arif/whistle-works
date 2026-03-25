@@ -99,7 +99,7 @@ class UserController extends Controller
             'first_name' => 'nullable|string|max:100',
             'last_name'  => 'nullable|string|max:100',
             'biography'  => 'nullable|string|max:2500',
-            'phone'      => 'required|string|max:150|unique:users,phone,' . auth('api')->id(),
+            'phone'      => 'required|string|max:150',
             'address'    => 'required|string',
         ]);
 
