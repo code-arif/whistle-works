@@ -173,20 +173,23 @@ class RosterController extends Controller
                 'evaluators' => $camp->evaluatorRegistrations
                     ->where('status', 'approved')
                     ->pluck('evaluator')
+                    ->filter()
                     ->unique('id')
-                    ->sortBy(fn($evaluator) => strtolower($evaluator->last_name))
+                    ->sortBy('last_name', SORT_NATURAL | SORT_FLAG_CASE)
+                    ->values()
                     ->map(function ($evaluator) {
                         return [
                             'id' => $evaluator->id,
                             'name' => $evaluator->first_name . ' ' . $evaluator->last_name,
-                            'avatar' => $evaluator->avatar ? asset($evaluator->avatar) : asset('default/profile.jpg'),
+                            'avatar' => $evaluator->avatar
+                                ? asset($evaluator->avatar)
+                                : asset('default/profile.jpg'),
                             'email' => $evaluator->email,
                             'phone' => $evaluator->phone ?? null,
                             'address' => $evaluator->address ?? null,
                             'biography' => $evaluator->biography ?? null,
                         ];
-                    })
-                    ->values(),
+                    }),
 
                 'crews' => $camp->crews
                     ->sortBy(fn($crew) => strtolower($crew->name)) // crew name e last name concept nai, so name by
