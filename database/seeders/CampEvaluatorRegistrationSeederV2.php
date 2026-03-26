@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\CampEvaluatorRegistration;
 
-class CampEvaluatorRegistrationSeeder extends Seeder
+class CampEvaluatorRegistrationSeederV2 extends Seeder
 {
     public function run()
     {

@@ -17,7 +17,8 @@ class DatabaseSeeder extends Seeder
             SportsTypeSeeder::class,
             CampTableSeeder::class,
             CampPaymentAndCheckinSeeder::class,
-            CampEvaluatorRegistrationSeeder::class
+            // CampEvaluatorRegistrationSeeder::class
+            CampEvaluatorRegistrationSeederV2::class
         ]);
 
         // optional: show output
