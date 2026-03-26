@@ -141,7 +141,7 @@ class UserSeeder extends Seeder
         /* =======================
          * Evaluators (5)
          * ======================= */
-        for ($i = 1; $i <= 5; $i++) {
+        for ($i = 1; $i <= 70; $i++) {
             $users[] = [
                 'id' => $id,
                 'first_name' => "Evaluator{$i}",
