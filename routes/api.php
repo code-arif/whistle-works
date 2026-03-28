@@ -213,10 +213,6 @@ Route::middleware(['auth:api', 'role:director|evaluator|referee,api'])->group(fu
         Route::get('/camp/{campId}/approved', [CampEvaluatorRegisterManageForDirectorController::class, 'approved']);
         Route::get('/camp/{campId}/pending', [CampEvaluatorRegisterManageForDirectorController::class, 'pending']);
         Route::get('/camp/{campId}/rejected', [CampEvaluatorRegisterManageForDirectorController::class, 'rejected']);
-
-        Route::post('/approve/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'approve']);
-        Route::post('/reject/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'reject']);
-        Route::delete('/remove/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'removeEvaluator']);
     });
 });
 
