@@ -225,4 +225,104 @@ class CampEvaluatorRegisterManageForDirectorController extends Controller
             200
         );
     }
+
+
+    /**
+     * Get all register evalator
+     */
+    public function index(Request $request, $campId)
+    {
+        $user = auth('api')->user();
+
+        // if (!$user->hasRole('director')) {
+        //     return $this->error([], 'Only directors can view camp registrations.', 403);
+        // }
+
+        $camp = Camp::find($campId);
+
+        if (!$camp) {
+            return $this->error([], 'Camp not found!', 404);
+        }
+
+        $query = CampEvaluatorRegistration::with(['evaluator'])
+            ->where('camp_id', $campId)
+            ->join('users', 'users.id', '=', 'camp_evaluator_registrations.evaluator_id')
+            ->orderBy('users.last_name', 'asc')
+            ->select('camp_evaluator_registrations.*');
+
+        // optional filter
+        if ($request->filled('status')) {
+            $query->where('camp_evaluator_registrations.status', $request->status);
+        }
+
+        $registrations = $query->paginate($request->get('per_page', 12));
+
+        return $this->success(
+            'Camp evaluators retrieved successfully.',
+            [
+                'camp' => [
+                    'id' => $camp->id,
+                    'name' => $camp->camp_name,
+                ],
+                'registrations' => CampRegistraionsListResource::collection($registrations),
+                'pagination' => [
+                    'total' => $registrations->total(),
+                    'per_page' => $registrations->perPage(),
+                    'current_page' => $registrations->currentPage(),
+                    'last_page' => $registrations->lastPage(),
+                ],
+            ]
+        );
+    }
+
+    public function approved(Request $request, $campId)
+    {
+        return $this->statusList($request, $campId, 'approved');
+    }
+
+    public function pending(Request $request, $campId)
+    {
+        return $this->statusList($request, $campId, 'pending');
+    }
+
+    public function rejected(Request $request, $campId)
+    {
+        return $this->statusList($request, $campId, 'rejected');
+    }
+
+    private function statusList(Request $request, $campId, $status)
+    {
+        $user = auth('api')->user();
+
+        $camp = Camp::find($campId);
+
+        if (!$camp) {
+            return $this->error([], 'Camp not found or unauthorized.', 404);
+        }
+
+        $registrations = CampEvaluatorRegistration::with(['evaluator'])
+            ->where('camp_evaluator_registrations.camp_id', $campId)
+            ->where('camp_evaluator_registrations.status', $status)
+            ->join('users', 'users.id', '=', 'camp_evaluator_registrations.evaluator_id')
+            ->orderBy('users.last_name', 'asc')
+            ->select('camp_evaluator_registrations.*')
+            ->paginate($request->get('per_page', 12));
+
+        return $this->success(
+            ucfirst($status) . ' evaluators retrieved successfully.',
+            [
+                'camp' => [
+                    'id' => $camp->id,
+                    'name' => $camp->camp_name,
+                ],
+                'registrations' => CampRegistraionsListResource::collection($registrations),
+                'pagination' => [
+                    'total' => $registrations->total(),
+                    'per_page' => $registrations->perPage(),
+                    'current_page' => $registrations->currentPage(),
+                    'last_page' => $registrations->lastPage(),
+                ],
+            ]
+        );
+    }
 }

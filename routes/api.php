@@ -203,6 +203,23 @@ Route::middleware(['auth:api', 'role:director,api'])->group(function () {
     });
 });
 
+Route::middleware(['auth:api', 'role:director|evaluator|referee,api'])->group(function () {
+    Route::prefix('roster/evaluator-registrations')->group(function () {
+
+        // global (with optional status filter)
+        Route::get('/camp/{campId}', [CampEvaluatorRegisterManageForDirectorController::class, 'index']); // DONE: get all register evaluator
+
+        // specific status APIs
+        Route::get('/camp/{campId}/approved', [CampEvaluatorRegisterManageForDirectorController::class, 'approved']);
+        Route::get('/camp/{campId}/pending', [CampEvaluatorRegisterManageForDirectorController::class, 'pending']);
+        Route::get('/camp/{campId}/rejected', [CampEvaluatorRegisterManageForDirectorController::class, 'rejected']);
+
+        Route::post('/approve/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'approve']);
+        Route::post('/reject/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'reject']);
+        Route::delete('/remove/{registrationId}', [CampEvaluatorRegisterManageForDirectorController::class, 'removeEvaluator']);
+    });
+});
+
 // Ranking Settings Routes (Only for Directors)
 Route::middleware(['auth:api', 'role:director,api'])->group(function () {
     Route::prefix('camp/{campId}/ranking-settings')->group(function () {

@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
-use Modules\Director\Models\Camp;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Http\Request;
+use Modules\Director\Models\Camp;
 
 class CampEvaluatorRegistration extends Model
 {
