@@ -76,23 +76,49 @@ class AutoCourtAssignController extends Controller
         // 4. Determine total distinct courts for cycle-reset logic (Rule 2)
         $totalCourts = $availableSlots->pluck('court_number')->unique()->count();
 
-        // 5. Group slots by time window (date + start_time) and build an index map
+        // 5. Group slots by time window (date + start_time) and build a PER-DATE index map.
+        //
+        //    WHY per-date and not global?
+        //    Multiple locations (e.g. Dhaka + Rajshahi) can have different time windows
+        //    on the same date. A global sequential index inserts "foreign" location windows
+        //    between two Dhaka windows, inflating the distance and letting the rest rule
+        //    silently pass a back-to-back assignment on the same date.
+        //
+        //    Per-date index treats each date as its own sequence:
+        //      2026-04-10 → [05:00 → pos 0,  07:00 → pos 1]
+        //      2026-04-11 → [08:00 → pos 0,  10:00 → pos 1]
+        //
         $slotsByTimeWindow = $availableSlots->groupBy(
             fn($slot) => $slot->game_date . '|' . $slot->start_time
         );
 
-        $timeWindowIndex = array_flip(array_keys($slotsByTimeWindow->toArray()));
+        // Build: timeKey → ['date' => '2026-04-10', 'position' => 1]
+        $windowMeta    = [];
+        $datePositions = [];
+
+        foreach ($slotsByTimeWindow->keys() as $timeKey) {
+            [$date] = explode('|', $timeKey);
+            if (!isset($datePositions[$date])) {
+                $datePositions[$date] = 0;
+            }
+            $windowMeta[$timeKey] = [
+                'date'     => $date,
+                'position' => $datePositions[$date]++,
+            ];
+        }
 
         // 6. Build in-memory referee state
-        //    assignment_count         → fair distribution (Rule 3)
-        //    last_played_window_index → sequential window index for rest rule (Rule 1)
-        //    used_courts              → courts used in current rotation cycle (Rule 2)
+        //    assignment_count      → fair distribution (Rule 3)
+        //    last_played_date      → date of last assignment  (Rule 1)
+        //    last_played_position  → per-date position of last assignment (Rule 1)
+        //    used_courts           → courts used in current rotation cycle (Rule 2)
         $refereeStats = [];
         foreach ($checkedInReferees as $referee) {
             $refereeStats[$referee->id] = [
-                'assignment_count'          => 0,
-                'last_played_window_index'  => null,   // ← index-based, not time-based
-                'used_courts'               => [],
+                'assignment_count'     => 0,
+                'last_played_date'     => null,
+                'last_played_position' => null,
+                'used_courts'          => [],
             ];
         }
 
@@ -103,19 +129,20 @@ class AutoCourtAssignController extends Controller
 
         foreach ($slotsByTimeWindow as $timeKey => $windowSlots) {
 
-            $firstSlot       = $windowSlots->first();
-            $maxPerSlot      = $firstSlot->schedule->max_referees_per_slot ?? 3;
-            $currentWinIndex = $timeWindowIndex[$timeKey];
+            $firstSlot      = $windowSlots->first();
+            $maxPerSlot     = $firstSlot->schedule->max_referees_per_slot ?? 3;
+            $currentMeta    = $windowMeta[$timeKey]; // ['date', 'position']
 
             // 7a. Build eligible referee list — strictly enforce rest rule (Rule 1).
-            //     Resting referees are NEVER used as fallback.
-            //     If eligible referees are insufficient, slots remain partially/fully empty.
-            //     The director can fill remaining gaps via manual assignment.
             $sortedRefereeIds   = $this->getSortedRefereeIds($refereeStats);
             $eligibleRefereeIds = [];
 
             foreach ($sortedRefereeIds as $refereeId) {
-                if ($this->needsRest($refereeStats[$refereeId]['last_played_window_index'], $currentWinIndex)) {
+                if ($this->needsRest(
+                    $refereeStats[$refereeId]['last_played_date'],
+                    $refereeStats[$refereeId]['last_played_position'],
+                    $currentMeta
+                )) {
                     $restSkips++;
                     continue;
                 }
@@ -174,7 +201,8 @@ class AutoCourtAssignController extends Controller
 
                     // Update in-memory state
                     $refereeStats[$refereeId]['assignment_count']++;
-                    $refereeStats[$refereeId]['last_played_window_index'] = $currentWinIndex; // ← index
+                    $refereeStats[$refereeId]['last_played_date']     = $currentMeta['date'];
+                    $refereeStats[$refereeId]['last_played_position']  = $currentMeta['position'];
 
                     // ── Rule 2: Record court usage ────────────────────────────
                     if (!in_array($slot->court_number, $refereeStats[$refereeId]['used_courts'])) {
@@ -234,22 +262,28 @@ class AutoCourtAssignController extends Controller
     }
 
     /**
-     * Rule 1 — Minimum 1 window rest (index-based, duration-independent).
+     * Rule 1 — Minimum 1 window rest, scoped per date.
      *
-     * A referee who played at window index N is blocked at window N+1.
-     * They become eligible again at N+2 or later.
+     * A referee who played at position P on date D is blocked at position P+1 on the SAME date.
+     * They become eligible again at P+2 or later (on date D), or on any other date.
      *
-     * This is intentionally NOT time/duration based — it purely counts
-     * time-window slots, so it works regardless of game length or gap size.
+     * Per-date scoping is critical: without it, a window from another location (e.g. Rajshahi
+     * at 06:00) inserted between two same-date Dhaka windows (05:00 and 07:00) would inflate
+     * the global distance to 2, incorrectly allowing a back-to-back assignment on Dhaka.
      */
-    private function needsRest(?int $lastPlayedWindowIndex, int $currentWindowIndex): bool
+    private function needsRest(?string $lastDate, ?int $lastPosition, array $currentMeta): bool
     {
-        if ($lastPlayedWindowIndex === null) {
+        if ($lastDate === null || $lastPosition === null) {
             return false; // Never played → no rest needed
         }
 
-        // Block only the immediately next window (distance == 1)
-        return ($currentWindowIndex - $lastPlayedWindowIndex) === 1;
+        // Different date → no rest carry-over (new day resets)
+        if ($lastDate !== $currentMeta['date']) {
+            return false;
+        }
+
+        // Block only the immediately next position on the same date (distance == 1)
+        return ($currentMeta['position'] - $lastPosition) === 1;
     }
 
     /**
