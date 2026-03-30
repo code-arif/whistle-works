@@ -305,7 +305,7 @@ Route::middleware(['auth:api'])->controller(ChatController::class)->prefix('auth
 });
 
 /*
-# Firebase Notification
+# Firebase Notification Route
 */
 Route::middleware(['auth:api'])->controller(FirebaseTokenController::class)->prefix('firebase')->group(function () {
     Route::get("test", "test");
