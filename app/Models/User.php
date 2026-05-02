@@ -169,4 +169,32 @@ class User extends Authenticatable implements JWTSubject
         )->withPivot('jersey_number')
             ->withTimestamps();
     }
+
+    /**
+     * Route notifications for the Twilio SMS channel.
+     *
+     * @return string|null  E.164 phone number or null to skip
+     */
+    public function routeNotificationForTwilio(): ?string
+    {
+        if (empty($this->phone)) {
+            return null;
+        }
+
+        $phone = preg_replace('/\D/', '', $this->phone); // strip non-digits
+
+        // Already in E.164 format (starts with +)
+        if (str_starts_with($this->phone, '+')) {
+            return '+' . $phone;
+        }
+
+        // Bangladeshi numbers: 01XXXXXXXXX  → +8801XXXXXXXXX
+        // Adjust the country prefix below to match your user base
+        if (strlen($phone) === 11 && str_starts_with($phone, '0')) {
+            return '+88' . $phone; // BD prefix
+        }
+
+        // Already includes country code without +  (e.g. 8801XXXXXXXXX)
+        return '+' . $phone;
+    }
 }

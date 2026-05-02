@@ -50,4 +50,10 @@ return [
     'google_maps' => [
         'api_key' => env('GOOGLE_MAPS_API_KEY', 'AIzaSyA-9OmmV8vaRrLOOW57zlW9ws4QPUb8S0c'),
     ],
+
+    'twilio' => [
+        'sid'   => env('TWILIO_SID'),
+        'token' => env('TWILIO_TOKEN'),
+        'from'  => env('TWILIO_FROM'), // Your Twilio phone number in E.164, e.g. +12015551234
+    ],
 ];

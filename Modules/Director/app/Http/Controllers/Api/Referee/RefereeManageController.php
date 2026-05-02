@@ -516,6 +516,11 @@ class RefereeManageController extends Controller
         // Delete the registration record
         $registration->delete();
 
+        // Delete all evaluations for this referee in this camp
+        \App\Models\RefereeEvaluation::where('camp_id', $campId)
+            ->where('referee_id', $refereeId)
+            ->delete();
+
         // Optional: Send notification email to referee
         $referee = User::find($refereeId);
         if ($referee && $referee->email) {
