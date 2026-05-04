@@ -36,7 +36,7 @@ class CheckedInRefereeResource extends JsonResource
                 : asset('default/profile.jpg'),
 
             // correct jersey number
-            'jersey_number' => $this->jerseyNumbers[$this->referee->id] ?? null,
+            'jersey_number' => $this->jerseyNumbers[$this->referee->id] ?? $this->jersey_number ?? null,
         ];
     }
 }

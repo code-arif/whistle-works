@@ -528,12 +528,18 @@ class RefereeEvaluationController extends Controller
             }
         }
 
-        $perPage = request()->get('per_page', 15);
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $campId)
+            ->pluck('jersey_number', 'referee_id');
 
         $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
             ->where('registration_status', 'registered')
             ->with('referee')
             ->paginate($perPage);
+
+        $checkedInReferees->getCollection()->transform(function ($checkin) use ($jerseyNumbers) {
+            $checkin->jersey_number = $jerseyNumbers[$checkin->referee_id] ?? null;
+            return $checkin;
+        });
 
         return $this->success('Registered referees fetched successfully.', [
             'total' => $checkedInReferees->total(),
