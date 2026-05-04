@@ -531,9 +531,12 @@ class RefereeEvaluationController extends Controller
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $campId)
             ->pluck('jersey_number', 'referee_id');
 
-        $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
-            ->where('registration_status', 'registered')
+        $checkedInReferees = CampRefereeCheckin::select('camp_referee_checkins.*')
+            ->where('camp_referee_checkins.camp_id', $campId)
+            ->where('camp_referee_checkins.registration_status', 'registered')
+            ->join('users', 'camp_referee_checkins.referee_id', '=', 'users.id')
             ->with('referee')
+            ->orderBy('users.last_name', 'asc')
             ->paginate($perPage);
 
         $checkedInReferees->getCollection()->transform(function ($checkin) use ($jerseyNumbers) {
@@ -587,15 +590,16 @@ class RefereeEvaluationController extends Controller
         //         return $checkin;
         //     });
 
-        $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
+        $checkedInReferees = CampRefereeCheckin::select('camp_referee_checkins.*')
+            ->where('camp_referee_checkins.camp_id', $campId)
+            ->join('users', 'camp_referee_checkins.referee_id', '=', 'users.id')
             ->with('referee')
+            ->orderBy('users.last_name', 'asc')
             ->get()
             ->map(function ($checkin) use ($jerseyNumbers) {
                 $checkin->jersey_number = $jerseyNumbers[$checkin->referee_id] ?? null;
                 return $checkin;
-            })
-            ->sortBy(fn($checkin) => strtolower($checkin->referee->last_name))
-            ->values();
+            });
 
         return $this->success('Registered referees fetched successfully.', [
             'total' => $checkedInReferees->count(),
