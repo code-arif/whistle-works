@@ -148,7 +148,7 @@ class CourtAssignController extends Controller
                     $failedAssignments[] = [
                         'referee_id' => $refereeId,
                         'referee_name' => $refereeName,
-                        'reason' => 'Referee needs rest - played in the previous time slot',
+                        'reason' => 'Referee needs rest - consecutive assignment restriction',
                         'can_retry' => false,
                         'can_override' => true // NEW: Indicate this can be overridden
                     ];
@@ -433,7 +433,7 @@ class CourtAssignController extends Controller
             $query->select('referee_id')
                 ->from('camp_referee_checkins')
                 ->where('camp_id', $slot->schedule->camp_id);
-        })->get();
+        })->orderBy('last_name', 'asc')->get();
 
         // Get already assigned referees to this slot
         $assignedRefereeIds = GameSlotAssignment::where('game_slot_id', $slotId)
@@ -474,7 +474,7 @@ class CourtAssignController extends Controller
                 $canAssign = false;
             } elseif ($needsRest) {
                 $status = 'needs_rest';
-                $statusMessage = 'Played in previous slot - needs rest';
+                $statusMessage = 'Consecutive assignment restriction - needs rest';
                 $canAssign = false;
             }
 
@@ -510,17 +510,8 @@ class CourtAssignController extends Controller
             ];
         });
 
-        // Sort: assigned first, then available, then unavailable
-        $sorted = collect($refereesWithStatus)->sortBy(function ($referee) {
-            // $order = [
-            //     'assigned_to_this_slot' => 1,
-            //     'available' => 2,
-            //     'needs_rest' => 3,
-            //     'time_conflict' => 4,
-            // ];
-            // return $order[$referee['status']] ?? 5;
-            return $referee['can_assign'] ? 1 : 0;
-        })->values();
+        // The list is already sorted alphabetically by last name from the database query
+        $sorted = $refereesWithStatus->values();
 
         // Count by status
         $statusCounts = [
