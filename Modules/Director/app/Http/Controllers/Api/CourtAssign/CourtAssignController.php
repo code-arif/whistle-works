@@ -433,7 +433,7 @@ class CourtAssignController extends Controller
             $query->select('referee_id')
                 ->from('camp_referee_checkins')
                 ->where('camp_id', $slot->schedule->camp_id);
-        })->get();
+        })->orderBy('last_name', 'asc')->get();
 
         // Get already assigned referees to this slot
         $assignedRefereeIds = GameSlotAssignment::where('game_slot_id', $slotId)
