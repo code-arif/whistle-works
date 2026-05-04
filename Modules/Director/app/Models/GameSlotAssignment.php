@@ -176,7 +176,7 @@ class GameSlotAssignment extends Model
     }
 
     /**
-     * Check if referee needs rest (has assignment in previous slot)
+     * Check if referee needs rest (has assignment in previous or next slot)
      * Returns true if referee is NOT available (needs rest)
      */
     public static function needsRest($refereeId, $modelType, GameSlot $currentSlot)
@@ -188,17 +188,32 @@ class GameSlotAssignment extends Model
         $previousSlotStartTime = $currentStartTime->copy()->subMinutes($gameDuration)->format('H:i:s');
         $previousSlotEndTime = $currentStartTime->format('H:i:s');
 
-        // Check if referee has assignment in the IMMEDIATELY previous slot
-        $hasRecentAssignment = self::where('assignable_id', $refereeId)
+        // Calculate next slot time range
+        $currentEndTime = Carbon::parse($currentSlot->end_time);
+        $nextSlotStartTime = $currentEndTime->format('H:i:s');
+        $nextSlotEndTime = $currentEndTime->copy()->addMinutes($gameDuration)->format('H:i:s');
+
+        // Check if referee has assignment in the IMMEDIATELY previous or next slot
+        $hasConsecutiveAssignment = self::where('assignable_id', $refereeId)
             ->where('assignable_type', $modelType)
-            ->whereHas('gameSlot', function ($q) use ($currentSlot, $previousSlotStartTime, $previousSlotEndTime) {
+            ->whereHas('gameSlot', function ($q) use ($currentSlot, $previousSlotStartTime, $previousSlotEndTime, $nextSlotStartTime, $nextSlotEndTime) {
                 $q->where('schedule_id', $currentSlot->schedule_id)
                     ->where('game_date', $currentSlot->game_date)
-                    ->where('start_time', '>=', $previousSlotStartTime)
-                    ->where('start_time', '<', $previousSlotEndTime);
+                    ->where(function ($query) use ($previousSlotStartTime, $previousSlotEndTime, $nextSlotStartTime, $nextSlotEndTime) {
+                        // Check previous slot
+                        $query->where(function ($subQ) use ($previousSlotStartTime, $previousSlotEndTime) {
+                            $subQ->where('start_time', '>=', $previousSlotStartTime)
+                                 ->where('start_time', '<', $previousSlotEndTime);
+                        })
+                        // Check next slot
+                        ->orWhere(function ($subQ) use ($nextSlotStartTime, $nextSlotEndTime) {
+                            $subQ->where('start_time', '>=', $nextSlotStartTime)
+                                 ->where('start_time', '<', $nextSlotEndTime);
+                        });
+                    });
             })
             ->exists();
 
-        return $hasRecentAssignment;
+        return $hasConsecutiveAssignment;
     }
 }

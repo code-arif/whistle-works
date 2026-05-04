@@ -148,7 +148,7 @@ class CourtAssignController extends Controller
                     $failedAssignments[] = [
                         'referee_id' => $refereeId,
                         'referee_name' => $refereeName,
-                        'reason' => 'Referee needs rest - played in the previous time slot',
+                        'reason' => 'Referee needs rest - consecutive assignment restriction',
                         'can_retry' => false,
                         'can_override' => true // NEW: Indicate this can be overridden
                     ];
@@ -474,7 +474,7 @@ class CourtAssignController extends Controller
                 $canAssign = false;
             } elseif ($needsRest) {
                 $status = 'needs_rest';
-                $statusMessage = 'Played in previous slot - needs rest';
+                $statusMessage = 'Consecutive assignment restriction - needs rest';
                 $canAssign = false;
             }
 
