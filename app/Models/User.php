@@ -65,6 +65,7 @@ class User extends Authenticatable implements JWTSubject
 
         'email_verification_token',
         'email_verification_token_expires_at',
+        'receive_sms_notifications',
     ];
 
 
@@ -87,7 +88,8 @@ class User extends Authenticatable implements JWTSubject
         return [
             'otp_verified_at' => 'datetime',
             'password' => 'hashed',
-            'last_activity_at' => 'datetime'
+            'last_activity_at' => 'datetime',
+            'receive_sms_notifications' => 'boolean',
         ];
     }
 

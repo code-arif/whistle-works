@@ -46,6 +46,7 @@ class RegisterController extends Controller
             'agree' => 'required|in:true',
             'role'  => 'required',
             'biography' => 'nullable|string|max:2500',
+            'receive_sms_notifications' => 'nullable|boolean',
         ]);
         try {
             DB::beginTransaction();
@@ -73,7 +74,8 @@ class RegisterController extends Controller
                 'status'                   => 'active',
                 'last_activity_at'         => Carbon::now(),
                 'biography'               => $request->input('biography'),
-                'phone'                    => $request->input('phone')
+                'phone'                    => $request->input('phone'),
+                'receive_sms_notifications' => $request->boolean('receive_sms_notifications'),
             ]);
 
             DB::table('model_has_roles')->insert([
@@ -115,6 +117,7 @@ class RegisterController extends Controller
                 'avatar' => $user->avatar,
                 'role' => $user->role,
                 'biography' => $user->biography,
+                'receive_sms_notifications' => $user->receive_sms_notifications,
                 // 'otp' => auth('api')->user()->otp,
             ];
 
