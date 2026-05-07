@@ -28,17 +28,18 @@ use Throwable;
  */
 class TwilioChannel
 {
-    private Client $client;
-    private string $from;
+    private ?Client $client = null;
+    private ?string $from = null;
 
     public function __construct()
     {
-        $this->client = new Client(
-            config('services.twilio.sid'),
-            config('services.twilio.token')
-        );
-
+        $sid = config('services.twilio.sid');
+        $token = config('services.twilio.token');
         $this->from = config('services.twilio.from');
+
+        if ($sid && $token) {
+            $this->client = new Client($sid, $token);
+        }
     }
 
     /**
@@ -74,6 +75,14 @@ class TwilioChannel
         }
 
         // 3. Dispatch via Twilio REST API
+        if (!$this->client || !$this->from) {
+            Log::warning('TwilioChannel: skipped — missing Twilio configuration (SID, Token, or From)', [
+                'has_client' => !!$this->client,
+                'has_from'   => !!$this->from,
+            ]);
+            return;
+        }
+
         try {
             $this->client->messages->create($to, [
                 'from' => $this->from,
