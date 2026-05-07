@@ -134,7 +134,7 @@ class RefereeManageController extends Controller
                 ],
                 200
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
 
             Log::error('Failed to manually check in referee', [
@@ -258,7 +258,7 @@ class RefereeManageController extends Controller
                 ],
                 200
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
 
             Log::error('Bulk manual check-in failed', [
