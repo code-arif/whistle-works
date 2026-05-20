@@ -7,6 +7,7 @@ use App\Channels\TwilioMessage;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Notification when referee is assigned to a game slot.
@@ -111,6 +112,8 @@ class RefereeAssignedNotification extends Notification
         $endTime   = Carbon::parse($this->gameSlot->end_time)->format('h:i A');
         $court     = $this->gameSlot->court_name;
         $campName  = $this->camp->camp_name;
+
+        Log::info($this->assignmentType);
 
         if ($this->assignmentType === 'crew') {
             $body = "Hi {$notifiable->first_name}, you've been assigned to {$campName} as part of the {$this->crewName} crew.\n"

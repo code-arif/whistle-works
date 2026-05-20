@@ -7,6 +7,7 @@ use App\Channels\TwilioMessage;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Notification when referee is removed from a game slot.
@@ -103,25 +104,27 @@ class RefereeRemoveFromCourtNotification extends Notification
     // Twilio SMS payload (NEW)
     // -------------------------------------------------------------------------
 
-    // public function toTwilio($notifiable): TwilioMessage
-    // {
-    //     $date      = Carbon::parse($this->gameSlot->game_date)->format('M d, Y');
-    //     $startTime = Carbon::parse($this->gameSlot->start_time)->format('h:i A');
-    //     $court     = $this->gameSlot->court_name;
-    //     $campName  = $this->camp->camp_name;
+    public function toTwilio($notifiable): TwilioMessage
+    {
+        $date      = Carbon::parse($this->gameSlot->game_date)->format('M d, Y');
+        $startTime = Carbon::parse($this->gameSlot->start_time)->format('h:i A');
+        $court     = $this->gameSlot->court_name;
+        $campName  = $this->camp->camp_name;
 
-    //     if ($this->assignmentType === 'crew') {
-    //         $body = "Hi {$notifiable->first_name}, your assignment as part of the {$this->crewName} crew at {$campName} has been removed.\n"
-    //             . "Court: {$court} | {$date} {$startTime}";
-    //     } else {
-    //         $body = "Hi {$notifiable->first_name}, your game assignment at {$campName} has been removed.\n"
-    //             . "Court: {$court} | {$date} {$startTime}";
-    //     }
+        Log::info($this->assignmentType);
 
-    //     if (!empty($this->reason)) {
-    //         $body .= "\nReason: {$this->reason}";
-    //     }
+        if ($this->assignmentType === 'crew') {
+            $body = "Hi {$notifiable->first_name}, your assignment as part of the {$this->crewName} crew at {$campName} has been removed.\n"
+                . "Court: {$court} | {$date} {$startTime}";
+        } else {
+            $body = "Hi {$notifiable->first_name}, your game assignment at {$campName} has been removed.\n"
+                . "Court: {$court} | {$date} {$startTime}";
+        }
 
-    //     return (new TwilioMessage)->content($body);
-    // }
+        if (!empty($this->reason)) {
+            $body .= "\nReason: {$this->reason}";
+        }
+
+        return (new TwilioMessage)->content($body);
+    }
 }
