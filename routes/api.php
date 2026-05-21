@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\TwilioTestController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\Auth\UserController;
 use App\Http\Controllers\Api\Auth\LoginController;
@@ -313,3 +314,10 @@ Route::middleware(['auth:api'])->controller(FirebaseTokenController::class)->pre
     Route::post("token/get", "getToken");
     Route::post("token/delete", "deleteToken");
 });
+
+/*
+|--------------------------------------------------------------------------
+| Twilio Test Route
+|--------------------------------------------------------------------------
+*/
+Route::post('/twilio-test', [TwilioTestController::class, 'sendTestSms']);
