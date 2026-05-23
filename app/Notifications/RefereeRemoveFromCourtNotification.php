@@ -103,25 +103,25 @@ class RefereeRemoveFromCourtNotification extends Notification
     // Twilio SMS payload (NEW)
     // -------------------------------------------------------------------------
 
-    // public function toTwilio($notifiable): TwilioMessage
-    // {
-    //     $date      = Carbon::parse($this->gameSlot->game_date)->format('M d, Y');
-    //     $startTime = Carbon::parse($this->gameSlot->start_time)->format('h:i A');
-    //     $court     = $this->gameSlot->court_name;
-    //     $campName  = $this->camp->camp_name;
+    public function toTwilio($notifiable): TwilioMessage
+    {
+        $date      = Carbon::parse($this->gameSlot->game_date)->format('M d, Y');
+        $startTime = Carbon::parse($this->gameSlot->start_time)->format('h:i A');
+        $court     = $this->gameSlot->court_name;
+        $campName  = $this->camp->camp_name;
 
-    //     if ($this->assignmentType === 'crew') {
-    //         $body = "Hi {$notifiable->first_name}, your assignment as part of the {$this->crewName} crew at {$campName} has been removed.\n"
-    //             . "Court: {$court} | {$date} {$startTime}";
-    //     } else {
-    //         $body = "Hi {$notifiable->first_name}, your game assignment at {$campName} has been removed.\n"
-    //             . "Court: {$court} | {$date} {$startTime}";
-    //     }
+        if ($this->assignmentType === 'crew') {
+            $body = "Hi {$notifiable->first_name}, your assignment as part of the {$this->crewName} crew at {$campName} has been removed.\n"
+                . "Court: {$court} | {$date} {$startTime}";
+        } else {
+            $body = "Hi {$notifiable->first_name}, your game assignment at {$campName} has been removed.\n"
+                . "Court: {$court} | {$date} {$startTime}";
+        }
 
-    //     if (!empty($this->reason)) {
-    //         $body .= "\nReason: {$this->reason}";
-    //     }
+        if (!empty($this->reason)) {
+            $body .= "\nReason: {$this->reason}";
+        }
 
-    //     return (new TwilioMessage)->content($body);
-    // }
+        return (new TwilioMessage)->content($body);
+    }
 }

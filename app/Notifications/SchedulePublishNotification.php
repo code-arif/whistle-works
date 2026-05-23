@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Channels\TwilioChannel;
+use App\Channels\TwilioMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -22,7 +24,7 @@ class SchedulePublishNotification extends Notification
 
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database', TwilioChannel::class];
     }
 
     public function toArray($notifiable)
@@ -58,5 +60,12 @@ class SchedulePublishNotification extends Notification
 
             'action_url' => "/referee/camp/{$this->camp->id}/assigned-slots", // Frontend URL
         ];
+    }
+
+    public function toTwilio($notifiable): TwilioMessage
+    {
+        $body = "Hi {$notifiable->first_name}, the schedule for {$this->camp->camp_name} has been published. You can now view your assigned game slots.";
+
+        return (new TwilioMessage)->content($body);
     }
 }

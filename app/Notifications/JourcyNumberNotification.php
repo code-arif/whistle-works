@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Channels\TwilioChannel;
+use App\Channels\TwilioMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -26,7 +28,7 @@ class JourcyNumberNotification extends Notification
 
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database', TwilioChannel::class];
     }
 
     public function toArray($notifiable)
@@ -66,5 +68,18 @@ class JourcyNumberNotification extends Notification
 
             'action_url' => "/referee/camp/{$this->camp->id}/details",
         ];
+    }
+
+    public function toTwilio($notifiable): TwilioMessage
+    {
+        $isUpdate = !is_null($this->oldJourcyNumber);
+
+        if ($isUpdate) {
+            $body = "Hi {$notifiable->first_name}, your jersey number for {$this->camp->camp_name} was updated to #{$this->jourcyNumber}.";
+        } else {
+            $body = "Hi {$notifiable->first_name}, you have been assigned jersey number #{$this->jourcyNumber} for {$this->camp->camp_name}.";
+        }
+
+        return (new TwilioMessage)->content($body);
     }
 }

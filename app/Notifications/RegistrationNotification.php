@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Channels\TwilioChannel;
+use App\Channels\TwilioMessage;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +26,7 @@ class RegistrationNotification extends Notification  implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return ['database', 'mail', TwilioChannel::class];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -47,4 +49,9 @@ class RegistrationNotification extends Notification  implements ShouldQueue
         ];
     }
 
+    public function toTwilio(object $notifiable): TwilioMessage
+    {
+        $body = "Welcome " . $this->data['name'] . "! " . ($this->data['title'] ?? 'You have been registered.');
+        return (new TwilioMessage)->content($body);
+    }
 }

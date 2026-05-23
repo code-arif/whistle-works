@@ -104,22 +104,22 @@ class RefereeAssignedNotification extends Notification
      *
      * Kept intentionally short — SMS has a 160-char soft limit per segment.
      */
-    // public function toTwilio($notifiable): TwilioMessage
-    // {
-    //     $date      = Carbon::parse($this->gameSlot->game_date)->format('M d, Y');
-    //     $startTime = Carbon::parse($this->gameSlot->start_time)->format('h:i A');
-    //     $endTime   = Carbon::parse($this->gameSlot->end_time)->format('h:i A');
-    //     $court     = $this->gameSlot->court_name;
-    //     $campName  = $this->camp->camp_name;
+    public function toTwilio($notifiable): TwilioMessage
+    {
+        $date      = Carbon::parse($this->gameSlot->game_date)->format('M d, Y');
+        $startTime = Carbon::parse($this->gameSlot->start_time)->format('h:i A');
+        $endTime   = Carbon::parse($this->gameSlot->end_time)->format('h:i A');
+        $court     = $this->gameSlot->court_name;
+        $campName  = $this->camp->camp_name;
 
-    //     if ($this->assignmentType === 'crew') {
-    //         $body = "Hi {$notifiable->first_name}, you've been assigned to {$campName} as part of the {$this->crewName} crew.\n"
-    //             . "Court: {$court} | {$date} | {$startTime} - {$endTime}";
-    //     } else {
-    //         $body = "Hi {$notifiable->first_name}, you've been assigned to a game at {$campName}.\n"
-    //             . "Court: {$court} | {$date} | {$startTime} - {$endTime}";
-    //     }
+        if ($this->assignmentType === 'crew') {
+            $body = "Hi {$notifiable->first_name}, you've been assigned to {$campName} as part of the {$this->crewName} crew.\n"
+                . "Court: {$court} | {$date} | {$startTime} - {$endTime}";
+        } else {
+            $body = "Hi {$notifiable->first_name}, you've been assigned to a game at {$campName}.\n"
+                . "Court: {$court} | {$date} | {$startTime} - {$endTime}";
+        }
 
-    //     return (new TwilioMessage)->content($body);
-    // }
+        return (new TwilioMessage)->content($body);
+    }
 }
