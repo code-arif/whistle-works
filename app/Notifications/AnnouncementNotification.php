@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Channels\TwilioChannel;
+use App\Channels\TwilioMessage;
 use App\Models\Announcement;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
@@ -22,7 +24,7 @@ class AnnouncementNotification extends Notification
      */
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database', TwilioChannel::class];
     }
 
     /**
@@ -39,5 +41,15 @@ class AnnouncementNotification extends Notification
             'sent_at' => $this->announcement->sent_at,
             'type' => 'announcement', // Distinguish from other notification types
         ];
+    }
+
+    public function toTwilio($notifiable): TwilioMessage
+    {
+        $subject = $this->announcement->subject;
+        $creator = $this->announcement->creator->first_name ?? 'Director';
+
+        $body = "New Announcement from {$creator}: {$subject}";
+
+        return (new TwilioMessage)->content($body);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Channels\TwilioChannel;
+use App\Channels\TwilioMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -20,7 +22,7 @@ class RefereeRemovedFromCampNotification extends Notification
 
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database', TwilioChannel::class];
     }
 
     public function toArray($notifiable)
@@ -43,5 +45,12 @@ class RefereeRemovedFromCampNotification extends Notification
                 'role' => 'Director',
             ],
         ];
+    }
+
+    public function toTwilio($notifiable): TwilioMessage
+    {
+        $body = "Hi {$notifiable->first_name}, you have been removed from the camp: {$this->camp->camp_name}.";
+
+        return (new TwilioMessage)->content($body);
     }
 }

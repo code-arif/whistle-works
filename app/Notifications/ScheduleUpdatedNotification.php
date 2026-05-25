@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Channels\TwilioChannel;
+use App\Channels\TwilioMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -26,7 +28,7 @@ class ScheduleUpdatedNotification extends Notification
 
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database', TwilioChannel::class];
     }
 
     public function toArray($notifiable)
@@ -70,5 +72,19 @@ class ScheduleUpdatedNotification extends Notification
 
             'action_url' => "/referee/camp/{$this->camp->id}/assigned-slots",
         ];
+    }
+
+    public function toTwilio($notifiable): TwilioMessage
+    {
+        $messages = [
+            'slots_added' => 'New game slots added.',
+            'slots_removed' => 'Some game slots removed.',
+            'assignments_changed' => 'Schedule updated. Please check assignments.',
+        ];
+
+        $msg = $messages[$this->changeType] ?? $messages['assignments_changed'];
+        $body = "Hi {$notifiable->first_name}, the schedule for {$this->camp->camp_name} has been updated. {$msg}";
+
+        return (new TwilioMessage)->content($body);
     }
 }

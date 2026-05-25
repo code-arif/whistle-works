@@ -111,15 +111,13 @@ class RefereeRemoveFromCourtNotification extends Notification
         $court     = $this->gameSlot->court_name;
         $campName  = $this->camp->camp_name;
 
-        Log::info($this->assignmentType);
-
-        if ($this->assignmentType === 'crew') {
-            $body = "Hi {$notifiable->first_name}, your assignment as part of the {$this->crewName} crew at {$campName} has been removed.\n"
-                . "Court: {$court} | {$date} {$startTime}";
-        } else {
-            $body = "Hi {$notifiable->first_name}, your game assignment at {$campName} has been removed.\n"
-                . "Court: {$court} | {$date} {$startTime}";
-        }
+    //     if ($this->assignmentType === 'crew') {
+    //         $body = "Hi {$notifiable->first_name}, your assignment as part of the {$this->crewName} crew at {$campName} has been removed.\n"
+    //             . "Court: {$court} | {$date} {$startTime}";
+    //     } else {
+    //         $body = "Hi {$notifiable->first_name}, your game assignment at {$campName} has been removed.\n"
+    //             . "Court: {$court} | {$date} {$startTime}";
+    //     }
 
         if (!empty($this->reason)) {
             $body .= "\nReason: {$this->reason}";
