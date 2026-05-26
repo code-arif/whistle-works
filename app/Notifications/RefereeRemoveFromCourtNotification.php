@@ -130,9 +130,6 @@ class RefereeRemoveFromCourtNotification extends Notification
         if (!empty($this->reason)) {
             $body .= "\nReason: {$this->reason}";
         }
-        if (!empty($this->reason)) {
-            $body .= "\nReason: {$this->reason}";
-        }
 
         return (new TwilioMessage)->content($body);
     }
