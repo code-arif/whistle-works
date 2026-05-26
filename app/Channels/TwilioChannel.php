@@ -48,12 +48,12 @@ class TwilioChannel
     public function send(mixed $notifiable, Notification $notification): void
     {
         // 1. Check if user has opted in for SMS notifications
-        if (isset($notifiable->receive_sms_notifications) && !$notifiable->receive_sms_notifications) {
-            Log::debug('TwilioChannel: skipped — user has opted out of SMS notifications', [
-                'notifiable_id' => $notifiable->id ?? null,
-            ]);
-            return;
-        }
+        // if (isset($notifiable->receive_sms_notifications) && !$notifiable->receive_sms_notifications) {
+        //     Log::debug('TwilioChannel: skipped — user has opted out of SMS notifications', [
+        //         'notifiable_id' => $notifiable->id ?? null,
+        //     ]);
+        //     return;
+        // }
 
         // 2. Resolve the recipient phone number from the notifiable model
         $to = $notifiable->routeNotificationFor('twilio', $notification);
