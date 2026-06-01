@@ -46,9 +46,10 @@ class AnnouncementNotification extends Notification
     public function toTwilio($notifiable): TwilioMessage
     {
         $subject = $this->announcement->subject;
+        $message = strip_tags($this->announcement->message);
         $creator = $this->announcement->creator->first_name ?? 'Director';
 
-        $body = "New Announcement from {$creator}: {$subject}";
+        $body = "New Announcement from {$creator}: {$subject}\n\n{$message}";
 
         return (new TwilioMessage)->content($body);
     }
