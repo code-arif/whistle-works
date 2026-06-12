@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\Frontend\Evaluator\GameOverviewController;
 use App\Http\Controllers\Api\Frontend\Referee\EvaluatedRefereeController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentCrewController;
+use App\Http\Controllers\Api\Frontend\Referee\RefereeDetailsController;
 use App\Http\Controllers\Api\Frontend\CampRanking\CampRankingSettingsController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegistrationController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegisterManageForDirectorController;
@@ -123,10 +124,13 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
 // Roster camp details
 Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetails'])->middleware('auth:api', 'role:director|referee|evaluator,api');
 
-// Referee histroy
+// Referee details (profile, evaluations, assigned slots)
+Route::get('/referee-details/{campId}/{refereeId}', [RefereeDetailsController::class, 'getRefereeDetails'])->middleware('auth:api', 'role:director|referee|evaluator,api');
+
+// Referee history
 Route::get('/camp/{campId}/referee/{refereeId}/history', [RefereeEvaluationController::class, 'getRefereeEvaluationHistory'])->middleware('auth:api', 'role:director|referee|evaluator,api');
 
-// Referee histroy
+// Referee history
 Route::get('/referee/evaluation/camp/{campId}', [RefereeEvaluationController::class, 'getEvaluationsByCamp'])->middleware('auth:api', 'role:director|referee|evaluator,api');
 
 /*

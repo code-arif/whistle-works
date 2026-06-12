@@ -509,7 +509,7 @@ class RefereeEvaluationController extends Controller
     /**
      * Get all checked-in referees for a camp that the evaluator can evaluate
      */
-    public function getAllRegisteredInReferees($campId)
+    public function getAllRegisteredInReferees(Request $request, $campId)
     {
         $user = auth('api')->user();
 
@@ -530,6 +530,8 @@ class RefereeEvaluationController extends Controller
 
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $campId)
             ->pluck('jersey_number', 'referee_id');
+
+        $perPage = $request->get('per_page', 15);
 
         $checkedInReferees = CampRefereeCheckin::select('camp_referee_checkins.*')
             ->where('camp_referee_checkins.camp_id', $campId)
