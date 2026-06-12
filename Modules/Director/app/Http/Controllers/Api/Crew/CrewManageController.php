@@ -291,7 +291,7 @@ class CrewManageController extends Controller
         $user = auth('api')->user();
 
         $request->validate([
-            'referee_ids' => 'required|array|min:1|max:5',
+            'referee_ids' => 'required|array|min:1|max:6',
             'referee_ids.*' => 'exists:users,id'
         ]);
 
@@ -309,13 +309,13 @@ class CrewManageController extends Controller
         $refereeIds = $request->referee_ids;
 
         // --- Capacity Check ---
-        if ($crew->members->count() + count($refereeIds) > 5) {
+        if ($crew->members->count() + count($refereeIds) > 6) {
             return $this->error(
                 [
                     'current_members' => $crew->members->count(),
                     'trying_to_add' => count($refereeIds)
                 ],
-                'Crew can have max 5 members.',
+                'Crew can have max 6 members.',
                 400
             );
         }
