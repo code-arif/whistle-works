@@ -70,9 +70,9 @@ class RefereeDetailsController extends Controller
                 return $this->error([], 'You must be registered and approved for this camp.', 403);
             }
 
-            if (!$registration->can_view_own_evaluations) {
-                return $this->error([], 'You do not have permission to view details for this camp. Contact the director.', 403);
-            }
+            // if (!$registration->can_view_own_evaluations) {
+            //     return $this->error([], 'You do not have permission to view details for this camp. Contact the director.', 403);
+            // }
         }
 
         // Referee permission check — mirrors getRefereeEvaluationHistory pattern
