@@ -125,7 +125,7 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
 Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetails'])->middleware('auth:api', 'role:director|referee|evaluator,api');
 
 // Referee details (profile, evaluations, assigned slots)
-Route::get('/referee-details/{campId}/{refereeId}', [RefereeDetailsController::class, 'getRefereeDetails'])->middleware('auth:api', 'role:director|referee|evaluator,api');
+Route::get('/referee-details/{campId}/{refereeId}', [RefereeDetailsController::class, 'getRefereeDetails'])->middleware('auth:api');
 
 // Referee history
 Route::get('/camp/{campId}/referee/{refereeId}/history', [RefereeEvaluationController::class, 'getRefereeEvaluationHistory'])->middleware('auth:api', 'role:director|referee|evaluator,api');
