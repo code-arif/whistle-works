@@ -247,7 +247,7 @@ class RefereeDetailsController extends Controller
     }
 
     /**
-     * Get all game slots assigned to a specific referee in a camp.
+     * Get all game slots assigned to a specific referee in a camp
      * Includes individual assignments and crew-based assignments.
      */
     private function getRefereeAssignedSlots($campId, $refereeId): array
