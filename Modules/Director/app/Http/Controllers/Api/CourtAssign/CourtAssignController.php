@@ -420,8 +420,19 @@ class CourtAssignController extends Controller
             return $this->error([], 'Game court not found!', 404);
         }
 
-        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $slot->schedule->camp->id)
+        $campId = $slot->schedule->camp->id;
+
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $campId)
             ->pluck('jersey_number', 'referee_id');
+
+        // Get assignment counts for all referees in this camp
+        $assignmentCounts = GameSlotAssignment::where('assignable_type', User::class)
+            ->whereHas('gameSlot.schedule', function ($q) use ($campId) {
+                $q->where('camp_id', $campId);
+            })
+            ->select('assignable_id', DB::raw('count(*) as total'))
+            ->groupBy('assignable_id')
+            ->pluck('total', 'assignable_id');
 
 
         if ($slot->schedule->camp->director_id !== $user->id) {
@@ -443,7 +454,7 @@ class CourtAssignController extends Controller
             ->toArray();
 
         // Prepare referees with availability status
-        $refereesWithStatus = $allReferees->map(function ($referee) use ($slot, $assignedRefereeIds, $jerseyNumbers) {
+        $refereesWithStatus = $allReferees->map(function ($referee) use ($slot, $assignedRefereeIds, $jerseyNumbers, $assignmentCounts) {
             // Check various conditions
             $isAssignedToThisSlot = in_array($referee->id, $assignedRefereeIds);
 
@@ -507,6 +518,7 @@ class CourtAssignController extends Controller
                 'status_message' => $statusMessage,
                 'can_assign' => $canAssign,
                 'conflict_details' => $conflictDetails,
+                'total_assignments' => (int) ($assignmentCounts[$referee->id] ?? 0),
             ];
         });
 
@@ -956,6 +968,16 @@ class CourtAssignController extends Controller
             return $this->error('Unauthorized.', null, 403);
         }
 
+        // Get assignment counts for all crews in this camp
+        $crewAssignmentCounts = GameSlotAssignment::where('assignable_type', Crew::class)
+            ->where('assignment_type', 'crew')
+            ->whereHas('gameSlot.schedule', function ($q) use ($slot) {
+                $q->where('camp_id', $slot->schedule->camp_id);
+            })
+            ->select('assignable_id', DB::raw('count(*) as total'))
+            ->groupBy('assignable_id')
+            ->pluck('total', 'assignable_id');
+
         // Get all crews for this camp
         $allCrews = Crew::where('camp_id', $slot->schedule->camp_id)
             ->where('status', 'active')
@@ -972,7 +994,7 @@ class CourtAssignController extends Controller
             ->value('assignable_id');
 
         // Prepare crews with availability status
-        $crewsWithStatus = $allCrews->map(function ($crew) use ($slot, $assignedCrewId) {
+        $crewsWithStatus = $allCrews->map(function ($crew) use ($slot, $assignedCrewId, $crewAssignmentCounts) {
             // Check various conditions
             // $isAssignedToThisSlot = ($crew->id === $assignedCrewId);
             $isAssignedToThisSlot = ($assignedCrewId && $crew->id == (int) $assignedCrewId);
@@ -1036,6 +1058,7 @@ class CourtAssignController extends Controller
                 'can_assign' => $canAssign,
                 'conflict_details' => $conflictDetails,
                 'member_count' => $crew->members_count,
+                'total_assignments' => (int) ($crewAssignmentCounts[$crew->id] ?? 0),
                 'members' => $crew->members->map(function ($member) {
                     return [
                         'id' => $member->id,
