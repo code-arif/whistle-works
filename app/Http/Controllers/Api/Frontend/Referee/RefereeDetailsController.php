@@ -95,19 +95,17 @@ class RefereeDetailsController extends Controller
             ->value('jersey_number');
 
         $profile = [
-            'id'            => $referee->id,
-            'first_name'    => $referee->first_name,
-            'last_name'     => $referee->last_name,
-            'email'         => $referee->email,
-            'phone'         => $referee->phone,
-            'address'       => $referee->address ?? '',
-            'avatar'        => $referee->avatar
-                ? asset($referee->avatar)
-                : asset('default/profile.jpg'),
-            'biography'     => $referee->biography ?? '',
+            'id' => $referee->id,
+            'first_name' => $referee->first_name,
+            'last_name' => $referee->last_name,
+            'email' => $referee->email,
+            'phone' => $referee->phone,
+            'address' => $referee->address ?? '',
+            'avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
+            'biography' => $referee->biography ?? '',
             'jersey_number' => $jerseyNumber,
             'registration_status' => $checkin->registration_status,
-            'checked_in_at'       => $checkin->checked_in_at?->format('Y-m-d H:i:s'),
+            'checked_in_at' => $checkin->checked_in_at?->format('Y-m-d H:i:s'),
         ];
 
         // 2. Evaluation History & Statistics
@@ -115,16 +113,6 @@ class RefereeDetailsController extends Controller
         $evaluationQuery = RefereeEvaluation::with(['evaluator', 'gameSlot', 'recommendedLevels'])
             ->where('camp_id', $campId)
             ->where('referee_id', $refereeId);
-
-        // Referees (and referees only) see only submitted evaluations
-        if ($user->hasRole('referee')) {
-            $evaluationQuery->where('status', 'submitted');
-        }
-
-        // Evaluators (non-director) can only see their own evaluations
-        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
-            $evaluationQuery->where('evaluator_id', $user->id);
-        }
 
         $evaluations = $evaluationQuery->orderBy('submitted_at', 'desc')->get();
 
@@ -163,16 +151,16 @@ class RefereeDetailsController extends Controller
                 'total_evaluations' => $evaluations->count(),
                 'unique_evaluators' => $evaluations->pluck('evaluator_id')->unique()->count(),
                 'averages' => [
-                    'overall'              => $overallAvg,
-                    'call_accuracy'        => $avgCallAccuracy,
+                    'overall' => $overallAvg,
+                    'call_accuracy' => $avgCallAccuracy,
                     'communication_skills' => $avgCommunication,
                     'consistency_of_calls' => $avgConsistency,
                     'court_position_mechanics' => $avgCourtPosition,
-                    'fitness_mobility'     => $avgFitness,
-                    'game_awareness'       => $avgGameAwareness,
+                    'fitness_mobility' => $avgFitness,
+                    'game_awareness' => $avgGameAwareness,
                 ],
-                'recommended_levels'          => $recommendedLevelsFormatted,
-                'highest_recommended_level'    => !empty($recommendedLevelsFormatted)
+                'recommended_levels' => $recommendedLevelsFormatted,
+                'highest_recommended_level' => !empty($recommendedLevelsFormatted)
                     ? $recommendedLevelsFormatted[0]['level']
                     : null,
             ];
@@ -183,60 +171,58 @@ class RefereeDetailsController extends Controller
             return [
                 'id' => $evaluation->id,
                 'evaluator' => [
-                    'id'    => $evaluation->evaluator_id,
-                    'name'  => $evaluation->evaluator->first_name . ' ' . $evaluation->evaluator->last_name,
+                    'id' => $evaluation->evaluator_id,
+                    'name' => $evaluation->evaluator->first_name . ' ' . $evaluation->evaluator->last_name,
                     'email' => $evaluation->evaluator->email,
-                    'role'  => $evaluation->evaluator->getRoleNames()->first(),
+                    'role' => $evaluation->evaluator->getRoleNames()->first(),
                 ],
                 'game_slot' => $evaluation->gameSlot ? [
-                    'id'         => $evaluation->gameSlot->id,
-                    'date'       => $evaluation->gameSlot->game_date?->toDateString(),
-                    'time'       => $evaluation->gameSlot->start_time . ' - ' . $evaluation->gameSlot->end_time,
+                    'id' => $evaluation->gameSlot->id,
+                    'date' => $evaluation->gameSlot->game_date?->toDateString(),
+                    'time' => $evaluation->gameSlot->start_time . ' - ' . $evaluation->gameSlot->end_time,
                     'court_name' => $evaluation->gameSlot->court_name ?? 'N/A',
                 ] : null,
                 'scores' => [
-                    'call_accuracy'           => $evaluation->call_accuracy,
-                    'communication_skills'    => $evaluation->communication_skills,
-                    'consistency_of_calls'    => $evaluation->consistency_of_calls,
+                    'call_accuracy' => $evaluation->call_accuracy,
+                    'communication_skills' => $evaluation->communication_skills,
+                    'consistency_of_calls' => $evaluation->consistency_of_calls,
                     'court_position_mechanics' => $evaluation->court_position_mechanics,
-                    'fitness_mobility'        => $evaluation->fitness_mobility,
-                    'game_awareness'          => $evaluation->game_awareness,
+                    'fitness_mobility' => $evaluation->fitness_mobility,
+                    'game_awareness' => $evaluation->game_awareness,
                 ],
-                'total_score'         => (float) $evaluation->total_score,
-                'average_score'       => (float) $evaluation->average_score,
-                'max_score'           => 60,
-                'percentage'          => $evaluation->total_score
+                'total_score' => (float) $evaluation->total_score,
+                'average_score' => (float) $evaluation->average_score,
+                'max_score' => 60,
+                'percentage' => $evaluation->total_score
                     ? round(($evaluation->total_score / 60) * 100, 2)
                     : 0,
-                'recommended_level'   => $evaluation->relationLoaded('recommendedLevels')
+                'recommended_level' => $evaluation->relationLoaded('recommendedLevels')
                     && $evaluation->recommendedLevels->isNotEmpty()
                         ? $evaluation->recommendedLevels->first()->level
                         : null,
-                'referee_feedback'    => $evaluation->referee_feedback,
-                'status'              => $evaluation->status,
-                'submitted_at'        => $evaluation->submitted_at?->toDateString(),
-                'created_at'          => $evaluation->created_at->toDateString(),
+                'referee_feedback' => $evaluation->referee_feedback,
+                'status' => $evaluation->status,
+                'submitted_at' => $evaluation->submitted_at?->toDateString(),
+                'created_at' => $evaluation->created_at->toDateString(),
             ];
         })->values();
 
-        // ── 3. Assigned Game Slots ──────────────────────────────────────────────
+        // 3. Assigned Game Slots
         $assignedSlots = $this->getRefereeAssignedSlots($campId, $refereeId);
 
-        // ── 4. Build Response ────────────────────────────────────────────────────
+        // 4. Build Response
         return $this->success(
             'Referee details retrieved successfully.',
             [
                 'camp' => [
-                    'id'         => $camp->id,
-                    'name'       => $camp->camp_name,
-                    'location'   => $camp->location,
+                    'id' => $camp->id,
+                    'name' => $camp->camp_name,
+                    'location' => $camp->location,
                     'start_date' => $camp->start_date?->toDateString(),
-                    'end_date'   => $camp->end_date?->toDateString(),
-                    'address'    => $camp->address,
-                    'timezone'   => $camp->timezone,
-                    'logo'       => $camp->camp_logo
-                        ? asset($camp->camp_logo)
-                        : asset('default/no_image.webp'),
+                    'end_date' => $camp->end_date?->toDateString(),
+                    'address' => $camp->address,
+                    'timezone' => $camp->timezone,
+                    'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
                 ],
                 'referee' => $profile,
                 'statistics' => $statistics,
@@ -315,11 +301,11 @@ class RefereeDetailsController extends Controller
                     if ($crew && $crew->members) {
                         foreach ($crew->members as $member) {
                             $referees[] = [
-                                'id'        => $member->id,
-                                'name'      => $member->first_name . ' ' . $member->last_name,
-                                'avatar'    => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
-                                'email'     => $member->email,
-                                'type'      => 'crew_member',
+                                'id' => $member->id,
+                                'name' => $member->first_name . ' ' . $member->last_name,
+                                'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                                'email' => $member->email,
+                                'type' => 'crew_member',
                                 'crew_name' => $crew->crew_name ?? 'N/A',
                                 'is_current_referee' => $member->id === (int) $refereeId,
                             ];
@@ -329,11 +315,11 @@ class RefereeDetailsController extends Controller
                     $ref = $slotAssignment->assignable;
                     if (!$ref) continue;
                     $referees[] = [
-                        'id'        => $ref->id,
-                        'name'      => $ref->first_name . ' ' . $ref->last_name,
-                        'avatar'    => $ref->avatar ? asset($ref->avatar) : asset('default/profile.jpg'),
-                        'email'     => $ref->email,
-                        'type'      => 'individual',
+                        'id' => $ref->id,
+                        'name' => $ref->first_name . ' ' . $ref->last_name,
+                        'avatar' => $ref->avatar ? asset($ref->avatar) : asset('default/profile.jpg'),
+                        'email' => $ref->email,
+                        'type' => 'individual',
                         'is_current_referee' => $ref->id === (int) $refereeId,
                     ];
                 }
@@ -343,30 +329,30 @@ class RefereeDetailsController extends Controller
             $crewNameIfVia = ($assignmentSource === 'crew') ? ($assignment->assignable->crew_name ?? null) : null;
 
             $slots[] = [
-                'game_slot_id'     => $gameSlot->id,
+                'game_slot_id' => $gameSlot->id,
                 'assignment_source' => $assignmentSource,
-                'crew_name'        => $crewNameIfVia,
-                'game_details'     => [
-                    'date'         => $gameSlot->game_date?->toDateString(),
-                    'start_time'   => $gameSlot->start_time,
-                    'end_time'     => $gameSlot->end_time,
-                    'court_name'   => $gameSlot->court_name,
+                'crew_name' => $crewNameIfVia,
+                'game_details' => [
+                    'date' => $gameSlot->game_date?->toDateString(),
+                    'start_time' => $gameSlot->start_time,
+                    'end_time' => $gameSlot->end_time,
+                    'court_name' => $gameSlot->court_name,
                     'court_number' => $gameSlot->court_number,
-                    'status'       => $gameSlot->status,
-                    'is_blocked'   => (bool) $gameSlot->is_block,
+                    'status' => $gameSlot->status,
+                    'is_blocked' => (bool) $gameSlot->is_block,
                 ],
                 'location' => [
-                    'id'        => $gameSlot->location?->id,
-                    'name'      => $gameSlot->location?->location_name ?? 'N/A',
-                    'latitude'  => $gameSlot->location?->latitude,
+                    'id' => $gameSlot->location?->id,
+                    'name' => $gameSlot->location?->location_name ?? 'N/A',
+                    'latitude' => $gameSlot->location?->latitude,
                     'longitude' => $gameSlot->location?->longitude,
-                    'address'   => $gameSlot->location?->address,
+                    'address' => $gameSlot->location?->address,
                 ],
-                'position'         => $assignment->position,
-                'assigned_at'      => $assignment->assigned_at?->format('Y-m-d H:i:s'),
+                'position' => $assignment->position,
+                'assigned_at' => $assignment->assigned_at?->format('Y-m-d H:i:s'),
                 'is_auto_assigned' => (bool) $assignment->is_auto_assigned,
                 'assigned_referees' => [
-                    'total'    => count($referees),
+                    'total' => count($referees),
                     'referees' => $referees,
                 ],
             ];
