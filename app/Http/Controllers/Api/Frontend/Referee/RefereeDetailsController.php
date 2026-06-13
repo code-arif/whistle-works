@@ -76,19 +76,19 @@ class RefereeDetailsController extends Controller
         }
 
         // Referee permission check — mirrors getRefereeEvaluationHistory pattern
-        if ($user->hasRole('referee') && !$user->hasRole('director')) {
-            $refereeRegistration = CampRefereeCheckin::where('camp_id', $campId)
-                ->where('referee_id', $user->id)
-                ->first();
+        // if ($user->hasRole('referee') && !$user->hasRole('director')) {
+        //     $refereeRegistration = CampRefereeCheckin::where('camp_id', $campId)
+        //         ->where('referee_id', $user->id)
+        //         ->first();
 
-            if (!$refereeRegistration) {
-                return $this->error([], 'You must be registered for this camp.', 403);
-            }
+        //     if (!$refereeRegistration) {
+        //         return $this->error([], 'You must be registered for this camp.', 403);
+        //     }
 
-            if (!$camp->publish_ranking_for_referees) {
-                return $this->error([], 'You do not have permission to view referee details for this camp. Contact the director.', 403);
-            }
-        }
+        //     if (!$camp->publish_ranking_for_referees) {
+        //         return $this->error([], 'You do not have permission to view referee details for this camp. Contact the director.', 403);
+        //     }
+        // }
 
         // 1. Referee Profile
         $jerseyNumber = CampRefereeJearsyNumber::forCampAndReferee($campId, $refereeId)
