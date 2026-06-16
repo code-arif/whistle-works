@@ -125,7 +125,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
     });
 });
 
-Route::get('v1/crew/{crewId}', [CrewManageController::class, 'getCrewDetails'])->middleware('auth:api', 'role:director|referee|evaluator,api');
+Route::get('v1/crew/{crewId}', [CrewManageController::class, 'getCrewDetails'])->middleware('auth:api', 'role:director|referee|evaluator,api'); // done - crew details
 
 /**
  * globar camp details
