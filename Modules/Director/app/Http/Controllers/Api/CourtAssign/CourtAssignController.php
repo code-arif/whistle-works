@@ -512,7 +512,7 @@ class CourtAssignController extends Controller
                 'id' => $referee->id,
                 'name' => trim("{$referee->first_name} {$referee->last_name}"),
                 'email' => $referee->email,
-                'phone' => $referee->phone,
+                'phone' => $referee->phone, // phone is available
                 'avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
                 'status' => $status,
                 'jourcy_number' => $jerseyNumbers[$referee->id] ?? null,
