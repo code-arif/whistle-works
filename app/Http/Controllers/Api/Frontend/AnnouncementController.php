@@ -22,10 +22,10 @@ class AnnouncementController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'camp_id'           => 'required|integer|exists:camps,id',
-            'subject'           => 'required|string|max:255',
-            'message'           => 'required|string',
-            'announcement_to'   => 'required|in:all,referees,evaluators,specific',
+            'camp_id' => 'required|integer|exists:camps,id',
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string',
+            'announcement_to' => 'required|in:all,referees,evaluators,specific',
             'specific_user_ids' => 'required_if:announcement_to,specific|array'
         ]);
 
@@ -47,13 +47,13 @@ class AnnouncementController extends Controller
         try {
             // Store camp_id on the announcement for proper scoping
             $announcement = Announcement::create([
-                'camp_id'         => $request->camp_id, // <-- required fix
-                'created_by'      => $director->id,
-                'subject'         => $request->subject,
-                'message'         => $request->message,
+                'camp_id' => $request->camp_id, // <-- required fix
+                'created_by' => $director->id,
+                'subject' => $request->subject,
+                'message' => $request->message,
                 'announcement_to' => $request->announcement_to,
-                'status'          => 'sent',
-                'sent_at'         => now()
+                'status' => 'sent',
+                'sent_at' => now()
             ]);
 
             $recipients = $this->getCampRecipients(
@@ -69,10 +69,10 @@ class AnnouncementController extends Controller
 
             $recipientData = $recipients->map(fn($user) => [
                 'announcement_id' => $announcement->id,
-                'user_id'         => $user->id,
-                'is_read'         => false,
-                'created_at'      => now(),
-                'updated_at'      => now(),
+                'user_id' => $user->id,
+                'is_read' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
             ])->toArray();
 
             DB::table('announcement_recipients')->insert($recipientData);
