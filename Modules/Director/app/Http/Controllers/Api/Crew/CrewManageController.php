@@ -245,9 +245,9 @@ class CrewManageController extends Controller
         }
 
         // Verify ownership
-        if ($crew->camp->director_id !== $user->id) {
-            return $this->error('Unauthorized.', null, 403);
-        }
+        // if ($crew->camp->director_id !== $user->id) {
+        //     return $this->error('Unauthorized.', null, 403);
+        // }
 
         // Get camp-specific jersey number
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $crew->camp->id)
