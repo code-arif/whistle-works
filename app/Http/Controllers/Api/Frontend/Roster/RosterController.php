@@ -144,10 +144,18 @@ class RosterController extends Controller
                 'referees' => $camp->checkedInReferees
                     ->sortBy(fn($checkin) => strtolower($checkin->referee->last_name)) // sort before map
                     ->map(function ($referee) use ($gameSlotAssignments, $camp) {
-                        // Count how many games this referee is assigned to
+                        // Find which crews this referee belongs to (for crew-based assignment counting)
+                        $refereeCrewIds = $camp->crews->filter(function ($crew) use ($referee) {
+                            return $crew->members->contains('id', $referee->referee->id);
+                        })->pluck('id')->toArray();
+
+                        // Count individual assignments + crew assignments where referee is a crew member
                         $assignedGamesCount = $gameSlotAssignments->where('assignment_type', 'individual')
-                            ->where('assignable_id', $referee->referee->id)
-                            ->count();
+                                ->where('assignable_id', $referee->referee->id)
+                                ->count()
+                            + $gameSlotAssignments->where('assignment_type', 'crew')
+                                ->whereIn('assignable_id', $refereeCrewIds)
+                                ->count();
 
                         // Get camp-specific jersey number
                         $jerseyNumber = CampRefereeJearsyNumber::where('camp_id', $camp->id)
