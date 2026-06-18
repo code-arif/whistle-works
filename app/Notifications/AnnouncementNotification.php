@@ -51,6 +51,10 @@ class AnnouncementNotification extends Notification
 
         $body = "New Announcement from {$creator}: {$subject}\n\n{$message}";
 
+        if (strlen($body) > 400) {
+            $body = "A new announcement has been sent by \"{$creator}\". Please log in to Whistle Works for more details.";
+        }
+
         return (new TwilioMessage)->content($body);
     }
 }
