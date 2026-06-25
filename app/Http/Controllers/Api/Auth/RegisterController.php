@@ -2,22 +2,21 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
-use Exception;
-use Carbon\Carbon;
-use App\Traits\SMS;
-use App\Models\User;
-use App\Mail\OtpMail;
 use App\Helpers\Helper;
+use App\Http\Controllers\Controller;
+use App\Mail\AdminRegistrationMail;
+use App\Mail\OtpMail;
 use App\Mail\WelcomeMail;
+use App\Models\User;
 use App\Traits\ApiResponse;
+use App\Traits\SMS;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Events\RegistrationNotificationEvent;
-use App\Notifications\RegistrationNotification;
 
 class RegisterController extends Controller
 {
@@ -62,19 +61,19 @@ class RegisterController extends Controller
 
 
             $user = User::create([
-                'first_name'               => $request->input('first_name'),
-                'last_name'                => $request->input('last_name'),
-                'address'                  => $request->input('address'),
-                'username'                 => $username,
-                'slug'                     => $slug,
-                'email'                    => strtolower($request->input('email')),
-                'password'                 => Hash::make($request->input('password')),
-                'otp'                      => rand(1000, 9999),
-                'otp_expires_at'           => Carbon::now()->addMinutes(60),
-                'status'                   => 'active',
-                'last_activity_at'         => Carbon::now(),
-                'biography'               => $request->input('biography'),
-                'phone'                    => $request->input('phone'),
+                'first_name' => $request->input('first_name'),
+                'last_name' => $request->input('last_name'),
+                'address' => $request->input('address'),
+                'username' => $username,
+                'slug' => $slug,
+                'email' => strtolower($request->input('email')),
+                'password' => Hash::make($request->input('password')),
+                'otp' => rand(1000, 9999),
+                'otp_expires_at' => Carbon::now()->addMinutes(60),
+                'status' => 'active',
+                'last_activity_at' => Carbon::now(),
+                'biography' => $request->input('biography'),
+                'phone' => $request->input('phone'),
                 'receive_sms_notifications' => $request->boolean('receive_sms_notifications'),
             ]);
 
@@ -88,16 +87,16 @@ class RegisterController extends Controller
             $notiData = [
                 'user_id' => $user->id,
                 'title' => 'User register in successfully.',
-                'body' => 'User register in successfully.'
+                'body' => 'User register in successfully.',
+                'name' => $user->first_name . ' ' . $user->last_name ?? null,
+                'username' => $user->username,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+                'status' => $user->status,
             ];
 
-            $admins = User::role('admin', 'web')->get();
-            foreach ($admins as $admin) {
-                $admin->notify(new RegistrationNotification($notiData));
-                if (config('settings.reverb')  === 'on') {
-                    broadcast(new RegistrationNotificationEvent($notiData, $admin->id))->toOthers();
-                }
-            }
+            Mail::to('drewbontrager@gmail.com')->queue(new AdminRegistrationMail($notiData));
 
             $data = User::select('otp')->find($user->id);
 
@@ -241,9 +240,9 @@ class RegisterController extends Controller
                 return Helper::jsonErrorResponse('Email already verified.', 409);
             }
 
-            $newOtp               = rand(1000, 9999);
-            $otpExpiresAt         = Carbon::now()->addMinutes(60);
-            $user->otp            = $newOtp;
+            $newOtp = rand(1000, 9999);
+            $otpExpiresAt = Carbon::now()->addMinutes(60);
+            $user->otp = $newOtp;
             $user->otp_expires_at = $otpExpiresAt;
             $user->save();
 
@@ -253,8 +252,8 @@ class RegisterController extends Controller
             return response()->json([
                 'status'  => true,
                 'message' => 'A new OTP has been sent to your email address.',
-                'code'    => 200,
-                'otp'     => $newOtp // Remove this line in production
+                'code' => 200,
+                'otp' => $newOtp // Remove this line in production
             ], 200);
         } catch (Exception $e) {
             return Helper::jsonErrorResponse($e->getMessage(), 200);
