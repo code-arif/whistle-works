@@ -46,12 +46,12 @@ class AnnouncementNotification extends Notification
     public function toTwilio($notifiable): TwilioMessage
     {
         $subject = $this->announcement->subject;
-        $message = strip_tags($this->announcement->message);
+        $message = html_entity_decode(strip_tags($this->announcement->message), ENT_QUOTES, 'UTF-8');
         $creator = $this->announcement->creator->first_name ?? 'Director';
 
         $body = "New Announcement from {$creator}: {$subject}\n\n{$message}";
 
-        if (strlen($body) > 400) {
+        if (mb_strlen($body) > 400) {
             $body = "A new announcement has been sent by \"{$creator}\". Please log in to Whistle Works for more details.";
         }
 
