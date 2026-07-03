@@ -172,7 +172,7 @@ class AnnouncementController extends Controller
     {
         $director = auth()->user();
 
-        $announcements = Announcement::with('camp:id,name')
+        $announcements = Announcement::with(['camp:id,camp_name'])
             ->where('created_by', $director->id)
             ->withCount('recipients')
             ->orderBy('created_at', 'desc')
