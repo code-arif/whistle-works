@@ -261,6 +261,7 @@ Route::middleware(['auth:api'])->group(function () {
     // Making announcement only for director
     Route::post('/director/announcement/store', [AnnouncementController::class, 'store'])->middleware('role:director'); // done
     Route::delete('director/announcements/delete/{id}', [AnnouncementController::class, 'destroy'])->middleware('role:director'); // done
+    Route::get('/director/announcements/my', [AnnouncementController::class, 'myAnnouncements'])->middleware('role:director'); // done
 });
 
 

@@ -165,6 +165,23 @@ class AnnouncementController extends Controller
     }
 
     /**
+     * Get all announcements created by the authenticated director (across all camps).
+     * A director can only see their own announcements, not those of other directors.
+     */
+    public function myAnnouncements(Request $request)
+    {
+        $director = auth()->user();
+
+        $announcements = Announcement::with(['camp:id,name'])
+            ->where('created_by', $director->id)
+            ->withCount('recipients')
+            ->orderBy('created_at', 'desc')
+            ->paginate($request->get('per_page', 15));
+
+        return $this->success('Announcements fetched successfully', $announcements, 200);
+    }
+
+    /**
      * Delete announcement
      */
     public function destroy($id)
