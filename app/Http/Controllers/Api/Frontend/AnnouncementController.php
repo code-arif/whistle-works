@@ -178,7 +178,15 @@ class AnnouncementController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate($request->get('per_page', 15));
 
-        return $this->success('Announcements fetched successfully', $announcements, 200);
+        return $this->success('Announcements fetched successfully', [
+            'announcements' => $announcements->items(),
+            'pagination'    => [
+                'total'        => $announcements->total(),
+                'per_page'     => $announcements->perPage(),
+                'current_page' => $announcements->currentPage(),
+                'last_page'    => $announcements->lastPage(),
+            ],
+        ], 200);
     }
 
     /**
