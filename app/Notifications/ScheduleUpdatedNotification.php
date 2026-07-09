@@ -77,8 +77,8 @@ class ScheduleUpdatedNotification extends Notification
     public function toTwilio($notifiable): TwilioMessage
     {
         $messages = [
-            'slots_added' => 'New game slots added.',
-            'slots_removed' => 'Some game slots removed.',
+            'slots_added' => 'New game added.',
+            'slots_removed' => 'Some game removed.',
             'assignments_changed' => 'Schedule updated. Please check assignments.',
         ];
 
