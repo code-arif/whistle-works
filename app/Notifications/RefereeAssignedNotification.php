@@ -56,30 +56,30 @@ class RefereeAssignedNotification extends Notification
             : "You have been assigned to a new game slot.";
 
         return [
-            'type'            => 'referee_assigned',
-            'title'           => 'New Game Assignment',
-            'message'         => $message,
+            'type' => 'referee_assigned',
+            'title' => 'New Game Assignment',
+            'message' => $message,
             'assignment_type' => $this->assignmentType,
-            'crew_name'       => $this->crewName,
+            'crew_name' => $this->crewName,
 
             'game_slot' => [
-                'id'           => $this->gameSlot->id,
-                'date'         => $this->gameSlot->game_date,
-                'start_time'   => $this->gameSlot->start_time,
-                'end_time'     => $this->gameSlot->end_time,
-                'court_name'   => $this->gameSlot->court_name,
+                'id' => $this->gameSlot->id,
+                'date' => $this->gameSlot->game_date,
+                'start_time' => $this->gameSlot->start_time,
+                'end_time' => $this->gameSlot->end_time,
+                'court_name' => $this->gameSlot->court_name,
                 'court_number' => $this->gameSlot->court_number,
             ],
 
             'location' => [
-                'name'      => $this->gameSlot->location->location_name ?? 'N/A',
-                'latitude'  => $this->gameSlot->location->latitude     ?? null,
-                'longitude' => $this->gameSlot->location->longitude    ?? null,
-                'address'   => $this->gameSlot->location->address      ?? null,
+                'name' => $this->gameSlot->location->location_name ?? 'N/A',
+                'latitude' => $this->gameSlot->location->latitude ?? null,
+                'longitude' => $this->gameSlot->location->longitude ?? null,
+                'address' => $this->gameSlot->location->address ?? null,
             ],
 
             'camp' => [
-                'id'   => $this->camp->id,
+                'id' => $this->camp->id,
                 'name' => $this->camp->camp_name,
                 'logo' => $this->camp->camp_logo
                     ? asset($this->camp->camp_logo)
@@ -107,19 +107,23 @@ class RefereeAssignedNotification extends Notification
      */
     public function toTwilio($notifiable): TwilioMessage
     {
-        $date      = Carbon::parse($this->gameSlot->game_date)->format('M d, Y');
+        $date = Carbon::parse($this->gameSlot->game_date)->format('M d, Y');
         $startTime = Carbon::parse($this->gameSlot->start_time)->format('h:i A');
-        $endTime   = Carbon::parse($this->gameSlot->end_time)->format('h:i A');
-        $court     = $this->gameSlot->court_name;
-        $campName  = $this->camp->camp_name;
+        $endTime = Carbon::parse($this->gameSlot->end_time)->format('h:i A');
+        $court = $this->gameSlot->court_name;
+        $campName = $this->camp->camp_name;
+        $location = $this->gameSlot->location->location_name
+            ?? $this->gameSlot->location->address
+            ?? null;
+        $locationLine = $location ? "\nLocation: {$location}" : '';
 
-        Log::info($this->assignmentType);
+        // Log::info($this->assignmentType);
 
         if ($this->assignmentType === 'crew') {
-            $body = "Hi {$notifiable->first_name}, you've been assigned to {$campName} as part of the {$this->crewName} crew.\n"
+            $body = "Hi {$notifiable->first_name}, you've been assigned to {$campName} as part of the {$this->crewName} crew.{$locationLine}\n"
                 . "Court: {$court} | {$date} | {$startTime} - {$endTime}";
         } else {
-            $body = "Hi {$notifiable->first_name}, you've been assigned to a game at {$campName}.\n"
+            $body = "Hi {$notifiable->first_name}, you've been assigned to a game at {$campName}.{$locationLine}\n"
                 . "Court: {$court} | {$date} | {$startTime} - {$endTime}";
         }
 

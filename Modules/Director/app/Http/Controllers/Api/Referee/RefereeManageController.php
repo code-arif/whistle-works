@@ -367,16 +367,16 @@ class RefereeManageController extends Controller
             );
 
             // Send notification to referee
-            Notification::send(
-                $referee,
-                new JourcyNumberNotification(
-                    $referee,
-                    $camp,
-                    $director,
-                    $request->jourcy_number,
-                    $oldJerseyNumber
-                )
-            );
+            // Notification::send(
+            //     $referee,
+            //     new JourcyNumberNotification(
+            //         $referee,
+            //         $camp,
+            //         $director,
+            //         $request->jourcy_number,
+            //         $oldJerseyNumber
+            //     )
+            // );
 
             DB::commit();
 
