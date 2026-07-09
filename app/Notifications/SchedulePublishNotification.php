@@ -64,7 +64,7 @@ class SchedulePublishNotification extends Notification
 
     public function toTwilio($notifiable): TwilioMessage
     {
-        $body = "Hi {$notifiable->first_name}, the schedule for {$this->camp->camp_name} has been published. You can now view your assigned game slots.";
+        $body = "Hi {$notifiable->first_name}, the schedule for {$this->camp->camp_name} has been published. You can now view your assigned games.";
 
         return (new TwilioMessage)->content($body);
     }
