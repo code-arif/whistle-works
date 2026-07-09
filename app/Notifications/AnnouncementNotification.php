@@ -47,7 +47,7 @@ class AnnouncementNotification extends Notification
     {
         $subject = $this->announcement->subject;
         $message = html_entity_decode(strip_tags($this->announcement->message), ENT_QUOTES, 'UTF-8');
-        $creator = $this->announcement->creator->first_name ?? 'Director';
+        $creator = $this->announcement->creator->first_name . ' ' . $this->announcement->creator->last_name ?? 'Director';
 
         $body = "New Announcement from {$creator}: {$subject}\n\n{$message}";
 
