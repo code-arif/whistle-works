@@ -1,4 +1,4 @@
-name: Deploy project to our server
+name: Deploy via SSH
 
 on:
   push:
@@ -6,24 +6,20 @@ on:
       - deploy-test
 
 jobs:
-  FTP-Deploy-Action:
-    name: FTP Deploy
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v2.1.0
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          fetch-depth: 2
-
-      - name: FTP Deploy
-        uses: SamKirkland/FTP-Deploy-Action@4.3.0
-        with:
-          server: ${{ secrets.FTP_SERVER_TEST }}
-          username: ${{ secrets.FTP_USERNAME_TEST }}
-          password: ${{ secrets.FTP_PASSWORD_TEST }}
-          exclude: |
-            **/public/uploads/**
-            **/storage/**
-            **/.git/**
-            **/.github/**
-            **/node_modules/**
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/whistleworks-super-admin/htdocs/super-admin.whistleworks.org
+            git pull origin deploy-test
+            composer install --no-dev --optimize-autoloader
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
