@@ -972,3 +972,57 @@
 [2026-09-09 15:28:07] local.INFO: [API Error Debug Log] {"exception":"Spatie\\Permission\\Exceptions\\UnauthorizedException","message":"User does not have the right roles.","url":"https://admin.whistleworks.org/api/evaluator/camp-registration/previous-camps","method":"GET","user_id":296,"user_email":"jbavolar@yahoo.com","user_roles":["referee"],"user_roles_db":[{"id":4,"name":"referee","guard_name":"api","created_at":null,"updated_at":null,"pivot":{"model_type":"App\\Models\\User","model_id":296,"role_id":4}}]} 
 [2026-09-09 15:28:08] local.INFO: [API Error Debug Log] {"exception":"Spatie\\Permission\\Exceptions\\UnauthorizedException","message":"User does not have the right roles.","url":"https://admin.whistleworks.org/api/evaluator/camp-registration/my-registrations?page=1&per_page=100","method":"GET","user_id":296,"user_email":"jbavolar@yahoo.com","user_roles":["referee"],"user_roles_db":[{"id":4,"name":"referee","guard_name":"api","created_at":null,"updated_at":null,"pivot":{"model_type":"App\\Models\\User","model_id":296,"role_id":4}}]} 
 [2026-09-09 15:28:09] local.INFO: [API Error Debug Log] {"exception":"Spatie\\Permission\\Exceptions\\UnauthorizedException","message":"User does not have the right roles.","url":"https://admin.whistleworks.org/api/evaluator/camp-registration/my-registrations?page=1&per_page=100","method":"GET","user_id":296,"user_email":"jbavolar@yahoo.com","user_roles":["referee"],"user_roles_db":[{"id":4,"name":"referee","guard_name":"api","created_at":null,"updated_at":null,"pivot":{"model_type":"App\\Models\\User","model_id":296,"role_id":4}}]} 
+[2026-09-10 13:39:47] local.ERROR: rename(E:\remote-work\whistle-works-backend\bootstrap\cache\pac5E0A.tmp,E:\remote-work\whistle-works-backend\bootstrap\cache\packages.php): Access is denied (code: 5) {"exception":"[object] (ErrorException(code: 0): rename(E:\\remote-work\\whistle-works-backend\\bootstrap\\cache\\pac5E0A.tmp,E:\\remote-work\\whistle-works-backend\\bootstrap\\cache\\packages.php): Access is denied (code: 5) at E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Filesystem/Filesystem.php:233)
+[stacktrace]
+#0 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(258): Illuminate/Foundation/Bootstrap/HandleExceptions->handleError(2, 'rename(E://remot...', 'E://remote-work//...', 233)
+#1 [internal function]: Illuminate/Foundation/Bootstrap/HandleExceptions->{closure:Illuminate/Foundation/Bootstrap/HandleExceptions::forwardsTo():257}(2, 'rename(E://remot...', 'E://remote-work//...', 233)
+#2 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Filesystem/Filesystem.php(233): rename('E://remote-work//...', 'E://remote-work//...')
+#3 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/PackageManifest.php(182): Illuminate/Filesystem/Filesystem->replace('E://remote-work//...', '<?php return ar...')
+#4 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/PackageManifest.php(132): Illuminate/Foundation/PackageManifest->write(Array)
+#5 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/PackageManifest.php(108): Illuminate/Foundation/PackageManifest->build()
+#6 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/PackageManifest.php(91): Illuminate/Foundation/PackageManifest->getManifest()
+#7 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/PackageManifest.php(80): Illuminate/Foundation/PackageManifest->config('aliases')
+#8 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/RegisterFacades.php(26): Illuminate/Foundation/PackageManifest->aliases()
+#9 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(342): Illuminate/Foundation/Bootstrap/RegisterFacades->bootstrap(Object(Illuminate/Foundation/Application))
+#10 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(474): Illuminate/Foundation/Application->bootstrapWith(Array)
+#11 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(196): Illuminate/Foundation/Console/Kernel->bootstrap()
+#12 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#13 E:/remote-work/whistle-works-backend/artisan(13): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#14 {main}
+"} 
+[2026-09-10 13:48:50] local.ERROR: Uncaught ReflectionException: Class "App\Http\Middleware\WebDeveloperMiddleware" does not exist in Command line code:1
+Stack trace:
+#0 Command line code(1): ReflectionMethod->__construct('App\\Http\\Middle...', 'handle')
+#1 {main}
+  thrown {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Uncaught ReflectionException: Class \"App\\Http\\Middleware\\WebDeveloperMiddleware\" does not exist in Command line code:1
+Stack trace:
+#0 Command line code(1): ReflectionMethod->__construct('App\\\\Http\\\\Middle...', 'handle')
+#1 {main}
+  thrown at Command line code:1)
+[stacktrace]
+#0 {main}
+"} 
+[2026-09-10 13:57:46] local.ERROR: Uncaught ReflectionException: Class "App\Http\Middleware\WebDeveloperMiddleware" does not exist in Command line code:1
+Stack trace:
+#0 Command line code(1): ReflectionMethod->__construct('App\\Http\\Middle...', 'handle')
+#1 {main}
+  thrown {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Uncaught ReflectionException: Class \"App\\Http\\Middleware\\WebDeveloperMiddleware\" does not exist in Command line code:1
+Stack trace:
+#0 Command line code(1): ReflectionMethod->__construct('App\\\\Http\\\\Middle...', 'handle')
+#1 {main}
+  thrown at Command line code:1)
+[stacktrace]
+#0 {main}
+"} 
+[2026-09-10 13:57:46] local.ERROR: Uncaught ReflectionException: Class "App\Http\Middleware\WebDeveloperMiddleware" does not exist in Command line code:1
+Stack trace:
+#0 Command line code(1): ReflectionMethod->__construct('App\\Http\\Middle...', 'handle')
+#1 {main}
+  thrown {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Uncaught ReflectionException: Class \"App\\Http\\Middleware\\WebDeveloperMiddleware\" does not exist in Command line code:1
+Stack trace:
+#0 Command line code(1): ReflectionMethod->__construct('App\\\\Http\\\\Middle...', 'handle')
+#1 {main}
+  thrown at Command line code:1)
+[stacktrace]
+#0 {main}
+"} 

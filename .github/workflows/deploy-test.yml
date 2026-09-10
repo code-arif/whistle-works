@@ -18,9 +18,9 @@ jobs:
       - name: FTP Deploy
         uses: SamKirkland/FTP-Deploy-Action@4.3.0
         with:
-          # server: ${{ secrets.FTP_SERVER_TEST }}
-          # username: ${{ secrets.FTP_USERNAME_TEST }}
-          # password: ${{ secrets.FTP_PASSWORD_TEST }}
+          server: ${{ secrets.FTP_SERVER_TEST }}
+          username: ${{ secrets.FTP_USERNAME_TEST }}
+          password: ${{ secrets.FTP_PASSWORD_TEST }}
           exclude: |
             **/public/uploads/**
             **/storage/**
