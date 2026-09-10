@@ -2,22 +2,24 @@
 
 namespace App\Http\Controllers\Api\Auth\V2;
 
-use Exception;
-use Carbon\Carbon;
-use App\Models\User;
+use App\Events\RegistrationNotificationEvent;
 use App\Helpers\Helper;
+use App\Http\Controllers\Controller;
+use App\Mail\AdminRegistrationMail;
+use App\Mail\V2\EmailVerificationMail;
+use App\Models\User;
+use App\Notifications\RegistrationNotification;
 use App\Traits\ApiResponse;
-use Illuminate\Support\Str;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\V2\EmailVerificationMail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
-use App\Events\RegistrationNotificationEvent;
-use App\Notifications\RegistrationNotification;
+use Illuminate\Support\Str;
 
 class V2RegisterController extends Controller
 {
@@ -439,9 +441,6 @@ class V2RegisterController extends Controller
     }
 
 
-    /**
-     * Helper: Notify Admins
-     */
     private function notifyAdmins($user)
     {
         try {
@@ -449,20 +448,16 @@ class V2RegisterController extends Controller
                 'user_id' => $user->id,
                 'title'   => 'New user registered successfully.',
                 'body'    => $user->first_name . ' ' . $user->last_name . ' has registered and verified their email.',
+                'username' => $user->username,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role ?? 'user', // Depending on relation or field
+                'status' => $user->status,
             ];
 
-            $admins = User::role('admin', 'web')->get();
+            Mail::to('drewbontrager@gmail.com')->queue(new AdminRegistrationMail($notiData));
 
-            if ($admins->count() > 0) {
-                foreach ($admins as $admin) {
-                    $admin->notify(new RegistrationNotification($notiData));
-
-                    if (config('settings.reverb') === 'on') {
-                        broadcast(new RegistrationNotificationEvent($notiData, $admin->id))->toOthers();
-                    }
-                }
-                Log::info('Admin notifications sent', ['user_id' => $user->id]);
-            }
+            Log::info('Admin notifications sent', ['user_id' => $user->id]);
         } catch (Exception $e) {
             Log::error('Admin notification failed: ' . $e->getMessage());
             // Don't fail the verification if admin notification fails

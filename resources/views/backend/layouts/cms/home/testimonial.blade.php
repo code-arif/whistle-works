@@ -9,16 +9,15 @@
             <!-- CONTAINER -->
             <div class="main-container container-fluid">
                 {{-- PAGE-HEADER --}}
-                <div class="page-header">
+                <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                     <div>
-                        <h1 class="page-title">Home page - Testimonial section</h1>
+                        <h1 class="page-title">Home Page — Testimonial Section</h1>
+                        <p class="text-muted mb-0" style="font-size: 13px;">Manage testimonial reviews and feedback</p>
                     </div>
-                    <div class="ms-auto pageheader-btn">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="javascript:void(0);">Home page</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Testimonial section</li>
-                        </ol>
-                    </div>
+                    <ol class="breadcrumb mb-0 py-0">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.cms.home.testimonial.index') }}">Home page</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Testimonial section</li>
+                    </ol>
                 </div>
 
 
@@ -228,6 +227,10 @@
 
 @endsection
 
+
+@push('scripts')
+    @include('backend.partials._scripts-datatable')
+@endpush
 
 @push('scripts')
     <script>

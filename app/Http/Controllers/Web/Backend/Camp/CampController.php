@@ -2,20 +2,24 @@
 
 namespace App\Http\Controllers\Web\Backend\Camp;
 
-use Exception;
-use App\Models\User;
 use App\Helpers\Helper;
-use App\Models\SportsType;
-use Illuminate\Http\Request;
-use Yajra\DataTables\DataTables;
-use Illuminate\Http\JsonResponse;
-use Modules\Director\Models\Camp;
 use App\Http\Controllers\Controller;
+use App\Models\SportsType;
+use App\Models\User;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Modules\Director\Models\Camp;
+use Yajra\DataTables\DataTables;
 
 class CampController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -50,17 +54,22 @@ class CampController extends Controller
                     return '<div class="d-flex align-items-center">
                                 <img src="' . $logo . '" alt="logo" width="40" height="40" class="rounded me-2">
                                 <div>
-                                    <h6 class="mb-0 fs-14 fw-semibold">' . $data->camp_name . '<span class="badge bg-primary text-white" style="margin-left: 5px;"> ' . Str::limit($data->address ?? 'N/A', 20) . '</span>' . '</h6>
+                                    <h6 class="mb-0 fs-14 fw-semibold">' . $data->camp_name . '</h6>
                                     <small class="text-muted"><i class="fe fe-map-pin"></i> ' .
                         Str::limit($data->location, 30) .
                         '</small>
                                 </div>
                         </div>';
                 })
+                ->addColumn('address', function ($data) {
+                    return $data->address
+                        ? '<span class="text-wrap d-inline-block" style="max-width: 200px;"><i class="fe fe-home me-1 text-muted"></i>' . e($data->address) . '</span>'
+                        : '<span class="text-muted"><i class="fe fe-minus"></i></span>';
+                })
                 ->addColumn('sports_type', function ($data) {
                     $icon = $data->sportsType && $data->sportsType->icon
                         ? asset($data->sportsType->icon)
-                        : asset('default/no_image.webp');
+                        : asset('/default/no_image.webp');
 
                     return '<div class="d-flex align-items-center">
                                 <img src="' . $icon . '" alt="icon" width="30" height="30" class="rounded me-2">
@@ -68,14 +77,14 @@ class CampController extends Controller
                             </div>';
                 })
                 ->addColumn('dates', function ($data) {
-                    $startDate = \Carbon\Carbon::parse($data->start_date)->format('M d, Y');
-                    $endDate = \Carbon\Carbon::parse($data->end_date)->format('M d, Y');
-                    $duration = \Carbon\Carbon::parse($data->start_date)->diffInDays($data->end_date) + 1;
+                    $startDate = Carbon::parse($data->start_date)->format('M d, Y');
+                    $endDate = Carbon::parse($data->end_date)->format('M d, Y');
+                    $duration = Carbon::parse($data->start_date)->diffInDays($data->end_date) + 1;
 
                     return '<div>
                                 <div class="mb-1"><strong>Start:</strong> ' . $startDate . '</div>
                                 <div class="mb-1"><strong>End:</strong> ' . $endDate . '</div>
-                                <span class="badge bg-info-light">' . $duration . ' days</span>
+                                <span class="text-gray">' . $duration . ' days</span>
                             </div>';
                 })
                 ->addColumn('price', function ($data) {
@@ -109,7 +118,7 @@ class CampController extends Controller
                                 </a>
                             </div>';
                 })
-                ->rawColumns(['director', 'camp_info', 'sports_type', 'dates', 'price', 'status', 'action'])
+                ->rawColumns(['director', 'camp_info', 'address', 'sports_type', 'dates', 'price', 'status', 'action'])
                 ->make();
         }
 
@@ -154,9 +163,9 @@ class CampController extends Controller
             // Get sports type name
             $sportsType = SportsType::findOrFail($data['sports_type_id']);
 
-            // Add extra price (from env or default $25)
-            $extraPrice = env('CAMP_EXTRA_PRICE', 25);
-            $finalPrice = $data['price'] + $extraPrice;
+            // Add sports fee from sports type (replaces global CAMP_EXTRA_PRICE)
+            $sportsFee = $sportsType->sports_fee ?? 0;
+            $finalPrice = $data['price'] + $sportsFee;
 
             // Handle camp logo upload
             $campLogoPath = null;
@@ -188,7 +197,7 @@ class CampController extends Controller
 
             return response()->json([
                 'status' => 't-success',
-                'message' => 'Camp created successfully! (Extra $' . $extraPrice . ' added to price)',
+                'message' => 'Camp created successfully! (Sports fee of $' . $sportsFee . ' added to price)',
                 'data' => $camp
             ], 201);
         } catch (Exception $e) {

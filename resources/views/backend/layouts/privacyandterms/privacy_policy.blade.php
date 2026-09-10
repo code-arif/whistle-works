@@ -9,16 +9,15 @@
             <div class="main-container container-fluid">
 
                 {{-- PAGE-HEADER --}}
-                <div class="page-header">
+                <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                     <div>
                         <h1 class="page-title">Privacy Policy</h1>
+                        <p class="text-muted mb-0" style="font-size: 13px;">Manage privacy policy content</p>
                     </div>
-                    <div class="ms-auto pageheader-btn">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="javascript:void(0);">Terms and Privacy</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Privacy Policy</li>
-                        </ol>
-                    </div>
+                    <ol class="breadcrumb mb-0 py-0">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.cms.privecyandterms.privacy') }}">Terms and Privacy</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Privacy Policy</li>
+                    </ol>
                 </div>
                 {{-- PAGE-HEADER --}}
 
@@ -57,3 +56,22 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    @include('backend.partials._scripts-summernote')
+    <script>
+        $(document).ready(function() {
+            $('.summernote').summernote({
+                height: 300,
+                toolbar: [
+                    ['style', ['style']],
+                    ['font', ['bold', 'italic', 'underline', 'clear']],
+                    ['fontname', ['fontname']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['insert', ['link', 'picture', 'video']],
+                    ['view', ['fullscreen', 'codeview']],
+                ]
+            });
+        });
+    </script>
+@endpush

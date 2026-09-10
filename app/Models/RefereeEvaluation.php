@@ -117,10 +117,18 @@ class RefereeEvaluation extends Model
     // Permission methods
     public function canBeEditedBy(User $user): bool
     {
-        // Director can edit any evaluation in their camps
+        // Director can edit any evaluation in their camps or assigned assistant camps
         if ($user->hasRole('director')) {
             $camp = $this->camp;
-            return $camp && $camp->director_id === $user->id;
+            if (!$camp) {
+                return false;
+            }
+            if ($camp->director_id === $user->id) {
+                return true;
+            }
+            return AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->exists();
         }
 
         // Evaluator can edit their own evaluations
@@ -138,10 +146,18 @@ class RefereeEvaluation extends Model
             return true;
         }
 
-        // Director can view evaluations in their camps
+        // Director can view evaluations in their camps or assigned assistant camps
         if ($user->hasRole('director')) {
             $camp = $this->camp;
-            return $camp && $camp->director_id === $user->id;
+            if (!$camp) {
+                return false;
+            }
+            if ($camp->director_id === $user->id) {
+                return true;
+            }
+            return AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->exists();
         }
 
         // Evaluator can view their own evaluations
@@ -157,10 +173,20 @@ class RefereeEvaluation extends Model
      */
     public static function canEvaluateInCamp(User $evaluator, $campId): bool
     {
-        // Directors can always evaluate in their own camps
+        // Directors can evaluate in their own camps or if assigned as assistant director for this camp
         if ($evaluator->hasRole('director')) {
             $camp = Camp::find($campId);
-            return $camp && $camp->director_id === $evaluator->id;
+            if (!$camp) {
+                return false;
+            }
+
+            if ($camp->director_id === $evaluator->id) {
+                return true;
+            }
+
+            return AssistantDirectorPermission::where('camp_id', $campId)
+                ->where('assistant_director_id', $evaluator->id)
+                ->exists();
         }
 
         // Evaluators must be registered and approved
@@ -175,7 +201,7 @@ class RefereeEvaluation extends Model
     }
 
     /**
-     * recomanded lavel relation
+     * recommended level relation
      */
     public function recommendedLevels()
     {

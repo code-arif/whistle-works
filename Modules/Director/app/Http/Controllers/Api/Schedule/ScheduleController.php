@@ -11,11 +11,13 @@ use Modules\Director\Models\Crew;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\AssistantDirectorPermission;
 use App\Models\CampRefereeJearsyNumber;
 use App\Models\CampEvaluatorRegistration;
 use Illuminate\Support\Facades\Notification;
 use Modules\Director\Models\CampRefereeCheckin;
 use Modules\Director\Models\GameSlotAssignment;
+use Modules\Director\Models\GameSlotAssignmentPosition;
 use App\Notifications\SchedulePublishNotification;
 use App\Notifications\ScheduleUpdatedNotification;
 use Modules\Director\Http\Requests\{ScheduleCreateRequest, LocationAddRequest};
@@ -39,8 +41,8 @@ class ScheduleController extends Controller
     {
         $user = auth('api')->user();
 
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $user->id)
+        $camp = Camp::forDirectorOrAssistant($user->id)
+            ->where('id', $campId)
             ->withCount('checkedInReferees')
             ->first();
 
@@ -89,12 +91,23 @@ class ScheduleController extends Controller
     {
         $user = auth('api')->user();
 
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $user->id)
+        $camp = Camp::forDirectorOrAssistant($user->id)
+            ->where('id', $campId)
             ->first();
 
         if (!$camp) {
             return $this->error('Camp not found.', null, 404);
+        }
+
+        if ($camp->director_id !== $user->id) {
+            $hasPermission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->where('build_schedule', true)
+                ->exists();
+
+            if (!$hasPermission) {
+                return $this->error('You do not have permission to build schedule for this camp.', null, 403);
+            }
         }
 
         if ($camp->schedule()->exists()) {
@@ -232,8 +245,9 @@ class ScheduleController extends Controller
                 $locationMap[] = $scheduleLocation;
             }
 
-            // Generate game slots
-            $slotsGenerated = $this->generateGameSlots($schedule, $locationMap, $camp);
+            // Generate game slots with referee positions
+            $refereePositions = $request->input('referee_positions', []);
+            $slotsGenerated = $this->generateGameSlots($schedule, $locationMap, $camp, $refereePositions);
 
             DB::commit();
 
@@ -254,12 +268,19 @@ class ScheduleController extends Controller
     /**
      * Generate game slots in camp timezone
      */
-    private function generateGameSlots(Schedule $schedule, $locationMap, Camp $camp)
+    private function generateGameSlots(Schedule $schedule, $locationMap, Camp $camp, array $refereePositions = [])
     {
         $timeRanges = $schedule->timeRanges;
         $gameDuration = $schedule->game_duration;
         $totalSlotsCreated = 0;
         $campTimezone = $camp->timezone ?? 'UTC';
+
+        // If no referee_positions provided, default position names based on max_referees_per_slot
+        if (empty($refereePositions) && $schedule->max_referees_per_slot > 0) {
+            for ($i = 1; $i <= $schedule->max_referees_per_slot; $i++) {
+                $refereePositions[] = "Referee {$i}";
+            }
+        }
 
         foreach ($timeRanges as $range) {
             $gameDate = $range->date;
@@ -277,7 +298,7 @@ class ScheduleController extends Controller
                 // Create slots for each location with its court count
                 foreach ($locationMap as $location) {
                     for ($courtNum = 1; $courtNum <= $location->court_count; $courtNum++) {
-                        GameSlot::create([
+                        $slot = GameSlot::create([
                             'schedule_id' => $schedule->id,
                             'schedule_location_id' => $location->id,
                             'game_date' => $gameDate,
@@ -288,6 +309,16 @@ class ScheduleController extends Controller
                             'status' => 'available',
                             'is_block' => false
                         ]);
+
+                        // Create initial empty position records in game_slot_assignment_positions table
+                        foreach ($refereePositions as $position) {
+                            GameSlotAssignmentPosition::create([
+                                'camp_id' => $camp->id,
+                                'game_slot_id' => $slot->id,
+                                'game_slot_assignment_id' => null,
+                                'position' => $position,
+                            ]);
+                        }
 
                         $totalSlotsCreated++;
                     }
@@ -307,8 +338,8 @@ class ScheduleController extends Controller
     {
         $user = auth('api')->user();
 
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $user->id)
+        $camp = Camp::forDirectorOrAssistant($user->id)
+            ->where('id', $campId)
             ->first();
 
         if (!$camp) {
@@ -337,7 +368,7 @@ class ScheduleController extends Controller
     {
         $user = auth('api')->user();
 
-        $camp = Camp::where('director_id', $user->id)->find($campId);
+        $camp = Camp::forDirectorOrAssistant($user->id)->find($campId);
 
         if (!$camp) {
             return $this->error('Camp not found.', null, 404);
@@ -399,6 +430,7 @@ class ScheduleController extends Controller
             ->where('game_date', $selectedDate)
             ->with([
                 'location',
+                'assignmentPositions.gameSlotAssignment.assignable',
                 'slotAssignments.assignable' => function ($query) {
                     $query->when(function ($q) {
                         return $q->getModel() instanceof Crew;
@@ -447,10 +479,30 @@ class ScheduleController extends Controller
                             'location_id' => $slot->location->id,
                             'status' => $slot->status,
                             'is_blocked' => $slot->is_block,
+                            'mode' => $slot->mode,
                             'start_time' => $startTime->format('H:i'),
                             'end_time' => $endTime->format('H:i'),
                             'start_time_display' => $startTime->format('h:i A'),
                             'end_time_display' => $endTime->format('h:i A'),
+                            'positions' => $slot->assignmentPositions->map(function ($pos) use ($jerseyNumbers) {
+                                $assignment = $pos->gameSlotAssignment;
+                                $referee = $assignment?->assignable;
+                                $jerseyNumber = $referee ? ($jerseyNumbers[$referee->id] ?? null) : null;
+
+                                return [
+                                    'id' => $pos->id,
+                                    'position' => $pos->position,
+                                    'game_slot_assignment_id' => $pos->game_slot_assignment_id,
+                                    'is_assigned' => !is_null($pos->game_slot_assignment_id),
+                                    'referee' => $referee ? [
+                                        'referee_id' => $referee->id,
+                                        'referee_name' => trim(($referee->first_name ?? '') . ' ' . ($referee->last_name ?? '')),
+                                        'jersey_number' => $jerseyNumber,
+                                        'email' => $referee->email ?? null,
+                                        'avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
+                                    ] : null
+                                ];
+                            })->values(),
                             'assignments_count' => $slot->slotAssignments->count(),
                             'assignments' => $slot->slotAssignments->map(function ($assignment) use ($jerseyNumbers) {
                                 if ($assignment->assignment_type === 'crew') {
@@ -476,16 +528,20 @@ class ScheduleController extends Controller
                                         'members' => $members
                                     ];
                                 } else {
-                                    $jerseyNumber = $jerseyNumbers[$assignment->assignable->id] ?? null;
+                                    $referee = $assignment->assignable;
+                                    $jerseyNumber = $referee ? ($jerseyNumbers[$referee->id] ?? null) : null;
 
                                     return [
                                         'type' => 'individual',
                                         'assignment_id' => $assignment->id,
-                                        'referee_id' => $assignment->assignable->id,
-                                        'referee_name' => ($assignment->assignable->first_name ?? '') . ' ' . ($assignment->assignable->last_name ?? ''),
+                                        'position' => $assignment->position,
+                                        'referee_id' => $referee?->id,
+                                        'referee_name' => $referee
+                                            ? trim(($referee->first_name ?? '') . ' ' . ($referee->last_name ?? ''))
+                                            : null,
                                         'jourcy_number' => $jerseyNumber,
-                                        'avatar' => $assignment->assignable->avatar
-                                            ? asset($assignment->assignable->avatar)
+                                        'avatar' => $referee?->avatar
+                                            ? asset($referee->avatar)
                                             : asset('default/profile.jpg'),
                                     ];
                                 }
@@ -545,12 +601,23 @@ class ScheduleController extends Controller
     {
         $user = auth('api')->user();
 
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $user->id)
+        $camp = Camp::forDirectorOrAssistant($user->id)
+            ->where('id', $campId)
             ->first();
 
         if (!$camp) {
             return $this->error('Camp not found.', null, 404);
+        }
+
+        if ($camp->director_id !== $user->id) {
+            $hasPermission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->where('publish_camp', true)
+                ->exists();
+
+            if (!$hasPermission) {
+                return $this->error('You do not have permission to publish the schedule for this camp.', null, 403);
+            }
         }
 
         $schedule = $camp->schedule;
@@ -652,8 +719,8 @@ class ScheduleController extends Controller
     {
         $user = auth('api')->user();
 
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $user->id)
+        $camp = Camp::forDirectorOrAssistant($user->id)
+            ->where('id', $campId)
             ->first();
 
         if (!$camp) {
@@ -669,11 +736,10 @@ class ScheduleController extends Controller
 
         DB::beginTransaction();
         try {
-            // Remove all assignments
-            GameSlotAssignment::whereIn(
-                'game_slot_id',
-                $schedule->gameSlots()->pluck('id')
-            )->delete();
+            // Remove all assignments and reset position links
+            $slotIds = $schedule->gameSlots()->pluck('id');
+            GameSlotAssignmentPosition::whereIn('game_slot_id', $slotIds)->update(['game_slot_assignment_id' => null]);
+            GameSlotAssignment::whereIn('game_slot_id', $slotIds)->delete();
 
             // Reset slot statuses
             $schedule->gameSlots()->update(['status' => 'available']);
@@ -702,12 +768,23 @@ class ScheduleController extends Controller
     {
         $user = auth('api')->user();
 
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $user->id)
+        $camp = Camp::forDirectorOrAssistant($user->id)
+            ->where('id', $campId)
             ->first();
 
         if (!$camp) {
             return $this->error('Camp not found.', null, 404);
+        }
+
+        if ($camp->director_id !== $user->id) {
+            $hasPermission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->where('build_schedule', true)
+                ->exists();
+
+            if (!$hasPermission) {
+                return $this->error('You do not have permission to delete the schedule for this camp.', null, 403);
+            }
         }
 
         $schedule = $camp->schedule;
@@ -750,12 +827,21 @@ class ScheduleController extends Controller
         $camp = $schedule->camp;
         $campTimezone = $camp->timezone ?? 'UTC';
 
+        $refereePositions = GameSlotAssignmentPosition::whereHas('gameSlot', function ($query) use ($schedule) {
+            $query->where('schedule_id', $schedule->id);
+        })
+            ->whereNotNull('position')
+            ->distinct()
+            ->pluck('position')
+            ->values();
+
         return [
             'id' => $schedule->id,
             'camp_id' => $schedule->camp_id,
             'game_duration' => $schedule->game_duration,
             'status' => $schedule->status,
             'max_referees_per_slot' => $schedule->max_referees_per_slot,
+            'referee_positions' => $refereePositions,
             'camp_timezone' => $campTimezone,
             'camp_timezone_name' => $camp->timezone_display_name,
             'time_ranges' => $schedule->timeRanges->map(function ($range) use ($campTimezone) {

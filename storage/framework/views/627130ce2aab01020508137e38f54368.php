@@ -1,0 +1,155 @@
+<?php $__env->startSection('header'); ?>
+    <tr>
+        <td class="header">
+            <!-- Logo -->
+            <a href="<?php echo e(config('app.url')); ?>" style="display: inline-block;">
+                <img src="<?php echo e($message->embed(public_path('default/logo.png'))); ?>" alt="Whistle Works" class="logo"
+                    style="max-width: 200px; height: auto;">
+                <!-- Fallback text if image doesn't load -->
+                <div style="color: #ffffff; font-size: 24px; font-weight: bold; margin-top: 10px; display: none;">
+                    WHISTLE WORKS
+                </div>
+            </a>
+        </td>
+    </tr>
+<?php $__env->stopSection(); ?>
+
+<?php $__env->startSection('content'); ?>
+    <!-- Welcome Heading -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+        <tr>
+            <td align="center">
+                <h1 style="color: #00aeef; font-size: 28px; font-weight: bold; margin: 0;">
+                    Welcome to Whistle Works!
+                </h1>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Greeting -->
+    <p style="margin-bottom: 20px; font-size: 16px; color: #333333;">
+        Hello <strong><?php echo e($user->first_name); ?> <?php echo e($user->last_name); ?></strong>,
+    </p>
+
+    <!-- Welcome Message -->
+    <p style="margin-bottom: 25px; font-size: 15px; color: #555555; line-height: 1.6;">
+        Congratulations! Your email has been successfully verified. We're excited to have you as part of the
+        <strong>Whistle Works</strong> community - your ultimate sports management platform.
+    </p>
+
+    <!-- Success Icon -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 30px 0;">
+        <tr>
+            <td align="center">
+                <div
+                    style="
+                background-color: #00aeef;
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 20px;
+            ">
+                    <span style="color: #ffffff; font-size: 40px;">✓</span>
+                </div>
+                <p style="font-size: 18px; color: #00aeef; font-weight: bold; margin: 0;">
+                    Email Verified Successfully!
+                </p>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Account Details -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+        style="margin: 25px 0; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+        <tr>
+            <td style="padding: 20px;">
+                <h3
+                    style="color: #333333; font-size: 16px; margin-bottom: 15px; border-bottom: 2px solid #00aeef; padding-bottom: 8px;">
+                    Your Account Details
+                </h3>
+
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span
+                                style="color: #666666; font-size: 14px; min-width: 120px; display: inline-block;">Username:</span>
+                            <strong style="color: #333333; font-size: 14px;"><?php echo e($user->username); ?></strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span
+                                style="color: #666666; font-size: 14px; min-width: 120px; display: inline-block;">Email:</span>
+                            <strong style="color: #333333; font-size: 14px;"><?php echo e($user->email); ?></strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span
+                                style="color: #666666; font-size: 14px; min-width: 120px; display: inline-block;">Phone:</span>
+                            <strong style="color: #333333; font-size: 14px;"><?php echo e($user->phone); ?></strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span
+                                style="color: #666666; font-size: 14px; min-width: 120px; display: inline-block;">Role:</span>
+                            <strong
+                                style="color: #333333; font-size: 14px; text-transform: capitalize; font-weight: 800; background: #00aeef; padding: 5px 10px; border-radius: 5px;"><?php echo e($user->role ?? null); ?></strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span
+                                style="color: #666666; font-size: 14px; min-width: 120px; display: inline-block;">Name:</span>
+                            <strong style="color: #333333; font-size: 14px;"><?php echo e($user->first_name); ?>
+
+                                <?php echo e($user->last_name); ?></strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0;">
+                            <span style="color: #666666; font-size: 14px; min-width: 120px; display: inline-block;">Account
+                                Status:</span>
+                            <strong style="color: #4CAF50; font-size: 14px;">Active ✓</strong>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Closing -->
+    <p style="margin-top: 30px; font-size: 15px; color: #333333;">
+        Welcome aboard,<br>
+        <strong>The Whistle Works Team</strong>
+    </p>
+<?php $__env->stopSection(); ?>
+
+<?php $__env->startSection('footer'); ?>
+    <tr>
+        <td class="footer">
+            <!-- Social Links -->
+            <div class="footer-links">
+                <a href="<?php echo e(config('app.frontend_url')); ?>/about-us"
+                    style="color: #00aeef; text-decoration: none; margin: 0 10px;">About Us</a>
+                <a href="<?php echo e(config('app.frontend_url')); ?>"
+                    style="color: #00aeef; text-decoration: none; margin: 0 10px;">Home</a>
+                <a href="<?php echo e(config('app.frontend_url')); ?>/all-camps"
+                    style="color: #00aeef; text-decoration: none; margin: 0 10px;">All Camps</a>
+            </div>
+
+
+            <!-- Copyright -->
+            <div class="copyright">
+                &copy; <?php echo e(date('Y')); ?> Whistle Works Inc. All rights reserved.<br>
+                <small>Your ultimate sports management platform</small>
+            </div>
+        </td>
+    </tr>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('emails.layout.master_layout', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/whistleworks-admin/htdocs/admin.whistleworks.org/resources/views/emails/user-register/welcome.blade.php ENDPATH**/ ?>

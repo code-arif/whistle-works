@@ -9,17 +9,16 @@
         <!-- CONTAINER -->
         <div class="main-container container-fluid">
 
-            <div class="page-header">
+            <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                 <div>
                     <h1 class="page-title">Permission</h1>
+                    <p class="text-muted mb-0" style="font-size: 13px;">Update permission details</p>
                 </div>
-                <div class="ms-auto pageheader-btn">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item">Access</li>
-                        <li class="breadcrumb-item">Permission</li>
-                        <li class="breadcrumb-item">Update</li>
-                    </ol>
-                </div>
+                <ol class="breadcrumb mb-0 py-0">
+                    <li class="breadcrumb-item"><a href="{{ route('admin.permissions.index') }}">Access</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('admin.permissions.index') }}">Permission</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Update</li>
+                </ol>
             </div>
 
             <div class="row" id="user-profile">

@@ -17,13 +17,4 @@ class HomeController extends Controller
     {
         return view('auth.login');
     }
-
-    public function post($slug){
-        $cms = [
-            'home' => CMS::where('page', PageEnum::HOME)->where('status', 'active')->get(),
-            'common' => CMS::where('page', PageEnum::COMMON)->where('status', 'active')->get(),
-        ];
-        $post = Post::where('slug', base64_decode($slug))->where('status', 'active')->firstOrFail();
-        return view('frontend.layouts.post', compact('cms', 'post'));
-    }
 }

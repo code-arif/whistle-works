@@ -1,451 +1,609 @@
-@extends('backend.app')
+@extends('backend.app', ['title' => 'Dashboard'])
 
 @section('content')
     <!--app-content open-->
     <div class="app-content main-content mt-0">
-        <div class="side-app" style="margin-bottom: 60px">
+        <div class="side-app" style="margin-bottom: 80px">
+
             <!-- CONTAINER -->
             <div class="main-container container-fluid">
 
                 <!-- PAGE-HEADER -->
-                <div class="page-header">
+                <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                     <div>
-                        <h1 class="page-title">Dashboard</h1>
+                        <h1 class="page-title fw-bold">Dashboard</h1>
+                        <p class="text-muted mb-0" style="font-size: 13px;">
+                            <i class="fe fe-clock me-1"></i>
+                            {{ now()->format('l, F d, Y') }}
+                            &mdash; Complete business overview at a glance
+                        </p>
                     </div>
-                    <div class="ms-auto pageheader-btn">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="javascript:void(0);">Home</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
-                        </ol>
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="status-badge status-badge-online">
+                            <span class="status-dot"></span>
+                            <span class="status-text">System Online</span>
+                        </span>
+                        <span class="status-badge status-badge-time" id="liveClock">
+                            <i class="fe fe-clock me-1"></i>
+                            {{ now()->format('h:i A') }}
+                        </span>
                     </div>
                 </div>
                 <!-- PAGE-HEADER END -->
 
-                <!-- ROW-1: Main Statistics Cards -->
+                <!-- ============================================================ -->
+                <!--  ROW 1: FINANCIAL KPI CARDS (Top)                              -->
+                <!-- ============================================================ -->
                 <div class="row">
-                    <!-- Total Users Card -->
-                    <div class="col-lg-6 col-sm-12 col-md-6 col-xl-3">
-                        <div class="card overflow-hidden">
+                    {{-- Total Revenue --}}
+                    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12">
+                        <div class="card financial-card">
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col">
-                                        <h3 class="mb-2 fw-semibold">{{ number_format($userStats['total']) }}</h3>
-                                        <p class="text-muted fs-13 mb-0">Total Users</p>
-                                        <p class="text-muted mb-0 mt-2 fs-12">
+                                <div class="d-flex align-items-start justify-content-between">
+                                    <div>
+                                        <p class="mb-1 text-muted fs-13">Total Revenue</p>
+                                        <h2 class="mb-0 fw-bold text-success">
+                                            ${{ number_format($revenueStats['totalRevenue'], 2) }}</h2>
+                                        <div class="mt-2 d-flex align-items-center gap-2">
                                             <span
-                                                class="icn-box {{ $userStats['growth_percentage'] >= 0 ? 'text-success' : 'text-danger' }} fw-semibold fs-13 me-1">
+                                                class="badge {{ $revenueStats['revenueGrowth'] >= 0 ? 'bg-success-transparent text-success' : 'bg-danger-transparent text-danger' }} d-inline-flex align-items-center gap-1 px-2 py-1 fs-11">
                                                 <i
-                                                    class='fa fa-long-arrow-{{ $userStats['growth_percentage'] >= 0 ? 'up' : 'down' }}'></i>
-                                                {{ abs($userStats['growth_percentage']) }}%
+                                                    class="fe fe-{{ $revenueStats['revenueGrowth'] >= 0 ? 'trending-up' : 'trending-down' }}"></i>
+                                                <span>{{ abs($revenueStats['revenueGrowth']) }}%</span>
                                             </span>
-                                            since last month
-                                        </p>
-                                    </div>
-                                    <div class="col col-auto top-icn dash">
-                                        <div class="counter-icon bg-primary dash ms-auto box-shadow-primary">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="fill-white"
-                                                enable-background="new 0 0 24 24" viewBox="0 0 24 24">
-                                                <path
-                                                    d="M12,8c-2.2091675,0-4,1.7908325-4,4s1.7908325,4,4,4c2.208252-0.0021973,3.9978027-1.791748,4-4C16,9.7908325,14.2091675,8,12,8z M12,15c-1.6568604,0-3-1.3431396-3-3s1.3431396-3,3-3c1.6561279,0.0018311,2.9981689,1.3438721,3,3C15,13.6568604,13.6568604,15,12,15z M21.960022,11.8046875C19.9189453,6.9902344,16.1025391,4,12,4s-7.9189453,2.9902344-9.960022,7.8046875c-0.0537109,0.1246948-0.0537109,0.2659302,0,0.390625C4.0810547,17.0097656,7.8974609,20,12,20s7.9190063-2.9902344,9.960022-7.8046875C22.0137329,12.0706177,22.0137329,11.9293823,21.960022,11.8046875z M12,19c-3.6396484,0-7.0556641-2.6767578-8.9550781-7C4.9443359,7.6767578,8.3603516,5,12,5s7.0556641,2.6767578,8.9550781,7C19.0556641,16.3232422,15.6396484,19,12,19z" />
-                                            </svg>
+                                            <span class="text-muted fs-11">vs last month</span>
                                         </div>
+                                    </div>
+                                    <div class="icon-box bg-success-transparent">
+                                        <i class="fe fe-dollar-sign text-success fs-22"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex justify-content-between text-center small">
+                                    <div><span
+                                            class="text-muted">Month</span><br><strong>${{ number_format($revenueStats['monthlyRevenue'], 2) }}</strong>
+                                    </div>
+                                    <div><span
+                                            class="text-muted">Fees</span><br><strong>${{ number_format($revenueStats['totalAdminFees'], 2) }}</strong>
+                                    </div>
+                                    <div><span
+                                            class="text-muted">Avg</span><br><strong>${{ number_format($revenueStats['avgTransactionValue'], 2) }}</strong>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Total Camps Card -->
-                    <div class="col-lg-6 col-sm-12 col-md-6 col-xl-3">
-                        <div class="card overflow-hidden">
+                    {{-- Profit (Admin Fees) --}}
+                    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12">
+                        <div class="card financial-card">
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col">
-                                        <h3 class="mb-2 fw-semibold">{{ number_format($campStats['total']) }}</h3>
-                                        <p class="text-muted fs-13 mb-0">Total Camps</p>
-                                        <p class="text-muted mb-0 mt-2 fs-12">
+                                <div class="d-flex align-items-start justify-content-between">
+                                    <div>
+                                        <p class="mb-1 text-muted fs-13">Platform Profit (Admin Fees)</p>
+                                        <h2 class="mb-0 fw-bold text-primary">
+                                            ${{ number_format($revenueStats['totalAdminFees'], 2) }}</h2>
+                                        <div class="mt-2 d-flex align-items-center gap-2">
                                             <span
-                                                class="icn-box {{ $campStats['growth_percentage'] >= 0 ? 'text-success' : 'text-danger' }} fw-semibold fs-13 me-1">
-                                                <i
-                                                    class='fa fa-long-arrow-{{ $campStats['growth_percentage'] >= 0 ? 'up' : 'down' }}'></i>
-                                                {{ abs($campStats['growth_percentage']) }}%
+                                                class="badge bg-primary-transparent text-primary d-inline-flex align-items-center gap-1 px-2 py-1 fs-11">
+                                                <i class="fe fe-percent lh-1"></i>
+                                                <span>
+                                                    {{ $revenueStats['totalRevenue'] > 0 ? round(($revenueStats['totalAdminFees'] / $revenueStats['totalRevenue']) * 100, 1) : 0 }}%
+                                                </span>
                                             </span>
-                                            since last month
-                                        </p>
-                                    </div>
-                                    <div class="col col-auto top-icn dash">
-                                        <div class="counter-icon bg-secondary dash ms-auto box-shadow-secondary">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="fill-white"
-                                                enable-background="new 0 0 24 24" viewBox="0 0 24 24">
-                                                <path
-                                                    d="M19.5,7H16V5.9169922c0-2.2091064-1.7908325-4-4-4s-4,1.7908936-4,4V7H4.5C4.4998169,7,4.4996338,7,4.4993896,7C4.2234497,7.0001831,3.9998169,7.223999,4,7.5V19c0.0018311,1.6561279,1.3438721,2.9981689,3,3h10c1.6561279-0.0018311,2.9981689-1.3438721,3-3V7.5c0-0.0001831,0-0.0003662,0-0.0006104C19.9998169,7.2234497,19.776001,6.9998169,19.5,7z M9,5.9169922c0-1.6568604,1.3431396-3,3-3s3,1.3431396,3,3V7H9V5.9169922z M19,19c-0.0014038,1.1040039-0.8959961,1.9985962-2,2H7c-1.1040039-0.0014038-1.9985962-0.8959961-2-2V8h3v2.5C8,10.776123,8.223877,11,8.5,11S9,10.776123,9,10.5V8h6v2.5c0,0.0001831,0,0.0003662,0,0.0005493C15.0001831,10.7765503,15.223999,11.0001831,15.5,11c0.0001831,0,0.0003662,0,0.0006104,0C15.7765503,10.9998169,16.0001831,10.776001,16,10.5V8h3V19z" />
-                                            </svg>
+                                            <span class="text-muted fs-11">of total revenue</span>
                                         </div>
+                                    </div>
+                                    <div class="icon-box bg-primary-transparent">
+                                        <i class="fe fe-bar-chart-2 text-primary fs-22"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex justify-content-between text-center small">
+                                    <div><span class="text-muted">This
+                                            Month</span><br><strong>${{ number_format($revenueStats['monthlyAdminFees'], 2) }}</strong>
+                                    </div>
+                                    <div><span class="text-muted">Paid to
+                                            Directors</span><br><strong>${{ number_format($revenueStats['totalDirectorAmount'], 2) }}</strong>
+                                    </div>
+                                    <div><span
+                                            class="text-muted">Discounts</span><br><strong>${{ number_format($revenueStats['totalDiscountGiven'], 2) }}</strong>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Game Slots Card -->
-                    <div class="col-lg-6 col-sm-12 col-md-6 col-xl-3">
-                        <div class="card overflow-hidden">
+                    {{-- Transactions --}}
+                    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12">
+                        <div class="card financial-card">
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col">
-                                        <h3 class="mb-2 fw-semibold">{{ number_format($gameSlotStats['total']) }}</h3>
-                                        <p class="text-muted fs-13 mb-0">Game Slots</p>
-                                        <p class="text-muted mb-0 mt-2 fs-12">
+                                <div class="d-flex align-items-start justify-content-between">
+                                    <div>
+                                        <p class="mb-1 text-muted fs-13">Transactions</p>
+                                        <h2 class="mb-0 fw-bold text-warning">
+                                            {{ number_format($revenueStats['totalTransactions']) }}</h2>
+                                        <div class="mt-2 d-flex align-items-center gap-2">
                                             <span
-                                                class="icn-box {{ $gameSlotStats['growth_percentage'] >= 0 ? 'text-success' : 'text-danger' }} fw-semibold fs-13 me-1">
-                                                <i
-                                                    class='fa fa-long-arrow-{{ $gameSlotStats['growth_percentage'] >= 0 ? 'up' : 'down' }}'></i>
-                                                {{ abs($gameSlotStats['growth_percentage']) }}%
+                                                class="badge bg-warning-transparent text-warning d-inline-flex align-items-center gap-1 px-2 py-1 fs-11">
+                                                <i class="fe fe-check-circle lh-1"></i>
+                                                <span>{{ $paymentSuccessRate['rate'] }}% Success</span>
                                             </span>
-                                            since last week
-                                        </p>
-                                    </div>
-                                    <div class="col col-auto top-icn dash">
-                                        <div class="counter-icon bg-info dash ms-auto box-shadow-info">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="fill-white"
-                                                enable-background="new 0 0 24 24" viewBox="0 0 24 24">
-                                                <path
-                                                    d="M7.5,12C7.223877,12,7,12.223877,7,12.5v5.0005493C7.0001831,17.7765503,7.223999,18.0001831,7.5,18h0.0006104C7.7765503,17.9998169,8.0001831,17.776001,8,17.5v-5C8,12.223877,7.776123,12,7.5,12z M19,2H5C3.3438721,2.0018311,2.0018311,3.3438721,2,5v14c0.0018311,1.6561279,1.3438721,2.9981689,3,3h14c1.6561279-0.0018311,2.9981689-1.3438721,3-3V5C21.9981689,3.3438721,20.6561279,2.0018311,19,2z M21,19c-0.0014038,1.1040039-0.8959961,1.9985962-2,2H5c-1.1040039-0.0014038-1.9985962-0.8959961-2-2V5c0.0014038-1.1040039,0.8959961-1.9985962,2-2h14c1.1040039,0.0014038,1.9985962,0.8959961,2,2V19z M12,6c-0.276123,0-0.5,0.223877-0.5,0.5v11.0005493C11.5001831,17.7765503,11.723999,18.0001831,12,18h0.0006104c0.2759399-0.0001831,0.4995728-0.223999,0.4993896-0.5v-11C12.5,6.223877,12.276123,6,12,6z M16.5,10c-0.276123,0-0.5,0.223877-0.5,0.5v7.0005493C16.0001831,17.7765503,16.223999,18.0001831,16.5,18h0.0006104C16.7765503,17.9998169,17.0001831,17.776001,17,17.5v-7C17,10.223877,16.776123,10,16.5,10z" />
-                                            </svg>
+                                            <span class="text-muted fs-11">{{ $paymentStats['totalAttempts'] }} total
+                                                attempts</span>
                                         </div>
+                                    </div>
+                                    <div class="icon-box bg-warning-transparent">
+                                        <i class="fe fe-credit-card text-warning fs-22"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex justify-content-between text-center small">
+                                    <div><span class="text-muted">This
+                                            Month</span><br><strong>{{ number_format($revenueStats['monthlyTransactions']) }}</strong>
+                                    </div>
+                                    <div><span class="text-muted">Failed</span><br><strong
+                                            class="text-danger">{{ number_format($paymentStats['failedAttempts']) }}</strong>
+                                    </div>
+                                    <div><span class="text-muted">Pending</span><br><strong
+                                            class="text-warning">{{ number_format($paymentStats['pendingAttempts']) }}</strong>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Revenue Card -->
-                    <div class="col-lg-6 col-sm-12 col-md-6 col-xl-3">
-                        <div class="card overflow-hidden">
+                    {{-- Coupons / Discounts --}}
+                    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12">
+                        <div class="card financial-card">
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col">
-                                        <h3 class="mb-2 fw-semibold">${{ number_format($revenue['this_month'], 2) }}</h3>
-                                        <p class="text-muted fs-13 mb-0">Monthly Revenue</p>
-                                        <p class="text-muted mb-0 mt-2 fs-12">
+                                <div class="d-flex align-items-start justify-content-between">
+                                    <div>
+                                        <p class="mb-1 text-muted fs-13">Coupons &amp; Discounts</p>
+                                        <h2 class="mb-0 fw-bold text-info">
+                                            ${{ number_format($couponStats['totalDiscountGiven'], 2) }}</h2>
+                                        <div class="mt-2 d-flex align-items-center gap-2">
                                             <span
-                                                class="icn-box {{ $revenue['growth_percentage'] >= 0 ? 'text-success' : 'text-danger' }} fw-semibold fs-13 me-1">
-                                                <i
-                                                    class='fa fa-long-arrow-{{ $revenue['growth_percentage'] >= 0 ? 'up' : 'down' }}'></i>
-                                                {{ abs($revenue['growth_percentage']) }}%
+                                                class="badge bg-info-transparent text-info d-inline-flex align-items-center gap-1 px-2 py-1 fs-11">
+                                                <i class="fe fe-tag lh-1"></i>
+                                                <span>{{ number_format($couponStats['totalUsed']) }} uses</span>
                                             </span>
-                                            since last month
-                                        </p>
-                                    </div>
-                                    <div class="col col-auto top-icn dash">
-                                        <div class="counter-icon bg-warning dash ms-auto box-shadow-warning">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="fill-white"
-                                                enable-background="new 0 0 24 24" viewBox="0 0 24 24">
-                                                <path
-                                                    d="M9,10h2.5c0.276123,0,0.5-0.223877,0.5-0.5S11.776123,9,11.5,9H10V8c0-0.276123-0.223877-0.5-0.5-0.5S9,7.723877,9,8v1c-1.1045532,0-2,0.8954468-2,2s0.8954468,2,2,2h1c0.5523071,0,1,0.4476929,1,1s-0.4476929,1-1,1H7.5C7.223877,15,7,15.223877,7,15.5S7.223877,16,7.5,16H9v1.0005493C9.0001831,17.2765503,9.223999,17.5001831,9.5,17.5h0.0006104C9.7765503,17.4998169,10.0001831,17.276001,10,17v-1c1.1045532,0,2-0.8954468,2-2s-0.8954468-2-2-2H9c-0.5523071,0-1-0.4476929-1-1S8.4476929,10,9,10z M21.5,12H17V2.5c0.000061-0.0875244-0.0228882-0.1735229-0.0665283-0.2493896c-0.1375732-0.2393188-0.4431152-0.3217773-0.6824951-0.1842041l-3.2460327,1.8603516L9.7481079,2.0654297c-0.1536865-0.0878906-0.3424072-0.0878906-0.4960938,0l-3.256897,1.8613281L2.7490234,2.0664062C2.6731567,2.0227661,2.5871582,1.9998779,2.4996338,1.9998779C2.2235718,2.000061,1.9998779,2.223938,2,2.5v17c0.0012817,1.380188,1.119812,2.4987183,2.5,2.5H19c1.6561279-0.0018311,2.9981689-1.3438721,3-3v-6.5006104C21.9998169,12.2234497,21.776001,11.9998169,21.5,12z M4.5,21c-0.828064-0.0009155-1.4990845-0.671936-1.5-1.5V3.3623047l2.7412109,1.5712891c0.1575928,0.0872192,0.348877,0.0875854,0.5068359,0.0009766L9.5,3.0761719l3.2519531,1.8583984c0.157959,0.0866089,0.3492432,0.0862427,0.5068359-0.0009766L16,3.3623047V19c0.0008545,0.7719116,0.3010864,1.4684448,0.7803345,2H4.5z M21,19c0,1.1045532-0.8954468,2-2,2s-2-0.8954468-2-2v-6h4V19z" />
-                                            </svg>
+                                            <span class="text-muted fs-11">{{ $couponStats['active'] }} active
+                                                coupons</span>
                                         </div>
+                                    </div>
+                                    <div class="icon-box bg-info-transparent">
+                                        <i class="fe fe-tag text-info fs-22"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex justify-content-between text-center small">
+                                    <div><span class="text-muted">Total
+                                            Coupons</span><br><strong>{{ number_format($couponStats['total']) }}</strong>
+                                    </div>
+                                    <div><span class="text-muted">Active</span><br><strong
+                                            class="text-success">{{ number_format($couponStats['active']) }}</strong></div>
+                                    <div><span class="text-muted">Orders w/
+                                            Coupon</span><br><strong>{{ number_format($couponStats['couponsUsed']) }}</strong>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- ROW-1 END-->
+                <!-- END ROW 1 -->
 
-                <!-- ROW-2 -->
+                <!-- ============================================================ -->
+                <!--  ROW 2: OPERATIONAL KPIs                                     -->
+                <!-- ============================================================ -->
                 <div class="row">
-                    <!-- Revenue By Channel -->
-                    <div class="col-sm-12 col-md-12 col-xl-4 col-lg-6">
-                        <div class="row">
-                            <div class="col-lg-12 col-xl-12 col-md-6 col-sm-12">
-                                <div class="card">
-                                    <div class="card-body pb-2">
-                                        <div class="title-head mb-3">
-                                            <h3 class="mb-5 card-title">Camp Status Distribution</h3>
-                                            <div class="storage-percent">
-                                                <div class="progress fileprogress h-auto ps-0 shadow1">
-                                                    @php
-                                                        $total =
-                                                            $campStats['upcoming'] +
-                                                            $campStats['ongoing'] +
-                                                            $campStats['completed'];
-                                                        $upcomingPercent =
-                                                            $total > 0 ? ($campStats['upcoming'] / $total) * 100 : 0;
-                                                        $ongoingPercent =
-                                                            $total > 0 ? ($campStats['ongoing'] / $total) * 100 : 0;
-                                                        $completedPercent =
-                                                            $total > 0 ? ($campStats['completed'] / $total) * 100 : 0;
-                                                    @endphp
-                                                    <span class="progress-bar progress-bar-xs bg-primary" role="progressbar"
-                                                        style="width: {{ $upcomingPercent }}%"></span>
-                                                    <span class="progress-bar progress-bar-xs bg-success" role="progressbar"
-                                                        style="width: {{ $ongoingPercent }}%"></span>
-                                                    <span class="progress-bar progress-bar-xs bg-secondary"
-                                                        role="progressbar" style="width: {{ $completedPercent }}%"></span>
-                                                </div>
-                                                <div class="remaining-storage">
-                                                    <div class="text-muted fs-13 mb-1 mt-3">Total Camps Created</div>
-                                                    <div class="fw-semibold fs-14 mb-1 mt-3">
-                                                        {{ number_format($campStats['total']) }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="content-main mt-5">
-                                            <ul class="task-list1 row mx-auto">
-                                                <li class="col-xl-6">
-                                                    <span class="mb-0 fs-13 me-1"><i
-                                                            class="task-icon1 bg-primary me-3"></i>Upcoming</span>
-                                                    <span class="text-primary fw-semibold fs-12">
-                                                        <span class="">({{ $campStats['upcoming'] }})</span>
-                                                    </span>
-                                                </li>
-                                                <li class="col-xl-6">
-                                                    <span class="mb-0 fs-13 me-1"><i
-                                                            class="task-icon1 bg-success"></i>Ongoing</span>
-                                                    <span class="text-success fw-semibold fs-12">
-                                                        <span class="">({{ $campStats['ongoing'] }})</span>
-                                                    </span>
-                                                </li>
-                                                <li class="col-xl-6">
-                                                    <span class="mb-0 fs-13 me-1"><i
-                                                            class="task-icon1 bg-secondary"></i>Completed</span>
-                                                    <span class="text-secondary fw-semibold fs-12">
-                                                        <span class="">({{ $campStats['completed'] }})</span>
-                                                    </span>
-                                                </li>
-                                                <li class="col-xl-6 mb-xl-0">
-                                                    <span class="mb-0 fs-13 me-1"><i
-                                                            class="task-icon1 bg-info"></i>Active</span>
-                                                    <span class="text-info fw-semibold fs-12">
-                                                        <span class="">({{ $campStats['active'] }})</span>
-                                                    </span>
-                                                </li>
-                                            </ul>
-                                        </div>
+                    {{-- Users --}}
+                    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12">
+                        <div class="card operational-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="icon-box me-3 bg-primary-transparent">
+                                        <i class="fe fe-users text-primary fs-20"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-0 fw-bold">{{ number_format($userStats['total']) }}</h3>
+                                        <p class="mb-0 text-muted fs-13">Total Users</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <span
+                                            class="badge {{ $userStats['growth'] >= 0 ? 'bg-success-transparent text-success' : 'bg-danger-transparent text-danger' }} d-inline-flex align-items-center gap-1 px-2 py-1 fw-normal fs-11">
+                                            <i
+                                                class="fe fe-{{ $userStats['growth'] >= 0 ? 'trending-up' : 'trending-down' }} lh-1"></i>
+                                            <span>{{ abs($userStats['growth']) }}%</span>
+                                        </span>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Game Slot Status -->
-                            <div class="col-xl-12 col-lg-12 col-md-6 col-sm-12">
-                                <div class="card" style="height: 270px; overflow-x: auto">
-                                    <div class="card-header border-bottom">
-                                        <h4 class="card-title fw-semibold">Game Slot Status</h4>
+                                <div class="mt-3 d-flex justify-content-between small text-center">
+                                    <div><span
+                                            class="text-muted fs-11">Directors</span><br><strong>{{ number_format($userStats['directors']) }}</strong>
                                     </div>
-                                    <div class="card-body p-0 customers mt-1">
-                                        <div class="list-group py-1">
-                                            <a href="javascript:void(0);" class="border-0">
-                                                <div class="list-group-item border-0">
-                                                    <div class="media mt-0 align-items-center">
-                                                        <div class="transaction-icon">
-                                                            <i class="fe fe-check text-success"></i>
-                                                        </div>
-                                                        <div class="media-body">
-                                                            <div class="d-flex align-items-center">
-                                                                <div class="mt-0">
-                                                                    <h5 class="mb-1 fs-13 fw-normal text-dark">Available
-                                                                        Slots</h5>
-                                                                    <p class="mb-0 fs-12 text-muted">Ready to be assigned
-                                                                    </p>
-                                                                </div>
-                                                                <span class="ms-auto fs-13">
-                                                                    <span
-                                                                        class="float-end text-dark fw-semibold">{{ $gameSlotStats['available'] }}
-                                                                    </span>
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                            <a href="javascript:void(0);" class="border-0">
-                                                <div class="list-group-item border-0">
-                                                    <div class="media mt-0 align-items-center">
-                                                        <div class="transaction-icon">
-                                                            <i class="fe fe-clock text-warning"></i>
-                                                        </div>
-                                                        <div class="media-body">
-                                                            <div class="d-flex align-items-center">
-                                                                <div class="mt-0">
-                                                                    <h5 class="mb-1 fs-13 fw-normal text-dark">Assigned
-                                                                        Slots</h5>
-                                                                    <p class="mb-0 fs-12 text-muted">Currently in use</p>
-                                                                </div>
-                                                                <span class="ms-auto fs-13">
-                                                                    <span
-                                                                        class="float-end text-dark fw-semibold">{{ $gameSlotStats['assigned'] }}</span>
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                            <a href="javascript:void(0);" class="border-0">
-                                                <div class="list-group-item border-0">
-                                                    <div class="media mt-0 align-items-center">
-                                                        <div class="transaction-icon">
-                                                            <i class="fe fe-check-circle text-info"></i>
-                                                        </div>
-                                                        <div class="media-body">
-                                                            <div class="d-flex align-items-center">
-                                                                <div class="mt-0">
-                                                                    <h5 class="mb-1 fs-13 fw-normal text-dark">Completed
-                                                                        Slots</h5>
-                                                                    <p class="mb-0 fs-12 text-muted">Finished games</p>
-                                                                </div>
-                                                                <span class="ms-auto fs-13">
-                                                                    <span
-                                                                        class="float-end text-dark fw-semibold">{{ $gameSlotStats['completed'] }}</span>
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                            <a href="javascript:void(0);" class="border-0">
-                                                <div class="list-group-item border-0">
-                                                    <div class="media mt-0 align-items-center">
-                                                        <div class="transaction-icon">
-                                                            <i class="fe fe-x text-danger"></i>
-                                                        </div>
-                                                        <div class="media-body">
-                                                            <div class="d-flex align-items-center">
-                                                                <div class="mt-0">
-                                                                    <h5 class="mb-1 fs-13 fw-normal text-dark">Blocked
-                                                                        Slots</h5>
-                                                                    <p class="mb-0 fs-12 text-muted">Not available</p>
-                                                                </div>
-                                                                <span class="ms-auto fs-13">
-                                                                    <span
-                                                                        class="float-end text-dark fw-semibold">{{ $gameSlotStats['blocked'] }}</span>
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </div>
+                                    <div><span
+                                            class="text-muted fs-11">Referees</span><br><strong>{{ number_format($userStats['referees']) }}</strong>
+                                    </div>
+                                    <div><span
+                                            class="text-muted fs-11">Evaluators</span><br><strong>{{ number_format($userStats['evaluators']) }}</strong>
+                                    </div>
+                                    <div><span class="text-muted fs-11">Active</span><br><strong
+                                            class="text-success">{{ number_format($userStats['active']) }}</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Camps --}}
+                    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12">
+                        <div class="card operational-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="icon-box me-3 bg-secondary-transparent">
+                                        <i class="fe fe-flag text-secondary fs-20"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-0 fw-bold">{{ number_format($campStats['total']) }}</h3>
+                                        <p class="mb-0 text-muted fs-13">Total Camps</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <span
+                                            class="badge {{ $campStats['growth'] >= 0 ? 'bg-success-transparent text-success' : 'bg-danger-transparent text-danger' }} d-inline-flex align-items-center gap-1 px-2 py-1 fw-normal fs-11">
+                                            <i
+                                                class="fe fe-{{ $campStats['growth'] >= 0 ? 'trending-up' : 'trending-down' }} lh-1"></i>
+                                            <span>{{ abs($campStats['growth']) }}%</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex justify-content-between small text-center">
+                                    <div><span class="text-muted fs-11">Active</span><br><strong
+                                            class="text-success">{{ number_format($campStats['active']) }}</strong></div>
+                                    <div><span class="text-muted fs-11">Upcoming</span><br><strong
+                                            class="text-primary">{{ number_format($campStats['upcoming']) }}</strong>
+                                    </div>
+                                    <div><span class="text-muted fs-11">Ongoing</span><br><strong
+                                            class="text-warning">{{ number_format($campStats['ongoing']) }}</strong></div>
+                                    <div><span class="text-muted fs-11">Completed</span><br><strong
+                                            class="text-secondary">{{ number_format($campStats['completed']) }}</strong>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Monthly Camps Chart -->
-                    <div class="col-sm-12 col-md-12 col-lg-6 col-xl-8">
-                        <div class="card" style="height: min-content">
-                            <div class="card-header border-bottom">
-                                <h3 class="card-title">Monthly Camps Trend</h3>
-                                <div class="ms-auto">
-                                    <div class="btn-group p-0 ms-auto">
-                                        <button class="btn btn-primary-light btn-sm"
-                                            type="button">{{ date('Y') }}</button>
+                    {{-- Game Slots --}}
+                    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12">
+                        <div class="card operational-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="icon-box me-3 bg-info-transparent">
+                                        <i class="fe fe-grid text-info fs-20"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-0 fw-bold">{{ number_format($gameSlotStats['total']) }}</h3>
+                                        <p class="mb-0 text-muted fs-13">Game Slots</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <span
+                                            class="badge bg-info-transparent text-info d-inline-flex align-items-center gap-1 px-2 py-1 fw-normal fs-11">
+                                            <i class="fe fe-percent lh-1"></i>
+                                            <span>{{ $gameSlotStats['utilizationRate'] }}% utilized</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex justify-content-between small text-center">
+                                    <div><span class="text-muted fs-11">Available</span><br><strong
+                                            class="text-success">{{ number_format($gameSlotStats['available']) }}</strong>
+                                    </div>
+                                    <div><span class="text-muted fs-11">Assigned</span><br><strong
+                                            class="text-primary">{{ number_format($gameSlotStats['assigned']) }}</strong>
+                                    </div>
+                                    <div><span
+                                            class="text-muted fs-11">Completed</span><br><strong>{{ number_format($gameSlotStats['completed']) }}</strong>
+                                    </div>
+                                    <div><span class="text-muted fs-11">Blocked</span><br><strong
+                                            class="text-danger">{{ number_format($gameSlotStats['blocked']) }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Referees & Schedules --}}
+                    <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12">
+                        <div class="card operational-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="icon-box me-3 bg-success-transparent">
+                                        <i class="fe fe-user-check text-success fs-20"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-0 fw-bold">{{ number_format($refereeStats['totalRegistrations']) }}
+                                        </h3>
+                                        <p class="mb-0 text-muted fs-13">Referee Registrations</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <span
+                                            class="badge bg-success-transparent text-success d-inline-flex align-items-center gap-1 px-2 py-1 fw-normal fs-11">
+                                            <i class="fe fe-check lh-1"></i>
+                                            <span>{{ $refereeStats['checkedIn'] }} checked in</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex justify-content-between small text-center">
+                                    <div><span
+                                            class="text-muted fs-11">Schedules</span><br><strong>{{ number_format($scheduleStats['total']) }}</strong>
+                                    </div>
+                                    <div><span class="text-muted fs-11">Published</span><br><strong
+                                            class="text-success">{{ number_format($scheduleStats['published']) }}</strong>
+                                    </div>
+                                    <div><span class="text-muted fs-11">Draft</span><br><strong
+                                            class="text-warning">{{ number_format($scheduleStats['draft']) }}</strong>
+                                    </div>
+                                    <div><span
+                                            class="text-muted fs-11">Crews</span><br><strong>{{ number_format($crewStats['total']) }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- END ROW 2 -->
+
+                <!-- ============================================================ -->
+                <!--  ROW 3: CHARTS - Revenue & Camps                             -->
+                <!-- ============================================================ -->
+                <div class="row mb-4">
+                    {{-- Revenue Trend Chart --}}
+                    <div class="col-xl-8 col-lg-12 col-md-12">
+                        <div class="card chart-card h-100 w-100">
+                            <div class="card-header border-bottom d-flex align-items-center">
+                                <h4 class="card-title fw-semibold mb-0">
+                                    <i class="fe fe-trending-up me-2 text-success"></i>Revenue Trend
+                                </h4>
+                                <div class="ms-auto d-flex gap-3">
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span class="d-inline-block rounded-circle"
+                                            style="width:10px;height:10px;background:#0d6efd;"></span>
+                                        <span class="text-muted fs-11">Revenue</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span class="d-inline-block rounded-circle"
+                                            style="width:10px;height:10px;background:#20c997;"></span>
+                                        <span class="text-muted fs-11">Admin Fee</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span class="d-inline-block rounded-circle"
+                                            style="width:10px;height:10px;background:#dc3545;"></span>
+                                        <span class="text-muted fs-11">Discounts</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="card-body">
-                                <div class="sales-stats d-flex">
-                                    <div>
-                                        <div class="text-muted fs-13">Total Camps This Year
-                                            <span
-                                                class="p-2 br-5 {{ $campStats['growth_percentage'] >= 0 ? 'text-success' : 'text-danger' }}">
-                                                <i
-                                                    class="fe fe-arrow-{{ $campStats['growth_percentage'] >= 0 ? 'up' : 'down' }}-right"></i>
-                                            </span>
-                                        </div>
-                                        <h3 class="fw-semibold">{{ number_format($campStats['total']) }}</h3>
-                                        <div>
-                                            <span
-                                                class="{{ $campStats['growth_percentage'] >= 0 ? 'text-success' : 'text-danger' }} fs-13 me-1">
-                                                {{ abs($campStats['growth_percentage']) }}%
-                                            </span>
-                                            {{ $campStats['growth_percentage'] >= 0 ? 'Increase' : 'Decrease' }} Since Last
-                                            Month
-                                        </div>
+                                <div class="chart-container" style="position:relative;height:290px;">
+                                    <canvas id="revenueChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Camp Status & Sports Distribution --}}
+                    <div class="col-xl-4 col-lg-12 col-md-12">
+                        <div class="card chart-card h-100 w-100">
+                            <div class="card-header border-bottom">
+                                <h4 class="card-title fw-semibold mb-0">
+                                    <i class="fe fe-pie-chart me-2 text-primary"></i>Camp Status
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="position:relative;height:200px;margin-bottom:10px;">
+                                    <canvas id="campStatusChart"></canvas>
+                                </div>
+                                <div class="d-flex justify-content-center gap-3 flex-wrap small">
+                                    <div><span class="d-inline-block rounded-circle me-1"
+                                            style="width:10px;height:10px;background:#0d6efd;"></span> Upcoming
+                                        <strong>{{ number_format($campStats['upcoming']) }}</strong>
+                                    </div>
+                                    <div><span class="d-inline-block rounded-circle me-1"
+                                            style="width:10px;height:10px;background:#ffc107;"></span> Ongoing
+                                        <strong>{{ number_format($campStats['ongoing']) }}</strong>
+                                    </div>
+                                    <div><span class="d-inline-block rounded-circle me-1"
+                                            style="width:10px;height:10px;background:#6c757d;"></span> Completed
+                                        <strong>{{ number_format($campStats['completed']) }}</strong>
                                     </div>
                                 </div>
-                                <div style="position: relative; height: 300px; margin-top: 20px;">
+                                <hr>
+                                <h5 class="fw-semibold fs-14 mb-3">
+                                    <i class="fe fe-baseball me-2 text-info"></i>Sports Distribution
+                                </h5>
+                                @forelse($sportsStats['campsBySport'] as $sport)
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <small class="text-muted">{{ $sport->sports_type_name }}</small>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress" style="width:100px;height:6px;">
+                                                @php
+                                                    $maxCount = max($sportsStats['campsBySport']->max('total') ?? 0, 1);
+                                                    $pct = ($sport->total / $maxCount) * 100;
+                                                @endphp
+                                                <div class="progress-bar bg-info" role="progressbar"
+                                                    style="width:{{ $pct }}%"></div>
+                                            </div>
+                                            <strong class="fs-12">{{ $sport->total }}</strong>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <p class="text-muted text-center fs-13">No sports data</p>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- END ROW 3 -->
+
+                <!-- ============================================================ -->
+                <!--  ROW 4: USER GROWTH & CAMPS MONTHLY                          -->
+                <!-- ============================================================ -->
+                <div class="row">
+                    {{-- Monthly Camps Created --}}
+                    <div class="col-xl-6 col-lg-12 col-md-12">
+                        <div class="card chart-card">
+                            <div class="card-header border-bottom">
+                                <h4 class="card-title fw-semibold mb-0">
+                                    <i class="fe fe-bar-chart me-2 text-secondary"></i>Monthly Camps Created
+                                    <span class="text-muted fs-12 fw-normal ms-2">{{ date('Y') }}</span>
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="position:relative;height:240px;">
                                     <canvas id="monthlyCampsChart"></canvas>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <!-- ROW-2 END -->
 
-                <!-- ROW-3 -->
-                <div class="row">
-                    <!-- Daily Activity -->
-                    {{-- <div class="col-xl-4 col-md-12">
-                        <div class="card" style="height: min-content">
+                    {{-- User Growth Trend --}}
+                    <div class="col-xl-6 col-lg-12 col-md-12">
+                        <div class="card chart-card">
                             <div class="card-header border-bottom">
-                                <h4 class="card-title fw-semibold">Recent Activity</h4>
+                                <h4 class="card-title fw-semibold mb-0">
+                                    <i class="fe fe-users me-2 text-primary"></i>User Growth Trend
+                                </h4>
                             </div>
-                            <div class="card-body pb-0">
-                                <ul class="task-list">
-                                    @forelse($dailyActivities as $activity)
-                                        <li>
-                                            <i class="task-icon bg-{{ $activity['color'] }}"></i>
-                                            <p class="fw-semibold mb-1 fs-13">
-                                                {{ $activity['title'] }}
-                                                <span
-                                                    class="text-muted fs-12 ms-2 ms-auto float-end">{{ $activity['time'] }}</span>
-                                            </p>
-                                            <p class="text-muted fs-12">{{ $activity['description'] }}</p>
-                                        </li>
-                                    @empty
-                                        <li>
-                                            <p class="text-muted text-center">No recent activities</p>
-                                        </li>
-                                    @endforelse
-                                </ul>
+                            <div class="card-body">
+                                <div class="chart-container" style="position:relative;height:240px;">
+                                    <canvas id="userGrowthChart"></canvas>
+                                </div>
                             </div>
                         </div>
-                    </div> --}}
+                    </div>
+                </div>
+                <!-- END ROW 4 -->
 
-                    <!-- Recent Camps Table -->
-                    <div class="col-xl-12 col-md-12">
-                        <div class="card">
-                            <div class="card-header border-bottom">
-                                <h4 class="card-title fw-semibold">Recent Camps</h4>
-                                <a href="{{ route('admin.camps.index') }}" class="ms-auto">View All</a>
+                <!-- ============================================================ -->
+                <!--  ROW 5: TOP CAMPS & RECENT PAYMENTS                          -->
+                <!-- ============================================================ -->
+                <div class="row mb-4">
+                    {{-- Top Camps by Revenue --}}
+                    <div class="col-xl-6 col-lg-12 col-md-12">
+                        <div class="card h-100 w-100">
+                            <div class="card-header border-bottom d-flex align-items-center">
+                                <h4 class="card-title fw-semibold mb-0">
+                                    <i class="fe fe-award me-2 text-warning"></i>Top Camps by Revenue
+                                </h4>
+                                <a href="{{ route('admin.camps.index') }}"
+                                    class="ms-auto d-inline-flex align-items-center text-primary fs-12 text-decoration-none">
+                                    <span>View All Camps</span>
+                                    <i class="fe fe-arrow-right ms-1 lh-1"></i>
+                                </a>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
-                                    <table class="table text-nowrap mb-0">
-                                        <thead>
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
                                             <tr>
-                                                <th class="border-bottom-0">Camp Name</th>
-                                                <th class="border-bottom-0">Sport</th>
-                                                <th class="border-bottom-0">Location</th>
-                                                <th class="border-bottom-0">Status</th>
+                                                <th class="border-bottom-0 fs-12">#</th>
+                                                <th class="border-bottom-0 fs-12">Camp</th>
+                                                <th class="border-bottom-0 fs-12">Sport</th>
+                                                <th class="border-bottom-0 fs-12 text-end">Revenue</th>
+                                                <th class="border-bottom-0 fs-12 text-end">Fees</th>
+                                                <th class="border-bottom-0 fs-12 text-end">Payments</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @forelse($recentCamps as $camp)
+                                            @forelse($topCamps as $i => $camp)
                                                 <tr>
+                                                    <td class="fs-12">{{ $i + 1 }}</td>
                                                     <td>
                                                         <div class="d-flex align-items-center">
+                                                            <div class="me-2">
+                                                                <div class="avatar-xs rounded bg-{{ ['primary', 'success', 'warning', 'info', 'secondary'][$i % 5] }}-transparent d-flex align-items-center justify-content-center fw-bold text-{{ ['primary', 'success', 'warning', 'info', 'secondary'][$i % 5] }}"
+                                                                    style="width:32px;height:32px;">
+                                                                    {{ strtoupper(substr($camp['camp_name'] ?? 'C', 0, 1)) }}
+                                                                </div>
+                                                            </div>
                                                             <div>
-                                                                <h6 class="mb-0 fs-14">{{ $camp->camp_name }}</h6>
+                                                                <div class="fw-semibold fs-13 text-truncate"
+                                                                    style="max-width:140px;">
+                                                                    {{ $camp['camp_name'] ?? 'N/A' }}</div>
                                                                 <small
-                                                                    class="text-muted">{{ \Carbon\Carbon::parse($camp->created_at)->format('M d, Y') }}</small>
+                                                                    class="text-muted">{{ Str::limit($camp['location'] ?? '', 18) }}</small>
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td class="fs-13">{{ $camp->sports_type_name ?? 'N/A' }}</td>
-                                                    <td class="fs-13">{{ Str::limit($camp->location, 20) }}</td>
-                                                    <td>
-                                                        <span
-                                                            class="badge bg-{{ $camp->status == 'active' ? 'success' : 'secondary' }}">
-                                                            {{ ucfirst($camp->status) }}
-                                                        </span>
+                                                    <td><span
+                                                            class="badge bg-info-transparent text-info fs-11">{{ $camp['sports_type_name'] ?? 'N/A' }}</span>
+                                                    </td>
+                                                    <td class="text-end fw-semibold text-success">
+                                                        ${{ number_format($camp['total_revenue'] ?? 0, 2) }}</td>
+                                                    <td class="text-end text-primary">
+                                                        ${{ number_format($camp['total_fees'] ?? 0, 2) }}</td>
+                                                    <td class="text-end">{{ $camp['payment_count'] ?? 0 }}</td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="6" class="text-center text-muted py-4">
+                                                        <i class="fe fe-inbox fs-20 d-block mb-2"></i>
+                                                        No payment data yet
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Recent Payments --}}
+                    <div class="col-xl-6 col-lg-12 col-md-12">
+                        <div class="card h-100 w-100">
+                            <div class="card-header border-bottom d-flex align-items-center">
+                                <h4 class="card-title fw-semibold mb-0">
+                                    <i class="fe fe-clock me-2 text-success"></i>Recent Payments
+                                </h4>
+                                <a href="{{ route('admin.monitor.index') }}"
+                                    class="ms-auto d-inline-flex align-items-center text-primary fs-12 text-decoration-none">
+                                    <span>Payment Monitor</span>
+                                    <i class="fe fe-arrow-right ms-1 lh-1"></i>
+                                </a>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="border-bottom-0 fs-12">Camp</th>
+                                                <th class="border-bottom-0 fs-12">Referee</th>
+                                                <th class="border-bottom-0 fs-12 text-end">Amount</th>
+                                                <th class="border-bottom-0 fs-12 text-end">Fee</th>
+                                                <th class="border-bottom-0 fs-12 text-end">Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse($recentPayments as $payment)
+                                                <tr>
+                                                    <td class="fs-13">
+                                                        {{ Str::limit($payment['camp']['camp_name'] ?? 'N/A', 20) }}</td>
+                                                    <td class="fs-13">
+                                                        @if ($payment['referee'])
+                                                            {{ $payment['referee']['first_name'] ?? '' }}
+                                                            {{ $payment['referee']['last_name'] ?? '' }}
+                                                        @else
+                                                            <span class="text-muted">N/A</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-end fw-semibold">
+                                                        ${{ number_format($payment['amount'] ?? 0, 2) }}</td>
+                                                    <td class="text-end text-primary">
+                                                        ${{ number_format($payment['admin_fee'] ?? 0, 2) }}</td>
+                                                    <td class="text-end text-muted fs-12">
+                                                        {{ isset($payment['paid_at']) ? \Carbon\Carbon::parse($payment['paid_at'])->format('M d, H:i') : '-' }}
                                                     </td>
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="4" class="text-center text-muted">No recent camps</td>
+                                                    <td colspan="5" class="text-center text-muted py-4">
+                                                        <i class="fe fe-credit-card fs-20 d-block mb-2"></i>
+                                                        No payments yet
+                                                    </td>
                                                 </tr>
                                             @endforelse
                                         </tbody>
@@ -455,159 +613,616 @@
                         </div>
                     </div>
                 </div>
-                <!-- ROW-3 END -->
+                <!-- END ROW 5 -->
+
+                <!-- ============================================================ -->
+                <!--  ROW 6: GAME SLOT STATUS & RECENT ACTIVITY                   -->
+                <!-- ============================================================ -->
+                <div class="row mb-4">
+                    {{-- Game Slot Status Breakdown --}}
+                    {{-- <div class="col-xl-4 col-lg-6 col-md-12">
+                        <div class="card">
+                            <div class="card-header border-bottom">
+                                <h4 class="card-title fw-semibold mb-0">
+                                    <i class="fe fe-layers me-2 text-info"></i>Game Slot Status
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="position:relative;height:230px;">
+                                    <canvas id="gameSlotChart"></canvas>
+                                </div>
+                                <div class="mt-3 d-flex justify-content-around small text-center">
+                                    <div>
+                                        <span class="d-inline-block rounded-circle me-1"
+                                            style="width:10px;height:10px;background:#198754;"></span>
+                                        Available <br><strong>{{ number_format($gameSlotStats['available']) }}</strong>
+                                    </div>
+                                    <div>
+                                        <span class="d-inline-block rounded-circle me-1"
+                                            style="width:10px;height:10px;background:#0d6efd;"></span>
+                                        Assigned <br><strong>{{ number_format($gameSlotStats['assigned']) }}</strong>
+                                    </div>
+                                    <div>
+                                        <span class="d-inline-block rounded-circle me-1"
+                                            style="width:10px;height:10px;background:#6c757d;"></span>
+                                        Completed <br><strong>{{ number_format($gameSlotStats['completed']) }}</strong>
+                                    </div>
+                                    <div>
+                                        <span class="d-inline-block rounded-circle me-1"
+                                            style="width:10px;height:10px;background:#dc3545;"></span>
+                                        Blocked <br><strong>{{ number_format($gameSlotStats['blocked']) }}</strong>
+                                    </div>
+                                </div>
+                                <hr class="my-3">
+                                <div class="d-flex justify-content-between small">
+                                    <span class="text-muted">
+                                        <i class="fe fe-activity me-1"></i>Assignments
+                                    </span>
+                                    <span>
+                                        <strong>{{ number_format($gameSlotStats['totalAssignments']) }}</strong>
+                                        <span class="text-muted ms-2">
+                                            ({{ $gameSlotStats['autoAssignments'] }} auto /
+                                            {{ $gameSlotStats['manualAssignments'] }} manual)
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between small mt-1">
+                                    <span class="text-muted">
+                                        <i class="fe fe-calendar me-1"></i>Today's Slots
+                                    </span>
+                                    <span>
+                                        <strong>{{ number_format($gameSlotStats['todaySlots']) }}</strong>
+                                        <span class="text-success ms-2">({{ $gameSlotStats['todayAssigned'] }}
+                                            assigned)</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div> --}}
+
+                    {{-- Crews & Assignments Summary --}}
+                    <div class="col-xl-3 col-lg-6 col-md-12">
+                        <div class="card h-100 w-100">
+                            <div class="card-header border-bottom">
+                                <h4 class="card-title fw-semibold mb-0">
+                                    <i class="fe fe-users me-2 text-secondary"></i>Crews &amp; Teams
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex gap-4 mb-3">
+                                    <div class="text-center flex-fill p-3 rounded-1 bg-secondary-transparent">
+                                        <h3 class="mb-0 fw-bold">{{ number_format($crewStats['total']) }}</h3>
+                                        <small class="text-muted">Total Crews</small>
+                                    </div>
+                                    <div class="text-center flex-fill p-3 rounded-1 bg-success-transparent">
+                                        <h3 class="mb-0 fw-bold">{{ number_format($crewStats['totalMembers']) }}</h3>
+                                        <small class="text-muted">Total Members</small>
+                                    </div>
+                                    <div class="text-center flex-fill p-3 rounded-1 bg-info-transparent">
+                                        <h3 class="mb-0 fw-bold">{{ $crewStats['avgMembers'] }}</h3>
+                                        <small class="text-muted">Avg / Crew</small>
+                                    </div>
+                                </div>
+                                <h6 class="fw-semibold fs-13 mb-2">Largest Crews</h6>
+                                @forelse($crewStats['largestCrews'] as $crew)
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="d-inline-block rounded-circle bg-primary-transparent p-2">
+                                                <i class="fe fe-users text-primary fs-12"></i>
+                                            </span>
+                                            <span class="fs-13">{{ $crew->name }}</span>
+                                        </div>
+                                        <span class="badge bg-primary-transparent text-primary">{{ $crew->members_count }}
+                                            members</span>
+                                    </div>
+                                @empty
+                                    <p class="text-muted text-center fs-13">No crews created</p>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Recent Activity Timeline --}}
+                    <div class="col-xl-3 col-lg-6 col-md-12">
+                        <div class="card h-100 w-100">
+                            <div class="card-header border-bottom">
+                                <h4 class="card-title fw-semibold mb-0">
+                                    <i class="fe fe-activity me-2 text-warning"></i>Recent Activity
+                                </h4>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="activity-timeline p-3">
+                                    @forelse($dailyActivities as $activity)
+                                        <div class="d-flex align-items-start mb-3 activity-item">
+                                            <div class="me-3 position-relative">
+                                                <div class="activity-dot bg-{{ $activity['color'] }}"></div>
+                                                @if (!$loop->last)
+                                                    <div class="activity-line"></div>
+                                                @endif
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between">
+                                                    <h6 class="mb-0 fs-13 fw-semibold">{{ $activity['title'] }}</h6>
+                                                    <small class="text-muted">{{ $activity['time'] }}</small>
+                                                </div>
+                                                <p class="mb-0 text-muted fs-12">{{ $activity['description'] }}</p>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <div class="text-center text-muted py-4">
+                                            <i class="fe fe-inbox fs-24 d-block mb-2"></i>
+                                            No recent activity
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Schedules Overview --}}
+                    <div class="col-xl-3 col-lg-12 col-md-12">
+                        <div class="card h-100 w-100">
+                            <div class="card-header border-bottom">
+                                <h4 class="card-title fw-semibold mb-0">
+                                    <i class="fe fe-calendar me-2 text-primary"></i>Schedules Overview
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-4 text-center">
+                                        <div class="p-3 rounded-1 bg-primary-transparent">
+                                            <h3 class="mb-0 fw-bold text-primary">
+                                                {{ number_format($scheduleStats['total']) }}</h3>
+                                            <small class="text-muted">Total</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <div class="p-3 rounded-1 bg-success-transparent">
+                                            <h3 class="mb-0 fw-bold text-success">
+                                                {{ number_format($scheduleStats['published']) }}</h3>
+                                            <small class="text-muted">Published</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <div class="p-3 rounded-1 bg-warning-transparent">
+                                            <h3 class="mb-0 fw-bold text-warning">
+                                                {{ number_format($scheduleStats['draft']) }}</h3>
+                                            <small class="text-muted">Draft</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                @if ($scheduleStats['avgGameDuration'])
+                                    <div class="mt-3 d-flex align-items-center gap-2">
+                                        <i class="fe fe-clock text-muted"></i>
+                                        <span class="text-muted fs-13">Average game duration:</span>
+                                        <strong>{{ round($scheduleStats['avgGameDuration']) }} minutes</strong>
+                                    </div>
+                                @endif
+                                <div class="mt-3">
+                                    <div class="progress" style="height:12px;">
+                                        @php $pubPct = $scheduleStats['total'] > 0 ? ($scheduleStats['published'] / $scheduleStats['total']) * 100 : 0; @endphp
+                                        <div class="progress-bar bg-success" role="progressbar"
+                                            style="width:{{ $pubPct }}%">
+                                            {{ $pubPct > 0 ? round($pubPct) . '%' : '' }}</div>
+                                    </div>
+                                    <small class="text-muted">{{ round($pubPct) }}% of schedules published</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Stats Summary Grid --}}
+                    <div class="col-xl-3 col-lg-12 col-md-12">
+                        <div class="card h-100 w-100">
+                            <div class="card-header border-bottom">
+                                <h4 class="card-title fw-semibold mb-0">
+                                    <i class="fe fe-info me-2 text-info"></i>Platform Summary
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-2">
+                                    <div class="col-6 col-md-4">
+                                        <div class="p-2 summary-item">
+                                            <small class="text-muted d-block">Sports Types</small>
+                                            <strong>{{ number_format($sportsStats['total']) }}</strong>
+                                            <small class="text-success d-block">({{ $sportsStats['active'] }}
+                                                active)</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-4">
+                                        <div class="p-2 summary-item">
+                                            <small class="text-muted d-block">Total Courts</small>
+                                            <strong>{{ number_format($campStats['totalCourts']) }}</strong>
+                                            <small class="text-muted d-block">across all camps</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-4">
+                                        <div class="p-2 summary-item">
+                                            <small class="text-muted d-block">Avg Transaction</small>
+                                            <strong>${{ number_format($revenueStats['avgTransactionValue'], 2) }}</strong>
+                                            <small class="text-muted d-block">per payment</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-4">
+                                        <div class="p-2 summary-item">
+                                            <small class="text-muted d-block">Payment Attempts</small>
+                                            <strong>{{ number_format($paymentStats['totalAttempts']) }}</strong>
+                                            <small class="text-success d-block">{{ $paymentSuccessRate['success'] }}
+                                                succeeded</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-4">
+                                        <div class="p-2 summary-item">
+                                            <small class="text-muted d-block">Referees Checked In</small>
+                                            <strong>{{ number_format($refereeStats['checkedIn']) }}</strong>
+                                            <small class="text-muted d-block">of
+                                                {{ number_format($refereeStats['totalRegistrations']) }}</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-4">
+                                        <div class="p-2 summary-item">
+                                            <small class="text-muted d-block">Deleted Users</small>
+                                            <strong>{{ number_format($userStats['deleted']) }}</strong>
+                                            <small class="text-muted d-block">in trash</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- END ROW 6 -->
             </div>
+            <!-- CONTAINER CLOSED -->
         </div>
     </div>
-    <!-- CONTAINER CLOSED -->
+    <!--app-content close-->
 @endsection
 
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
-        // Monthly Camps Line Chart
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const monthlyCampsData = Array(12).fill(0);
-        @foreach ($campStats['monthly'] as $month)
-            monthlyCampsData[{{ $month->month - 1 }}] = {{ $month->count }};
-        @endforeach
+        // Chart defaults
+        Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+        Chart.defaults.font.size = 11;
 
-        const monthlyCampsCtx = document.getElementById('monthlyCampsChart').getContext('2d');
-        new Chart(monthlyCampsCtx, {
-            type: 'line',
-            data: {
-                labels: monthNames,
-                datasets: [{
-                    label: 'Camps Created',
-                    data: monthlyCampsData,
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#0d6efd',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
+        // ============================================================
+        //  1. Revenue Trend (Stacked Bar + Line)
+        // ============================================================
+        const revenueCtx = document.getElementById('revenueChart')?.getContext('2d');
+        if (revenueCtx) {
+            new Chart(revenueCtx, {
+                type: 'bar',
+                data: {
+                    labels: {!! json_encode($monthlyRevenue['labels']) !!},
+                    datasets: [{
+                            label: 'Revenue',
+                            data: {!! json_encode($monthlyRevenue['revenue']) !!},
+                            backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                            borderColor: '#0d6efd',
+                            borderWidth: 1,
+                            borderRadius: 3,
+                            order: 2,
+                        },
+                        {
+                            label: 'Admin Fee',
+                            data: {!! json_encode($monthlyRevenue['fees']) !!},
+                            backgroundColor: 'rgba(32, 201, 151, 0.6)',
+                            borderColor: '#20c997',
+                            borderWidth: 1,
+                            borderRadius: 3,
+                            order: 2,
+                        },
+                        {
+                            label: 'Discounts',
+                            data: {!! json_encode($monthlyRevenue['discounts']) !!},
+                            backgroundColor: 'rgba(220, 53, 69, 0.3)',
+                            borderColor: '#dc3545',
+                            borderWidth: 1,
+                            borderRadius: 3,
+                            order: 2,
+                        },
+                        {
+                            label: 'Transactions',
+                            data: {!! json_encode($monthlyRevenue['transactions']) !!},
+                            type: 'line',
+                            borderColor: '#ffc107',
+                            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#ffc107',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            yAxisID: 'y1',
+                            order: 1,
+                        }
+                    ]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    if (ctx.dataset.label === 'Transactions') {
+                                        return ctx.dataset.label + ': ' + ctx.raw;
+                                    }
+                                    return ctx.dataset.label + ': $' + Number(ctx.raw).toLocaleString('en-US', {
+                                        minimumFractionDigits: 2
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
 
-        // Sports Types Bar Chart
-        const sportsTypeCtx = document.getElementById('sportsTypeChart').getContext('2d');
-        new Chart(sportsTypeCtx, {
-            type: 'bar',
-            data: {
-                labels: {!! json_encode($sportsStats['camps_by_sport']->pluck('sports_type_name')) !!},
-                datasets: [{
-                    label: 'Camps',
-                    data: {!! json_encode($sportsStats['camps_by_sport']->pluck('total')) !!},
-                    backgroundColor: [
-                        '#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545',
-                        '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0'
-                    ],
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
+        // ============================================================
+        //  2. Camp Status (Doughnut)
+        // ============================================================
+        const campStatusCtx = document.getElementById('campStatusChart')?.getContext('2d');
+        if (campStatusCtx) {
+            new Chart(campStatusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Upcoming', 'Ongoing', 'Completed'],
+                    datasets: [{
+                        data: [
+                            {{ $campStats['upcoming'] }},
+                            {{ $campStats['ongoing'] }},
+                            {{ $campStats['completed'] }}
+                        ],
+                        backgroundColor: ['#0d6efd', '#ffc107', '#6c757d'],
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                        hoverOffset: 8,
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        //  3. Game Slot Status (Doughnut)
+        // ============================================================
+        const gameSlotCtx = document.getElementById('gameSlotChart')?.getContext('2d');
+        if (gameSlotCtx) {
+            new Chart(gameSlotCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Available', 'Assigned', 'Completed', 'Blocked'],
+                    datasets: [{
+                        data: [
+                            {{ $gameSlotStats['available'] }},
+                            {{ $gameSlotStats['assigned'] }},
+                            {{ $gameSlotStats['completed'] }},
+                            {{ $gameSlotStats['blocked'] }}
+                        ],
+                        backgroundColor: ['#198754', '#0d6efd', '#6c757d', '#dc3545'],
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                        hoverOffset: 8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        //  4. Monthly Camps (Bar)
+        // ============================================================
+        const monthlyCampsCtx = document.getElementById('monthlyCampsChart')?.getContext('2d');
+        if (monthlyCampsCtx) {
+            new Chart(monthlyCampsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Camps Created',
+                        data: {!! json_encode($monthlyCamps) !!},
+                        backgroundColor: 'rgba(108, 117, 125, 0.7)',
+                        borderColor: '#6c757d',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
+
+        // ============================================================
+        //  5. User Growth (Line)
+        // ============================================================
+        const userGrowthCtx = document.getElementById('userGrowthChart')?.getContext('2d');
+        if (userGrowthCtx) {
+            new Chart(userGrowthCtx, {
+                type: 'line',
+                data: {
+                    labels: {!! json_encode($userGrowth['labels']) !!},
+                    datasets: [{
+                        label: 'New Users',
+                        data: {!! json_encode($userGrowth['data']) !!},
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.08)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#0d6efd',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        //  Live Clock
+        // ============================================================
+        function updateClock() {
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+            const el = document.getElementById('liveClock');
+            if (el) el.innerHTML = '<i class="fe fe-clock me-1"></i>' + time;
+        }
+        updateClock(); // Call immediately
+        setInterval(updateClock, 30000);
     </script>
 @endpush
 
 @push('styles')
     <style>
-        .counter-icon {
-            width: 60px;
-            height: 60px;
+        /* =========================================================
+                           DASHBOARD STYLES
+                           ========================================================= */
+
+        /* ---- Card Enhancements ---- */
+        .card {
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            transition: all 0.25s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .financial-card .card-body {
+            padding: 1.25rem 1rem;
+        }
+
+        .financial-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .operational-card .card-body {
+            padding: 1rem 1rem;
+        }
+
+        .chart-card .card-body {
+            padding: 1rem 1rem 1.25rem;
+        }
+
+        /* ---- Icon Box ---- */
+        .icon-box {
+            width: 48px;
+            height: 48px;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
         }
 
-        .counter-icon svg {
-            width: 30px;
-            height: 30px;
-        }
-
-        .box-shadow-primary {
-            box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.15);
-        }
-
-        .box-shadow-secondary {
-            box-shadow: 0 0.5rem 1rem rgba(108, 117, 125, 0.15);
-        }
-
-        .box-shadow-info {
-            box-shadow: 0 0.5rem 1rem rgba(13, 202, 240, 0.15);
-        }
-
-        .box-shadow-warning {
-            box-shadow: 0 0.5rem 1rem rgba(255, 193, 7, 0.15);
-        }
-
-        .card {
-            border-radius: 5px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-        }
-
-        .transaction-icon {
-            width: 45px;
-            height: 45px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 15px;
-        }
-
+        /* ---- Badge backgrounds (using theme colors) ---- */
         .bg-success-transparent {
             background-color: rgba(25, 135, 84, 0.1);
-        }
-
-        .bg-warning-transparent {
-            background-color: rgba(255, 193, 7, 0.1);
-        }
-
-        .bg-info-transparent {
-            background-color: rgba(13, 202, 240, 0.1);
         }
 
         .bg-danger-transparent {
@@ -618,34 +1233,207 @@
             background-color: rgba(13, 110, 253, 0.1);
         }
 
+        .bg-warning-transparent {
+            background-color: rgba(255, 193, 7, 0.1);
+        }
+
+        .bg-info-transparent {
+            background-color: rgba(13, 202, 240, 0.1);
+        }
+
         .bg-secondary-transparent {
             background-color: rgba(108, 117, 125, 0.1);
         }
 
-        .task-icon1 {
-            width: 10px;
-            height: 10px;
-            display: inline-block;
-            border-radius: 50%;
+        .bg-purple-transparent {
+            background-color: rgba(102, 16, 242, 0.1);
         }
 
-        .task-icon {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 10px;
+        .text-success-transparent {
+            color: #198754;
         }
 
-        /* Chart Container Fixes */
-        canvas {
-            max-width: 100%;
-            height: auto !important;
+        .text-danger-transparent {
+            color: #dc3545;
         }
 
-        .chart-container {
+        /* ---- Activity Timeline ---- */
+        .activity-item {
             position: relative;
-            width: 100%;
+            padding-left: 4px;
+        }
+
+        .activity-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 2px currentColor;
+            position: relative;
+            z-index: 1;
+        }
+
+        .activity-dot.bg-primary {
+            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.3);
+        }
+
+        .activity-dot.bg-success {
+            box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.3);
+        }
+
+        .activity-dot.bg-info {
+            box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.3);
+        }
+
+        .activity-dot.bg-warning {
+            box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.3);
+        }
+
+        .activity-dot.bg-secondary {
+            box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.3);
+        }
+
+        .activity-dot.bg-danger {
+            box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.3);
+        }
+
+        .activity-line {
+            position: absolute;
+            top: 16px;
+            left: 5.5px;
+            width: 2px;
+            height: calc(100% + 4px);
+            background: rgba(0, 0, 0, 0.06);
+        }
+
+        /* ---- Summary Items ---- */
+        .summary-item {
+            border-radius: 6px;
+            background: #f8f9fa;
+            transition: background 0.2s;
+        }
+
+        .summary-item:hover {
+            background: #f0f1f3;
+        }
+
+        /* ---- Table Enhancements ---- */
+        .table> :not(caption)>*>* {
+            padding: 0.65rem 0.75rem;
+            vertical-align: middle;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.03);
+        }
+
+        /* ---- Avatar mini ---- */
+        .avatar-xs {
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        /* ---- Chart Container ---- */
+        .chart-container canvas {
+            max-width: 100%;
+            height: 100% !important;
+            width: 100% !important;
+        }
+
+        /* ---- Progress bar inside ---- */
+        .progress {
+            background-color: rgba(0, 0, 0, 0.06);
+            border-radius: 10px;
+        }
+
+        /* ---- Badge padding fix ---- */
+        .badge.px-3 {
+            font-weight: 500;
+        }
+
+        /* ---- Status Badges (System Online & Live Clock) ---- */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            transition: all 0.3s ease;
+            cursor: default;
+            user-select: none;
+            border: 1px solid transparent;
+        }
+
+        .status-badge-online {
+            background: linear-gradient(135deg, rgba(25, 135, 84, 0.12), rgba(25, 135, 84, 0.05));
+            color: #198754;
+            border-color: rgba(25, 135, 84, 0.2);
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.1);
+        }
+
+        .status-badge-online:hover {
+            background: linear-gradient(135deg, rgba(25, 135, 84, 0.18), rgba(25, 135, 84, 0.08));
+            box-shadow: 0 4px 14px rgba(25, 135, 84, 0.18);
+            transform: translateY(-1px);
+        }
+
+        .status-badge-time {
+            background: linear-gradient(135deg, rgba(13, 202, 240, 0.1), rgba(13, 202, 240, 0.04));
+            color: #0dcaf0;
+            border-color: rgba(13, 202, 240, 0.2);
+            box-shadow: 0 2px 8px rgba(13, 202, 240, 0.08);
+        }
+
+        .status-badge-time:hover {
+            background: linear-gradient(135deg, rgba(13, 202, 240, 0.16), rgba(13, 202, 240, 0.06));
+            box-shadow: 0 4px 14px rgba(13, 202, 240, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #198754;
+            display: inline-block;
+            animation: status-pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.15);
+        }
+
+        @keyframes status-pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+                box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.15);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.15);
+                box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.08);
+            }
+        }
+
+        .status-text {
+            position: relative;
+        }
+
+        .status-text::after {
+            content: '';
+            position: absolute;
+            right: -4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.3;
         }
     </style>
 @endpush

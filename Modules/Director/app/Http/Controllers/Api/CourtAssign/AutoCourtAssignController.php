@@ -3,9 +3,9 @@
 namespace Modules\Director\Http\Controllers\Api\CourtAssign;
 
 use App\Http\Controllers\Controller;
+use App\Models\AssistantDirectorPermission;
 use App\Models\User;
 use App\Traits\ApiResponse;
-use Illuminate\Support\Facades\Log;
 use Modules\Director\Models\Camp;
 use Modules\Director\Models\GameSlot;
 use Modules\Director\Models\GameSlotAssignment;
@@ -29,18 +29,32 @@ class AutoCourtAssignController extends Controller
     {
         $user = auth('api')->user();
 
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $user->id)
+        $camp = Camp::forDirectorOrAssistant($user->id)->where('id', $campId)
             ->first();
 
         if (!$camp) {
             return $this->error('Camp not found.', null, 404);
         }
 
+        if ($camp->director_id !== $user->id) {
+            $hasPermission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->where('assign_referees', true)
+                ->exists();
+
+            if (!$hasPermission) {
+                return $this->error('You do not have permission to auto assign referees for this camp.', null, 403);
+            }
+        }
+
         // 1. Fetch all available (non-blocked, non-crew) slots
         $availableSlots = GameSlot::with('schedule')
             ->whereHas('schedule', fn($q) => $q->where('camp_id', $campId))
             ->where('is_block', false)
+            ->where(function ($q) {
+                $q->where('mode', '!=', 'crew')
+                  ->orWhereNull('mode');
+            })
             ->whereDoesntHave('slotAssignments', fn($q) => $q->where('assignment_type', 'crew'))
             ->orderBy('game_date')
             ->orderBy('start_time')
@@ -62,16 +76,23 @@ class AutoCourtAssignController extends Controller
             return $this->error('No checked-in referees available.', null, 404);
         }
 
-        // 3. Clear previous auto-assignments only
+        // 3. Load all existing individual assignments on these slots (manual & auto) to avoid disturbing existing referees
         $slotIds = $availableSlots->pluck('id');
 
-        GameSlotAssignment::whereIn('game_slot_id', $slotIds)
+        $existingAssignments = GameSlotAssignment::whereIn('game_slot_id', $slotIds)
             ->where('assignment_type', 'individual')
-            ->where('is_auto_assigned', true)
-            ->delete();
+            ->get();
 
-        GameSlot::whereIn('id', $slotIds)
-            ->update(['status' => 'available']);
+        $existingSlotReferees = [];
+        foreach ($existingAssignments as $existing) {
+            if ($existing->assignable_type === User::class) {
+                $existingSlotReferees[$existing->game_slot_id][] = (int) $existing->assignable_id;
+            }
+        }
+
+        $existingCounts = $existingAssignments->where('assignable_type', User::class)
+            ->groupBy('assignable_id')
+            ->map->count();
 
         // 4. Determine total distinct courts for cycle-reset logic (Rule 2)
         $totalCourts = $availableSlots->pluck('court_number')->unique()->count();
@@ -115,7 +136,7 @@ class AutoCourtAssignController extends Controller
         $refereeStats = [];
         foreach ($checkedInReferees as $referee) {
             $refereeStats[$referee->id] = [
-                'assignment_count'     => 0,
+                'assignment_count'     => (int) ($existingCounts[$referee->id] ?? 0),
                 'last_played_date'     => null,
                 'last_played_position' => null,
                 'used_courts'          => [],
@@ -152,6 +173,13 @@ class AutoCourtAssignController extends Controller
             // 7b. Track which referees have already been assigned in THIS window
             //     (one court per referee per time window)
             $assignedInWindow = [];
+            foreach ($windowSlots as $wSlot) {
+                if (isset($existingSlotReferees[$wSlot->id])) {
+                    foreach ($existingSlotReferees[$wSlot->id] as $alreadyRefId) {
+                        $assignedInWindow[] = $alreadyRefId;
+                    }
+                }
+            }
 
             foreach ($windowSlots as $slot) {
 
@@ -181,42 +209,75 @@ class AutoCourtAssignController extends Controller
                 // Preferred referees first, fallback last
                 $sortedForCourt = array_merge($freshForCourt, $repeatForCourt);
 
-                // 7c. Fill this slot up to maxPerSlot
-                $assignedToThisSlot = 0;
+                // 7c. Fill remaining positions in this slot up to maxPerSlot
+                $existingInThisSlot = $existingSlotReferees[$slot->id] ?? [];
+                $assignedToThisSlot = count($existingInThisSlot);
 
                 foreach ($sortedForCourt as $refereeId) {
                     if ($assignedToThisSlot >= $maxPerSlot) {
                         break;
                     }
 
-                    // Persist assignment
-                    GameSlotAssignment::create([
-                        'game_slot_id'    => $slot->id,
-                        'assignable_type' => User::class,
-                        'assignable_id'   => $refereeId,
-                        'assignment_type' => 'individual',
-                        'is_auto_assigned' => true,
-                        'assigned_at'     => now(),
-                    ]);
-
-                    // Update in-memory state
-                    $refereeStats[$refereeId]['assignment_count']++;
-                    $refereeStats[$refereeId]['last_played_date']     = $currentMeta['date'];
-                    $refereeStats[$refereeId]['last_played_position']  = $currentMeta['position'];
-
-                    // ── Rule 2: Record court usage ────────────────────────────
-                    if (!in_array($slot->court_number, $refereeStats[$refereeId]['used_courts'])) {
-                        $refereeStats[$refereeId]['used_courts'][] = $slot->court_number;
+                    // Skip if referee is already assigned to this slot (don't disturb existing referee)
+                    if (in_array($refereeId, $existingInThisSlot)) {
+                        continue;
                     }
 
-                    // Reset cycle when referee has now visited every distinct court
-                    if (count($refereeStats[$refereeId]['used_courts']) >= $totalCourts) {
-                        $refereeStats[$refereeId]['used_courts'] = [];
-                    }
+                    // Safely persist assignment
+                    $assignmentRecord = GameSlotAssignment::firstOrCreate(
+                        [
+                            'game_slot_id'    => $slot->id,
+                            'assignable_type' => User::class,
+                            'assignable_id'   => $refereeId,
+                        ],
+                        [
+                            'assignment_type' => 'individual',
+                            'is_auto_assigned' => true,
+                            'assigned_at'     => now(),
+                        ]
+                    );
 
-                    $assignedInWindow[]   = $refereeId;
-                    $assignedToThisSlot++;
-                    $assignmentsCreated++;
+                    if ($assignmentRecord->wasRecentlyCreated) {
+                        // Assign referee position-wise
+                        $unassignedPosition = \Modules\Director\Models\GameSlotAssignmentPosition::where('game_slot_id', $slot->id)
+                            ->whereNull('game_slot_assignment_id')
+                            ->first();
+
+                        if ($unassignedPosition) {
+                            $unassignedPosition->update([
+                                'game_slot_assignment_id' => $assignmentRecord->id,
+                            ]);
+                        } else {
+                            \Modules\Director\Models\GameSlotAssignmentPosition::create([
+                                'camp_id' => $campId,
+                                'game_slot_id' => $slot->id,
+                                'game_slot_assignment_id' => $assignmentRecord->id,
+                                'position' => 'Referee ' . ($assignedToThisSlot + 1),
+                            ]);
+                        }
+
+                        $existingInThisSlot[] = $refereeId;
+                        $existingSlotReferees[$slot->id] = $existingInThisSlot;
+
+                        // Update in-memory state
+                        $refereeStats[$refereeId]['assignment_count']++;
+                        $refereeStats[$refereeId]['last_played_date']     = $currentMeta['date'];
+                        $refereeStats[$refereeId]['last_played_position']  = $currentMeta['position'];
+
+                        // ── Rule 2: Record court usage ────────────────────────────
+                        if (!in_array($slot->court_number, $refereeStats[$refereeId]['used_courts'])) {
+                            $refereeStats[$refereeId]['used_courts'][] = $slot->court_number;
+                        }
+
+                        // Reset cycle when referee has now visited every distinct court
+                        if (count($refereeStats[$refereeId]['used_courts']) >= $totalCourts) {
+                            $refereeStats[$refereeId]['used_courts'] = [];
+                        }
+
+                        $assignedInWindow[]   = $refereeId;
+                        $assignedToThisSlot++;
+                        $assignmentsCreated++;
+                    }
                 }
 
                 if ($assignedToThisSlot > 0) {
@@ -231,13 +292,6 @@ class AutoCourtAssignController extends Controller
         $min    = $counts ? min($counts) : 0;
         $max    = $counts ? max($counts) : 0;
         $avg    = count($counts) ? round(array_sum($counts) / count($counts), 2) : 0;
-
-        Log::info('Auto-assignment completed', [
-            'director_id'         => $user->id,
-            'camp_id'             => $campId,
-            'assignments_created' => $assignmentsCreated,
-            'slots_assigned'      => $slotsAssigned,
-        ]);
 
         return $this->success(
             'Auto-assignment completed with fair distribution and rest rules applied.',

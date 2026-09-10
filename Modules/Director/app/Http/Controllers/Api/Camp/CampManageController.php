@@ -48,11 +48,11 @@ class CampManageController extends Controller
             return $this->error('Invalid sports type.', null, 404);
         }
 
-        // Extra price from env
-        $extraPrice = Env('CAMP_EXTRA_PRICE');
+        // Use sports_type.sports_fee instead of global CAMP_EXTRA_PRICE
+        $sportsFee = $sportsType->sports_fee ?? 0;
 
-        // Final price calculation
-        $finalPrice = $request->price + $extraPrice;
+        // Final price calculation: base price + sports fee (admin fee)
+        $finalPrice = $request->price + $sportsFee;
 
         // Detect timezone from coordinates if not provided
         $timezone = $request->timezone;
@@ -250,11 +250,11 @@ class CampManageController extends Controller
         }
 
         /**
-         * CRITICAL: Price handling (same logic as createCamp)
+         * CRITICAL: Price handling — uses sports_type.sports_fee instead of global CAMP_EXTRA_PRICE
          */
         if ($request->filled('price')) {
-            $extraPrice  = env('CAMP_EXTRA_PRICE', 0);
-            $camp->price = $request->price + $extraPrice;
+            $sportsFee = $camp->sportsType->sports_fee ?? 0;
+            $camp->price = $request->price + $sportsFee;
         }
 
         /**
@@ -357,13 +357,14 @@ class CampManageController extends Controller
     {
         $user = auth('api')->user();
 
-        $camp = Camp::with(['sportsType'])
+        $camp = Camp::with(['sportsType','assistantDirectorPermissions' => function ($query) use ($user) {
+        $query->where('assistant_director_id', $user->id);
+    },])
             ->when($user->hasRole('referee'), function ($query) use ($user) {
                 $query->with(['checkedInReferees' => function ($q) use ($user) {
                     $q->where('referee_id', $user->id);
                 }]);
             })
-
             ->when($user->hasRole('evaluator'), function ($query) use ($user) {
                 $query->with(['evaluatorRegistrations' => function ($q) use ($user) {
                     $q->where('evaluator_id', $user->id);
@@ -440,16 +441,14 @@ class CampManageController extends Controller
     public function directorCampList(Request $request)
     {
         $user = auth('api')->user();
+        $today = now()->toDateString();
 
         // Fetch camps created by the logged-in director
         $camps = Camp::where('director_id', $user->id)
             ->with(['sportsType', 'checkedInReferees', 'schedule'])
+            ->where('end_date', '>', $today)
             ->orderBy('created_at', 'desc')
             ->paginate(8);
-
-        if ($camps->isEmpty()) {
-            return $this->error(null, 'No camps found.', 404);
-        }
 
         $response = [
             'camp_list' => $camps->map(function ($camp) {
@@ -495,12 +494,13 @@ class CampManageController extends Controller
      */
     public function getAdminFee()
     {
-        $adminFee = config('camp.extra_price');
-        //config('app.camp_extra_price')
+        // Now returns a list of sports fees since each sport has its own fee
+        $sportsFees = SportsType::where('status', 'active')
+            ->get(['id', 'sports_name', 'sports_fee']);
 
         return $this->success(
-            'Admin fee fetched successfully.',
-            ['admin_fee' => $adminFee],
+            'Sports fees fetched successfully.',
+            ['sports_fees' => $sportsFees],
             200
         );
     }

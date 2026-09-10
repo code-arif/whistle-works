@@ -9,17 +9,16 @@
         <!-- CONTAINER -->
         <div class="main-container container-fluid">
 
-            <div class="page-header">
+            <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                 <div>
                     <h1 class="page-title">Role</h1>
+                    <p class="text-muted mb-0" style="font-size: 13px;">Create a new user role</p>
                 </div>
-                <div class="ms-auto pageheader-btn">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item">Access</li>
-                        <li class="breadcrumb-item">Role</li>
-                        <li class="breadcrumb-item">Create</li>
-                    </ol>
-                </div>
+                <ol class="breadcrumb mb-0 py-0">
+                    <li class="breadcrumb-item"><a href="{{ route('admin.roles.index') }}">Access</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('admin.roles.index') }}">Role</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Create</li>
+                </ol>
             </div>
 
             <div class="row" id="user-profile">

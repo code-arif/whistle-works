@@ -16,18 +16,17 @@ $hasBoth = $hasImage && $hasBg;
         <!-- CONTAINER -->
         <div class="main-container container-fluid">
 
-            <div class="page-header">
+            <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                 <div>
-                    <h1 class="page-title">CMS : {{ ucwords(str_replace('_', ' ', $page ?? '')) }} Page {{ ucwords(str_replace('_', ' ', $section ?? '')) }} Section Update.</h1>
+                    <h1 class="page-title">CMS : {{ ucwords(str_replace('_', ' ', $page ?? '')) }} — {{ ucwords(str_replace('_', ' ', $section ?? '')) }}</h1>
+                    <p class="text-muted mb-0" style="font-size: 13px;">Update {{ ucwords(str_replace('_', ' ', $section ?? '')) }} section item</p>
                 </div>
-                <div class="ms-auto pageheader-btn">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item">CMS</li>
-                        <li class="breadcrumb-item">{{ ucwords(str_replace('_', ' ', $page ?? '')) }}</li>
-                        <li class="breadcrumb-item">{{ ucwords(str_replace('_', ' ', $section ?? '')) }}</li>
-                        <li class="breadcrumb-item active" aria-current="page">Update</li>
-                    </ol>
-                </div>
+                <ol class="breadcrumb mb-0 py-0">
+                    <li class="breadcrumb-item">CMS</li>
+                    <li class="breadcrumb-item">{{ ucwords(str_replace('_', ' ', $page ?? '')) }}</li>
+                    <li class="breadcrumb-item">{{ ucwords(str_replace('_', ' ', $section ?? '')) }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">Update</li>
+                </ol>
             </div>
 
             <div class="row" id="user-profile">

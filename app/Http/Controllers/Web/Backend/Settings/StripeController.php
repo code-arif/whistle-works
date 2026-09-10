@@ -109,7 +109,13 @@ class StripeController extends Controller
         }
     }
 
-  public function updateAdminPercentage(Request $request): RedirectResponse
+    /**
+     * @deprecated Fees are now per sports type (sports_types.sports_fee).
+     *             This method still works for backward compatibility but
+     *             no longer affects pricing. The UI has been updated to
+     *             show sports fees from the sports_types table.
+     */
+    public function updateAdminPercentage(Request $request): RedirectResponse
     {
         $request->validate([
             'admin_percentage'    => 'nullable|string|regex:/^\S+$/',
@@ -139,7 +145,7 @@ class StripeController extends Controller
             Artisan::call('cache:clear');
             Artisan::call('route:clear');
 
-            return back()->with('t-success', 'Updated Admin & Seller Profit');
+            return back()->with('t-success', 'Updated successfully (deprecated - fees are now per sports type)');
         } catch (Exception $e) {
             return back()->with('t-error', 'Failed to update: ' . $e->getMessage());
         }

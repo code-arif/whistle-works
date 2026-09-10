@@ -9,16 +9,15 @@
             <div class="main-container container-fluid">
 
                 <!-- PAGE-HEADER -->
-                <div class="page-header">
+                <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                     <div>
-                        <h1 class="page-title">Camps Management</h1>
+                        <h1 class="page-title mb-1">Camps Management</h1>
+                        <p class="text-muted fs-13 mb-0">Manage and oversee all training camps</p>
                     </div>
-                    <div class="ms-auto pageheader-btn">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="javascript:void(0);">Camps</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Index</li>
-                        </ol>
-                    </div>
+                    <ol class="breadcrumb mb-0 py-0">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Camps</li>
+                    </ol>
                 </div>
                 <!-- PAGE-HEADER END -->
 
@@ -44,6 +43,7 @@
                                                 <th class="bg-transparent border-bottom-0">ID</th>
                                                 <th class="bg-transparent border-bottom-0">Director</th>
                                                 <th class="bg-transparent border-bottom-0">Camp Info</th>
+                                                <th class="bg-transparent border-bottom-0">Address</th>
                                                 <th class="bg-transparent border-bottom-0">Sports Type</th>
                                                 <th class="bg-transparent border-bottom-0">Dates</th>
                                                 <th class="bg-transparent border-bottom-0">Price</th>
@@ -213,6 +213,11 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    @include('backend.partials._scripts-datatable')
+    @include('backend.partials._scripts-summernote')
+@endpush
 
 @push('scripts')
     <!-- Google Maps API -->
@@ -422,6 +427,12 @@
                             data: 'camp_info',
                             name: 'camp_info',
                             orderable: false,
+                            searchable: true
+                        },
+                        {
+                            data: 'address',
+                            name: 'address',
+                            orderable: true,
                             searchable: true
                         },
                         {
@@ -1253,6 +1264,8 @@
                 padding: 1.25rem;
             }
         }
+
+
 
         /* Fix Summernote z-index inside Bootstrap modal */
         .modal .note-editor.note-frame {

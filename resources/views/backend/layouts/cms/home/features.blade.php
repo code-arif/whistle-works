@@ -11,16 +11,15 @@
             <div class="main-container container-fluid">
 
                 {{-- PAGE-HEADER --}}
-                <div class="page-header">
+                <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                     <div>
-                        <h1 class="page-title">Home - Features</h1>
+                        <h1 class="page-title">Home Page — Features Section</h1>
+                        <p class="text-muted mb-0" style="font-size: 13px;">Manage features section items and content</p>
                     </div>
-                    <div class="ms-auto pageheader-btn">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="javascript:void(0);">Features</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Items</li>
-                        </ol>
-                    </div>
+                    <ol class="breadcrumb mb-0 py-0">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.cms.home.features.index') }}">Features</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Items</li>
+                    </ol>
                 </div>
                 
                 {{-- PAGE-HEADER --}}
@@ -152,6 +151,10 @@
 @endsection
 
 
+
+@push('scripts')
+    @include('backend.partials._scripts-datatable')
+@endpush
 
 @push('scripts')
     <script>

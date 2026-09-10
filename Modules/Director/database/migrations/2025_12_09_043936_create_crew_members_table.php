@@ -16,6 +16,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('crew_id')->constrained()->onDelete('cascade');
             $table->foreignId('referee_id')->constrained('users')->onDelete('cascade');
+            $table->string('position')->nullable();
             $table->timestamp('joined_at')->useCurrent();
             $table->timestamps();
 

@@ -9,16 +9,15 @@
         <div class="main-container container-fluid">
 
             {{-- PAGE-HEADER --}}
-            <div class="page-header">
+            <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                 <div>
                     <h1 class="page-title">Captcha Settings <i class="fa-solid fa-triangle-exclamation text-danger" title="Warning"></i></h1>
+                    <p class="text-muted mb-0" style="font-size: 13px;">Configure reCAPTCHA verification settings</p>
                 </div>
-                <div class="ms-auto pageheader-btn">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="javascript:void(0);">Settings</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Captcha</li>
-                    </ol>
-                </div>
+                <ol class="breadcrumb mb-0 py-0">
+                    <li class="breadcrumb-item"><a href="{{ route('admin.setting.general.index') }}">Settings</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Captcha</li>
+                </ol>
             </div>
             {{-- PAGE-HEADER --}}
 

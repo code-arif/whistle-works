@@ -33,7 +33,6 @@
             }
         });
     };
-    notification();
 
     // Read Notification
     function readnotify(id) {
@@ -82,17 +81,23 @@
         });
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    // Defer non-critical network requests until after page paint
+    setTimeout(function() {
+        notification();
+    }, 500);
 
-        Echo.private('notify.{{ auth()->user()->id }}').listen('RegistrationNotificationEvent', (e) => {
-            toastr.success(e.data.name + ' ' + e.data.body);
-            notification();
-        });
+    // Defer Echo/WebSocket connection
+    setTimeout(function() {
+        if (typeof Echo !== 'undefined') {
+            Echo.private('notify.{{ auth()->user()->id }}').listen('RegistrationNotificationEvent', (e) => {
+                toastr.success(e.data.name + ' ' + e.data.body);
+                notification();
+            });
 
-        Echo.private('test-notify.{{ auth()->user()->id }}').listen('TestNotificationEvent', (e) => {
-            toastr.success(e.data.title + ' ' + e.data.body);
-            notification();
-        });
-
-    });
+            Echo.private('test-notify.{{ auth()->user()->id }}').listen('TestNotificationEvent', (e) => {
+                toastr.success(e.data.title + ' ' + e.data.body);
+                notification();
+            });
+        }
+    }, 1000);
 </script>

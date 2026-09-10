@@ -32,6 +32,11 @@ class GameSlot extends Model
         return $this->hasMany(GameSlotAssignment::class);
     }
 
+    public function assignmentPositions(): HasMany
+    {
+        return $this->hasMany(GameSlotAssignmentPosition::class, 'game_slot_id');
+    }
+
     /**
      * Legacy relationship - keep for backward compatibility if needed
      */
@@ -120,5 +125,21 @@ class GameSlot extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(GameSlotAssignment::class, 'game_slot_id');
+    }
+
+    /**
+     * Check if slot is in crew mode
+     */
+    public function isCrewMode(): bool
+    {
+        return $this->mode === 'crew';
+    }
+
+    /**
+     * Check if slot is in individual mode
+     */
+    public function isIndividualMode(): bool
+    {
+        return $this->mode === 'individual';
     }
 }

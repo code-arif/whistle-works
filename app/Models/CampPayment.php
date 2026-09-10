@@ -18,14 +18,26 @@ class CampPayment extends Model
         'currency',
         'status',
         'paid_at',
-        'metadata'
+        'metadata',
+        'coupon_id',
+        'discount_amount',
+        'admin_fee',
+        'director_amount',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'admin_fee' => 'decimal:2',
+        'director_amount' => 'decimal:2',
         'paid_at' => 'datetime',
         'metadata' => 'array'
     ];
+
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class);
+    }
 
     public function camp(): BelongsTo
     {

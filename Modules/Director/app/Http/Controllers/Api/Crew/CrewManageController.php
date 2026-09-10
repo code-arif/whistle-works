@@ -2,8 +2,10 @@
 
 namespace Modules\Director\Http\Controllers\Api\Crew;
 
+use App\Models\AssistantDirectorPermission;
 use App\Models\User;
 use App\Traits\ApiResponse;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +14,9 @@ use App\Models\CampRefereeJearsyNumber;
 use Modules\Director\Transformers\Referee\AvailableRefereeResource;
 use Modules\Director\Transformers\Referee\CheckedInRefereeResource;
 use Modules\Director\Models\{Camp, Crew, CrewMember, CampRefereeCheckin, GameSlot, RefereeAssignment};
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Csv;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class CrewManageController extends Controller
 {
@@ -27,19 +32,38 @@ class CrewManageController extends Controller
 
         // Validate
         $request->validate([
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string|max:500',
-            'referee_ids' => 'nullable|array|max:6', // max 6 members
-            'referee_ids.*' => 'exists:users,id'
+            'name'          => 'required|string|max:255',
+            'description'   => 'nullable|string|max:500',
+            'positions'     => 'nullable|array|max:8', // max 8 members
+            'positions.*'   => 'nullable|string|max:255',
+            'referee_ids'   => 'nullable|array|max:8', // max 8 members
+            'referee_ids.*' => 'exists:users,id',
+            'members'       => 'nullable|array|max:8',
+            'members.*.referee_id' => 'required_with:members|exists:users,id',
+            'members.*.position'   => 'nullable|string|max:255',
         ]);
 
-        // Verify camp ownership
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $user->id)
+        // Verify camp ownership or assistant director access
+        $camp = Camp::forDirectorOrAssistant($user->id)
+            ->where('id', $campId)
             ->first();
 
         if (!$camp) {
             return $this->error('Camp not found.', null, 404);
+        }
+
+        if ($camp->director_id !== $user->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error('Unauthorized.', null, 403);
+            }
+
+            if (!$permission->manage_roster_crews) {
+                return $this->error('You do not have permission to manage crews for this camp.', null, 403);
+            }
         }
 
         // Check for duplicate crew name in same camp
@@ -64,11 +88,41 @@ class CrewManageController extends Controller
             $added = [];
             $skipped = [];
 
-            // If referee_ids provided, add them
-            if ($request->has('referee_ids') && count($request->referee_ids) > 0) {
-                $refereeIds = $request->referee_ids;
+            // Extract member inputs from either members array or referee_ids + positions
+            $memberInputs = [];
+            if ($request->has('members') && is_array($request->members)) {
+                foreach ($request->members as $item) {
+                    if (isset($item['referee_id'])) {
+                        $memberInputs[] = [
+                            'referee_id' => $item['referee_id'],
+                            'position'   => $item['position'] ?? $item['position_id'] ?? null,
+                        ];
+                    }
+                }
+            } elseif ($request->has('referee_ids') && is_array($request->referee_ids)) {
+                $positions = $request->positions ?? [];
+                foreach ($request->referee_ids as $index => $refereeId) {
+                    $pos = null;
+                    if (is_array($positions)) {
+                        if (array_key_exists($refereeId, $positions)) {
+                            $pos = $positions[$refereeId];
+                        } elseif (array_key_exists($index, $positions)) {
+                            $pos = $positions[$index];
+                        }
+                    }
+                    $memberInputs[] = [
+                        'referee_id' => $refereeId,
+                        'position'   => $pos,
+                    ];
+                }
+            }
 
-                foreach ($refereeIds as $refereeId) {
+            // If members provided, add them
+            if (!empty($memberInputs)) {
+                foreach ($memberInputs as $item) {
+                    $refereeId = $item['referee_id'];
+                    $position  = $item['position'] ?? null;
+
                     // 1. Must be checked in
                     $isCheckedIn = CampRefereeCheckin::where('camp_id', $campId)
                         ->where('referee_id', $refereeId)
@@ -97,19 +151,21 @@ class CrewManageController extends Controller
 
                     // Add to crew
                     CrewMember::create([
-                        'crew_id'     => $crew->id,
-                        'referee_id'  => $refereeId,
-                        'joined_at'   => now()
+                        'crew_id'    => $crew->id,
+                        'referee_id' => $refereeId,
+                        'position'   => $position,
+                        'joined_at'  => now()
                     ]);
 
-                    $added[] = $refereeId;
+                    $added[] = [
+                        'referee_id' => $refereeId,
+                        'position'   => $position,
+                    ];
                 }
             }
 
             // Reload crew with members
-            $crew->load(['members' => function ($q) {
-                $q->with('referee:id,first_name,last_name,email');
-            }]);
+            $crew->load('members');
 
             DB::commit();
 
@@ -123,11 +179,12 @@ class CrewManageController extends Controller
                         'member_count'  => $crew->members->count(),
                         'members' => $crew->members->map(function ($member) {
                             return [
-                                'id' => $member->id,
-                                'name' => $member->first_name . ' ' . $member->last_name,
-                                'email' => $member->email,
-                                'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
-                                'joined_at' => $member->pivot->joined_at
+                                'id'        => $member->id,
+                                'name'      => $member->first_name . ' ' . $member->last_name,
+                                'email'     => $member->email,
+                                'avatar'    => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                                'position'  => $member->pivot?->position ?? null,
+                                'joined_at' => $member->pivot?->joined_at
                             ];
                         })
                     ],
@@ -150,8 +207,8 @@ class CrewManageController extends Controller
         $user = auth('api')->user();
 
         // Verify camp ownership
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $user->id)
+        $camp = Camp::forDirectorOrAssistant($user->id)
+            ->where('id', $campId)
             ->first();
 
         if (!$camp) {
@@ -167,28 +224,6 @@ class CrewManageController extends Controller
                 $query->select('users.id', 'users.first_name', 'users.last_name', 'users.email', 'users.avatar', 'users.address', 'users.phone');
             }])
             ->get();
-
-        // $formatted = $crews->map(function ($crew) {
-        //     return [
-        //         'id' => $crew->id,
-        //         'name' => $crew->name,
-        //         'description' => $crew->description,
-        //         'status' => $crew->status,
-        //         'member_count' => $crew->members_count,
-        //         'members' => $crew->members->map(function ($member) {
-        //             return [
-        //                 'id' => $member->id,
-        //                 'name' => $member->first_name . ' ' . $member->last_name,
-        //                 'email' => $member->email,
-        //                 'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
-        //                 'joined_at' => $member->pivot->joined_at,
-        //                 'address' => $member->address,
-        //                 'phone' => $member->phone,
-        //             ];
-        //         }),
-        //         'created_at' => $crew->created_at->format('Y-m-d H:i:s')
-        //     ];
-        // });
 
         $formatted = $crews->map(function ($crew) use ($jerseyNumbers) {
             return [
@@ -208,7 +243,7 @@ class CrewManageController extends Controller
 
                         // jersey number here
                         'jersey_number' => $jerseyNumbers[$member->id] ?? null,
-
+                        'position' => $member->pivot->position ?? null,
                         'joined_at' => $member->pivot->joined_at,
                         'address' => $member->address,
                         'phone' => $member->phone,
@@ -230,6 +265,106 @@ class CrewManageController extends Controller
     }
 
     /**
+     * Export camp crews data as CSV or Excel (Director only)
+     */
+    public function exportCampCrews(Request $request, $campId)
+    {
+        $user = auth('api')->user();
+
+        if (!$user || !$user->hasRole('director')) {
+            return $this->error('Unauthorized access. Only directors can export crews.', null, 403);
+        }
+
+        // Verify camp ownership
+        $camp = Camp::where('id', $campId)
+            ->where('director_id', $user->id)
+            ->first();
+
+        if (!$camp) {
+            return $this->error('Camp not found.', null, 404);
+        }
+
+        $crews = Crew::where('camp_id', $campId)
+            ->withCount('members')
+            ->with(['members' => function ($query) {
+                $query->select('users.id', 'users.first_name', 'users.last_name', 'users.email', 'users.phone');
+            }])
+            ->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $campName = $camp->camp_name ?? 'Camp';
+
+        // Title Row
+        $sheet->setCellValue('A1', 'Camp Name:');
+        $sheet->setCellValue('B1', $campName . ' - Crews Export');
+
+        // Header Row
+        $headers = [
+            'A3' => 'Crew Name',
+            'B3' => 'Description',
+            'C3' => 'Status',
+            'D3' => 'Member Count',
+            'E3' => 'Members',
+        ];
+
+        foreach ($headers as $cell => $value) {
+            $sheet->setCellValue($cell, $value);
+        }
+
+        $rowIndex = 4;
+        foreach ($crews as $crew) {
+            $crewName = $crew->name ?? '-';
+            $description = $crew->description ?? '-';
+            $status = $crew->status ?? '-';
+            $memberCount = $crew->members_count ?? 0;
+
+            $membersList = $crew->members->map(function ($m) {
+                $name = trim(($m->first_name ?? '') . ' ' . ($m->last_name ?? ''));
+                $pos = $m->pivot->position ?? null;
+                $details = array_filter([$pos ? "Position: {$pos}" : null, $m->email ?? '', $m->phone ?? '']);
+                if (!empty($details)) {
+                    return $name . ' (' . implode(', ', $details) . ')';
+                }
+                return $name;
+            })->filter()->implode(' | ');
+
+            $sheet->setCellValue('A' . $rowIndex, !empty($crewName) ? $crewName : '-');
+            $sheet->setCellValue('B' . $rowIndex, !empty($description) ? $description : '-');
+            $sheet->setCellValue('C' . $rowIndex, !empty($status) ? $status : '-');
+            $sheet->setCellValue('D' . $rowIndex, $memberCount);
+            $sheet->setCellValue('E' . $rowIndex, !empty($membersList) ? $membersList : '-');
+
+            $rowIndex++;
+        }
+
+        $format = strtolower($request->query('format', $request->query('type', 'csv')));
+        $isExcel = in_array($format, ['excel', 'xlsx']);
+
+        $safeCampName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $campName);
+
+        if ($isExcel) {
+            $writer = new Xlsx($spreadsheet);
+            $fileName = $safeCampName . '_crews_' . date('Y_m_d') . '.xlsx';
+            $contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        } else {
+            $writer = new Csv($spreadsheet);
+            $writer->setUseBOM(true);
+            $fileName = $safeCampName . '_crews_' . date('Y_m_d') . '.csv';
+            $contentType = 'text/csv; charset=UTF-8';
+        }
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type'  => $contentType,
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Pragma'        => 'public',
+        ]);
+    }
+
+    /**
      * Get crew details
      */
     public function getCrewDetails($crewId)
@@ -245,9 +380,9 @@ class CrewManageController extends Controller
         }
 
         // Verify ownership
-        if ($crew->camp->director_id !== $user->id) {
-            return $this->error('Unauthorized.', null, 403);
-        }
+        // if ($crew->camp->director_id !== $user->id) {
+        //     return $this->error('Unauthorized.', null, 403);
+        // }
 
         // Get camp-specific jersey number
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $crew->camp->id)
@@ -267,7 +402,8 @@ class CrewManageController extends Controller
                         'name' => $member->first_name . ' ' . $member->last_name ?? null,
                         'email' => $member->email,
                         'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
-                        'joined_at' => $member->pivot->joined_at,
+                        'position' => $member->pivot?->position ?? null,
+                        'joined_at' => $member->pivot?->joined_at,
                         'jersey_number' => $jerseyNumbers->get($member->id) ?? null,
                         'address' => $member->address,
                         'phone' => $member->phone
@@ -291,8 +427,13 @@ class CrewManageController extends Controller
         $user = auth('api')->user();
 
         $request->validate([
-            'referee_ids' => 'required|array|min:1|max:5',
-            'referee_ids.*' => 'exists:users,id'
+            'referee_ids'   => 'nullable|array|min:1|max:8',
+            'referee_ids.*' => 'exists:users,id',
+            'positions'     => 'nullable|array|max:8',
+            'positions.*'   => 'nullable|string|max:255',
+            'members'       => 'nullable|array|min:1|max:8',
+            'members.*.referee_id' => 'required_with:members|exists:users,id',
+            'members.*.position'   => 'nullable|string|max:255',
         ]);
 
         $crew = Crew::with('camp', 'members')->find($crewId);
@@ -301,21 +442,63 @@ class CrewManageController extends Controller
             return $this->error('Crew not found.', null, 404);
         }
 
-        // Verify ownership
-        if ($crew->camp->director_id !== $user->id) {
-            return $this->error('Unauthorized.', null, 403);
+        // Verify ownership or assistant director access
+        $camp = $crew->camp;
+
+        if ($camp->director_id !== $user->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error('Unauthorized.', null, 403);
+            }
+
+            if (!$permission->manage_roster_crews) {
+                return $this->error('You do not have permission to manage crews for this camp.', null, 403);
+            }
         }
 
-        $refereeIds = $request->referee_ids;
+        $memberInputs = [];
+        if ($request->has('members') && is_array($request->members)) {
+            foreach ($request->members as $item) {
+                if (isset($item['referee_id'])) {
+                    $memberInputs[] = [
+                        'referee_id' => $item['referee_id'],
+                        'position'   => $item['position'] ?? $item['position_id'] ?? null,
+                    ];
+                }
+            }
+        } elseif ($request->has('referee_ids') && is_array($request->referee_ids)) {
+            $positions = $request->positions ?? [];
+            foreach ($request->referee_ids as $index => $refereeId) {
+                $pos = null;
+                if (is_array($positions)) {
+                    if (array_key_exists($refereeId, $positions)) {
+                        $pos = $positions[$refereeId];
+                    } elseif (array_key_exists($index, $positions)) {
+                        $pos = $positions[$index];
+                    }
+                }
+                $memberInputs[] = [
+                    'referee_id' => $refereeId,
+                    'position'   => $pos,
+                ];
+            }
+        }
+
+        if (empty($memberInputs)) {
+            return $this->error('No referees provided.', null, 400);
+        }
 
         // --- Capacity Check ---
-        if ($crew->members->count() + count($refereeIds) > 5) {
+        if ($crew->members->count() + count($memberInputs) > 8) {
             return $this->error(
+                'Crew can have max 8 members.',
                 [
                     'current_members' => $crew->members->count(),
-                    'trying_to_add' => count($refereeIds)
+                    'trying_to_add' => count($memberInputs)
                 ],
-                'Crew can have max 5 members.',
                 400
             );
         }
@@ -323,7 +506,9 @@ class CrewManageController extends Controller
         $added = [];
         $skipped = [];
 
-        foreach ($refereeIds as $refereeId) {
+        foreach ($memberInputs as $item) {
+            $refereeId = $item['referee_id'];
+            $position  = $item['position'] ?? null;
 
             // Check if checked in
             $isCheckedIn = CampRefereeCheckin::where('camp_id', $crew->camp_id)
@@ -354,18 +539,20 @@ class CrewManageController extends Controller
             }
 
             // Add to crew
-            $crew_member = CrewMember::create([
-                'crew_id' => $crewId,
+            CrewMember::create([
+                'crew_id'    => $crewId,
                 'referee_id' => $refereeId,
-                'joined_at' => now()
+                'position'   => $position,
+                'joined_at'  => now()
             ]);
 
-            $added[] = $refereeId;
+            $added[] = [
+                'referee_id' => $refereeId,
+                'position'   => $position,
+            ];
         }
 
-        $crew->load(['members' => function ($q) {
-            $q->with('referee:id,first_name,last_name,email');
-        }]);
+        $crew->load('members');
 
         return $this->success(
             'Members processed.',
@@ -379,6 +566,7 @@ class CrewManageController extends Controller
                             'id' => $member->id,
                             'name' => $member->first_name . ' ' . $member->last_name,
                             'email' => $member->email,
+                            'position' => $member->pivot->position ?? null,
                             'joined_at' => $member->pivot->joined_at
                         ];
                     })
@@ -409,9 +597,21 @@ class CrewManageController extends Controller
             return $this->error('Crew not found.', null, 404);
         }
 
-        // Verify ownership
-        if ($crew->camp->director_id !== $user->id) {
-            return $this->error('Unauthorized.', null, 403);
+        // Verify ownership or assistant director access
+        $camp = $crew->camp;
+
+        if ($camp->director_id !== $user->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error('Unauthorized.', null, 403);
+            }
+
+            if (!$permission->manage_roster_crews) {
+                return $this->error('You do not have permission to manage crews for this camp.', null, 403);
+            }
         }
 
         $refereeIds = $request->referee_ids;
@@ -456,8 +656,13 @@ class CrewManageController extends Controller
             'name'        => 'string|max:255',
             'description' => 'nullable|string|max:500',
             'status'      => 'sometimes|in:active,inactive',
-            'referee_ids' => 'nullable|array|max:5',
-            'referee_ids.*' => 'exists:users,id'
+            'referee_ids' => 'nullable|array|max:8',
+            'referee_ids.*' => 'exists:users,id',
+            'positions'   => 'nullable|array|max:8',
+            'positions.*' => 'nullable|string|max:255',
+            'members'     => 'nullable|array|max:8',
+            'members.*.referee_id' => 'required_with:members|exists:users,id',
+            'members.*.position'   => 'nullable|string|max:255',
         ]);
 
         $crew = Crew::with('camp')->find($crewId);
@@ -497,10 +702,39 @@ class CrewManageController extends Controller
             $added   = [];
             $skipped = [];
             $removed = [];
+            $updated = [];
 
-            // Member sync if referee_ids provided
-            if ($request->has('referee_ids')) {
-                $newRefereeIds = $request->referee_ids ?? [];
+            // Member sync if referee_ids or members provided
+            if ($request->has('referee_ids') || $request->has('members')) {
+                $memberInputs = [];
+                if ($request->has('members') && is_array($request->members)) {
+                    foreach ($request->members as $item) {
+                        if (isset($item['referee_id'])) {
+                            $memberInputs[] = [
+                                'referee_id' => $item['referee_id'],
+                                'position'   => $item['position'] ?? $item['position_id'] ?? null,
+                            ];
+                        }
+                    }
+                } elseif ($request->has('referee_ids') && is_array($request->referee_ids)) {
+                    $positions = $request->positions ?? [];
+                    foreach ($request->referee_ids as $index => $refereeId) {
+                        $pos = null;
+                        if (is_array($positions)) {
+                            if (array_key_exists($refereeId, $positions)) {
+                                $pos = $positions[$refereeId];
+                            } elseif (array_key_exists($index, $positions)) {
+                                $pos = $positions[$index];
+                            }
+                        }
+                        $memberInputs[] = [
+                            'referee_id' => $refereeId,
+                            'position'   => $pos,
+                        ];
+                    }
+                }
+
+                $newRefereeIds = array_column($memberInputs, 'referee_id');
 
                 // Current members
                 $currentMemberIds = CrewMember::where('crew_id', $crewId)
@@ -516,10 +750,23 @@ class CrewManageController extends Controller
                     $removed = array_values($toRemove);
                 }
 
-                // Add new members
-                foreach ($newRefereeIds as $refereeId) {
+                // Add or update members
+                foreach ($memberInputs as $item) {
+                    $refereeId = $item['referee_id'];
+                    $position  = $item['position'] ?? null;
+
                     if (in_array($refereeId, $currentMemberIds)) {
-                        continue; // already in crew
+                        // Already in crew, update position if provided
+                        if ($position !== null || $request->has('positions') || $request->has('members')) {
+                            CrewMember::where('crew_id', $crewId)
+                                ->where('referee_id', $refereeId)
+                                ->update(['position' => $position]);
+                            $updated[] = [
+                                'referee_id' => $refereeId,
+                                'position'   => $position
+                            ];
+                        }
+                        continue;
                     }
 
                     // Check-in validation
@@ -545,37 +792,34 @@ class CrewManageController extends Controller
                     CrewMember::create([
                         'crew_id'    => $crew->id,
                         'referee_id' => $refereeId,
+                        'position'   => $position,
                         'joined_at'  => now()
                     ]);
 
-                    $added[] = $refereeId;
+                    $added[] = [
+                        'referee_id' => $refereeId,
+                        'position'   => $position
+                    ];
                 }
             }
 
             $crew->save();
 
-            // Reload crew with members and their referees safely
-            $crew->load(['members' => function ($query) {
-                $query->with(['referee' => function ($q) {
-                    $q->select('id', 'first_name', 'last_name', 'email');
-                }]);
-            }]);
+            // Reload crew with members
+            $crew->load('members');
 
             DB::commit();
 
-            // Safe mapping with null checks
             $membersData = $crew->members->map(function ($member) {
-                if (!$member->referee) {
-                    // Rare case: referee deleted but crew_member row remains
-                    return null;
-                }
                 return [
-                    'id'        => $member->referee->id,
-                    'name'      => $member->referee->first_name . ' ' . $member->referee->last_name,
-                    'email'     => $member->referee->email,
-                    'joined_at' => $member->joined_at->format('Y-m-d H:i:s')
+                    'id'        => $member->id,
+                    'name'      => $member->first_name . ' ' . $member->last_name,
+                    'email'     => $member->email,
+                    'avatar'    => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                    'position'  => $member->pivot?->position ?? null,
+                    'joined_at' => $member->pivot?->joined_at ? Carbon::parse($member->pivot->joined_at)->format('Y-m-d H:i:s') : null
                 ];
-            })->filter()->values(); // remove nulls
+            })->values();
 
             return $this->success(
                 'Crew updated successfully.',
@@ -590,6 +834,7 @@ class CrewManageController extends Controller
                     ],
                     'members_sync' => [
                         'added'   => $added,
+                        'updated' => $updated,
                         'removed' => $removed,
                         'skipped' => $skipped
                     ]
@@ -616,9 +861,21 @@ class CrewManageController extends Controller
             return $this->error('Crew not found.', null, 404);
         }
 
-        // Verify ownership
-        if ($crew->camp->director_id !== $user->id) {
-            return $this->error('Unauthorized.', null, 403);
+        // Verify ownership or assistant director access
+        $camp = $crew->camp;
+
+        if ($camp->director_id !== $user->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error('Unauthorized.', null, 403);
+            }
+
+            if (!$permission->manage_roster_crews) {
+                return $this->error('You do not have permission to manage crews for this camp.', null, 403);
+            }
         }
 
         // Check if crew is assigned to any game slots
@@ -761,12 +1018,22 @@ class CrewManageController extends Controller
         $user = auth('api')->user();
 
         // Verify camp ownership
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $user->id)
+        $camp = Camp::forDirectorOrAssistant($user->id)
+            ->where('id', $campId)
             ->first();
 
         if (!$camp) {
             return $this->error('Camp not found.', null, 404);
+        }
+
+        if ($camp->director_id !== $user->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error([], 'Unauthorized to approve this registration.', 403);
+            }
         }
 
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)

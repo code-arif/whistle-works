@@ -1,5 +1,7 @@
 @php
-$settings = \App\Models\Setting::first();
+$settings = \Illuminate\Support\Facades\Cache::remember('auth_settings', 600, function () {
+    return \App\Models\Setting::first();
+});
 @endphp
 <!doctype html>
 <html lang="en" dir="ltr">

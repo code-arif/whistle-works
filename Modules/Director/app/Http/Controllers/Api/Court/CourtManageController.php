@@ -2,6 +2,7 @@
 
 namespace Modules\Director\Http\Controllers\Api\Court;
 
+use App\Models\AssistantDirectorPermission;
 use Exception;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -30,8 +31,21 @@ class CourtManageController extends Controller
             return $this->error('Game slot not found!', null, 404);
         }
 
-        if ($slot->schedule->camp->director_id !== $user->id) {
-            return $this->error('Unauthorized.', null, 403);
+        // Verify ownership or assistant director access
+        $camp = $slot->schedule?->camp;
+
+        if ($camp->director_id !== $user->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error('Unauthorized.', null, 403);
+            }
+
+            if (!$permission->assign_referees) {
+                return $this->error('You do not have permission to block the court.', null, 403);
+            }
         }
 
         DB::beginTransaction();
@@ -237,9 +251,21 @@ class CourtManageController extends Controller
             return $this->error('Location not found.', null, 404);
         }
 
-        // Authorization check
-        if ($location->schedule->camp->director_id !== $user->id) {
-            return $this->error('Unauthorized.', null, 403);
+        // Verify ownership or assistant director access
+        $camp = $location->schedule?->camp;
+
+        if ($camp->director_id !== $user->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error('Unauthorized.', null, 403);
+            }
+
+            if (!$permission->assign_referees) {
+                return $this->error('You do not have permission to change this court name.', null, 403);
+            }
         }
 
         // Validate court number
@@ -344,8 +370,21 @@ class CourtManageController extends Controller
         // Find schedule and verify ownership
         $schedule = Schedule::with('camp')->findOrFail($scheduleId);
 
-        if ($schedule->camp->director_id !== $user->id) {
-            return $this->error('Unauthorized.', null, 403);
+        // Verify ownership or assistant director access
+        $camp = $schedule->camp;
+
+        if ($camp->director_id !== $user->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error('Unauthorized.', null, 403);
+            }
+
+            if (!$permission->assign_referees) {
+                return $this->error('You do not have permission to block this court row.', null, 403);
+            }
         }
 
         // Get all slots matching date and time

@@ -2,15 +2,18 @@
 
 namespace App\Services;
 
-use Exception;
-use Stripe\Stripe;
-use App\Models\User;
 use App\Models\CampPayment;
-use Stripe\Checkout\Session;
-use Modules\Director\Models\Camp;
 use App\Models\CampPaymentAttempt;
+use App\Models\Coupon;
+use App\Models\User;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Modules\Director\Models\Camp;
+use Stripe\Checkout\Session;
+use Stripe\Stripe;
+use Stripe\StripeClient;
 
 class StripePaymentService
 {
@@ -18,9 +21,12 @@ class StripePaymentService
     // Processing fee percentage (3%)
     const PROCESSING_FEE_PERCENTAGE = 3;
 
+    protected $stripeClient;
+
     public function __construct()
     {
         Stripe::setApiKey(config('services.stripe.secret'));
+        $this->stripeClient = new StripeClient(config('services.stripe.secret'));
     }
 
     /**
@@ -126,113 +132,6 @@ class StripePaymentService
     /**
      * Create Stripe checkout session
      */
-    // public function createCheckoutSession(Camp $camp, User $referee): array
-    // {
-    //     DB::beginTransaction();
-
-    //     try {
-    //         // Check if can initiate payment
-    //         $canPay = $this->canInitiatePayment($camp, $referee);
-    //         if (!$canPay['can_pay']) {
-    //             return [
-    //                 'success' => false,
-    //                 'error' => $canPay['reason'],
-    //                 'data' => $canPay
-    //             ];
-    //         }
-
-    //         // Mark old expired attempts as failed
-    //         CampPaymentAttempt::where('camp_id', $camp->id)
-    //             ->where('referee_id', $referee->id)
-    //             ->where('status', 'pending')
-    //             ->where('expires_at', '<', now())
-    //             ->update(['status' => 'failed']);
-
-    //         // Stripe requires minimum 30 minutes
-    //         $stripeSessionExpiry = 30; // Stripe minimum
-    //         $retryWindow = (int) config('payment.retry_cooldown', 2); // Your custom retry window
-
-    //         $description = "Location: {$camp->location}";
-    //         if ($camp->start_date && $camp->end_date) {
-    //             $description .= " | {$camp->start_date} to {$camp->end_date}";
-    //         }
-
-    //         // Get valid image URL (only for production HTTPS)
-    //         $imageUrl = $this->getValidImageUrl($camp->camp_logo);
-
-    //         // Prepare product data
-    //         $productData = [
-    //             'name' => "Camp Registration: {$camp->camp_name}",
-    //             'description' => $description,
-    //         ];
-
-    //         // Only add images if we have a valid URL
-    //         if ($imageUrl) {
-    //             $productData['images'] = [$imageUrl];
-    //         }
-
-    //         // Create Stripe Checkout Session
-    //         $session = Session::create([
-    //             'payment_method_types' => ['card'],
-    //             'line_items' => [[
-    //                 'price_data' => [
-    //                     'currency' => 'usd',
-    //                     'product_data' => $productData,
-    //                     'unit_amount' => (int)($camp->price * 100),
-    //                 ],
-    //                 'quantity' => 1,
-    //             ]],
-    //             'mode' => 'payment',
-    //             'success_url' => config('payment.success_url') . '?session_id={CHECKOUT_SESSION_ID}',
-    //             'cancel_url' => config('payment.cancel_url') . '?session_id={CHECKOUT_SESSION_ID}',
-    //             'metadata' => [
-    //                 'camp_id' => $camp->id,
-    //                 'referee_id' => $referee->id,
-    //                 'camp_name' => $camp->camp_name,
-    //                 'referee_email' => $referee->email
-    //             ],
-    //             'customer_email' => $referee->email,
-    //             'expires_at' => now()->addMinutes($stripeSessionExpiry)->timestamp // 30 min minimum
-    //         ]);
-
-    //         // Create payment attempt with YOUR custom expiry (2 min)
-    //         $attempt = CampPaymentAttempt::create([
-    //             'camp_id' => $camp->id,
-    //             'referee_id' => $referee->id,
-    //             'stripe_session_id' => $session->id,
-    //             'amount' => $camp->price,
-    //             'status' => 'pending',
-    //             'expires_at' => now()->addMinutes($retryWindow) // Your custom: 2 minutes
-    //         ]);
-
-    //         DB::commit();
-
-    //         return [
-    //             'success' => true,
-    //             'session_id' => $session->id,
-    //             'checkout_url' => $session->url,
-    //             'attempt_id' => $attempt->id,
-    //             'expires_at' => $attempt->expires_at
-    //         ];
-    //     } catch (Exception $e) {
-    //         DB::rollBack();
-
-    //         // Log the error for debugging
-    //         Log::error('Stripe payment session creation failed', [
-    //             'camp_id' => $camp->id,
-    //             'referee_id' => $referee->id,
-    //             'error' => $e->getMessage(),
-    //             'trace' => $e->getTraceAsString()
-    //         ]);
-
-    //         return [
-    //             'success' => false,
-    //             'error' => 'Failed to create payment session',
-    //             'message' => $e->getMessage()
-    //         ];
-    //     }
-    // }
-
     public function createCheckoutSession(Camp $camp, User $referee): array
     {
         DB::beginTransaction();
@@ -401,9 +300,14 @@ class StripePaymentService
                 'currency' => strtolower($session->currency ?? 'usd'),
                 'status' => 'succeeded',
                 'paid_at' => now(),
+                'coupon_id' => $attempt->coupon_id ?? null,
+                'discount_amount' => $attempt->discount_amount ?? 0,
+                'admin_fee' => $attempt->admin_fee ?? 0,
+                'director_amount' => $attempt->director_amount ?? 0,
                 'metadata' => [
                     'payment_method' => $session->payment_intent->payment_method ?? null,
-                    'customer_email' => $session->customer_email
+                    'customer_email' => $session->customer_email,
+                    'version' => $session->metadata->version ?? 'v1'
                 ]
             ]);
 
@@ -412,6 +316,14 @@ class StripePaymentService
                 'status' => 'completed',
                 'completed_at' => now()
             ]);
+
+            // Record coupon usage (per-referee one-time tracking)
+            if ($payment->coupon_id) {
+                $coupon = \App\Models\Coupon::find($payment->coupon_id);
+                if ($coupon) {
+                    $coupon->recordUsage($payment->referee_id, $payment->camp_id, $payment->id);
+                }
+            }
 
             DB::commit();
 
@@ -464,5 +376,296 @@ class StripePaymentService
             ->where('referee_id', $refereeId)
             ->where('status', 'succeeded')
             ->exists();
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // V2: CHECKOUT SESSION (WITH SPLIT PAYMENT, SPORTS FEE & COUPONS)
+    // ─────────────────────────────────────────────────────────────────
+
+    public function createCheckoutSessionV2(Camp $camp, User $referee, ?Coupon $coupon = null): array
+    {
+        DB::beginTransaction();
+
+        try {
+            $canPay = $this->canInitiatePayment($camp, $referee);
+            if (!$canPay['can_pay']) {
+                return [
+                    'success' => false,
+                    'error' => $canPay['reason'],
+                    'data' => $canPay
+                ];
+            }
+
+            // Mark old expired attempts as failed
+            CampPaymentAttempt::where('camp_id', $camp->id)
+                ->where('referee_id', $referee->id)
+                ->where('status', 'pending')
+                ->where('expires_at', '<', now())
+                ->update(['status' => 'failed']);
+
+            // ── Price Breakdown ──
+            // stored camp.price = director_price + sports_fee (admin fee)
+            $sportsFee = $camp->sportsType->sports_fee ?? 0;
+            $directorBasePrice = $camp->price - $sportsFee; // Director's share before discount
+            $basePrice = $camp->price; // Total price before any discount
+            $discountAmount = 0;
+
+            if ($coupon) {
+                if ($coupon->type === 'fixed') {
+                    $discountAmount = min($coupon->discount_value, $basePrice);
+                } else {
+                    $discountAmount = ($basePrice * $coupon->discount_value) / 100;
+                }
+                $basePrice -= $discountAmount;
+            }
+
+            // Ensure base price doesn't go below 0
+            $basePrice = max(0, $basePrice);
+
+            // Calculate amounts after discount — proportionally reduce director & admin shares
+            $discountRatio = $camp->price > 0 ? ($discountAmount / $camp->price) : 0;
+            $appliedSportsFee = $sportsFee - ($sportsFee * $discountRatio);
+            $appliedDirectorAmount = $basePrice - $appliedSportsFee;
+
+            // Calculate total amount with processing fee (3% Stripe fee)
+            $amountCalculation = $this->calculateTotalAmount($basePrice);
+
+            $stripeFee = $amountCalculation['processing_fee']; // 3% Stripe processing
+            $totalAmount = $amountCalculation['total_amount'];
+
+            // If total amount is less than $0.50 (Stripe minimum transaction threshold),
+            // bypass Stripe payment creation and mark payment as succeeded immediately.
+            if ($totalAmount < 0.50) {
+                $freeSessionId = 'FREE_SESSION_' . Str::upper(Str::random(12));
+
+                $attempt = CampPaymentAttempt::create([
+                    'camp_id' => $camp->id,
+                    'referee_id' => $referee->id,
+                    'stripe_session_id' => $freeSessionId,
+                    'amount' => $totalAmount,
+                    'status' => 'completed',
+                    'completed_at' => now(),
+                    'expires_at' => now(),
+                    'coupon_id' => $coupon ? $coupon->id : null,
+                    'discount_amount' => $discountAmount,
+                    'admin_fee' => 0,
+                    'director_amount' => 0,
+                ]);
+
+                $payment = CampPayment::create([
+                    'camp_id' => $camp->id,
+                    'referee_id' => $referee->id,
+                    'payment_attempt_id' => $attempt->id,
+                    'stripe_payment_intent_id' => 'FREE_' . Str::upper(Str::random(12)),
+                    'stripe_session_id' => $freeSessionId,
+                    'amount' => $totalAmount,
+                    'currency' => 'usd',
+                    'status' => 'succeeded',
+                    'paid_at' => now(),
+                    'coupon_id' => $coupon ? $coupon->id : null,
+                    'discount_amount' => $discountAmount,
+                    'admin_fee' => 0,
+                    'director_amount' => 0,
+                    'metadata' => [
+                        'coupon_code' => $coupon?->code,
+                        'free_registration' => true,
+                        'note' => 'Bypassed Stripe payment because total amount was less than $0.50 threshold'
+                    ]
+                ]);
+
+                if ($coupon) {
+                    $coupon->recordUsage($referee->id, $camp->id, $payment->id);
+                }
+
+                DB::commit();
+
+                return [
+                    'success' => true,
+                    'free_registration' => true,
+                    'payment' => $payment,
+                    'discount_amount' => $discountAmount,
+                    'amount_breakdown' => $amountCalculation
+                ];
+            }
+
+            // For Connect split: platform retains stripe_fee + sports_fee, director gets his share
+            $adminFee = $stripeFee + $appliedSportsFee;
+            $directorAmount = $appliedDirectorAmount;
+
+            // Prepare description
+            $description = "Location: {$camp->location}";
+            if ($camp->start_date && $camp->end_date) {
+                $description .= " | {$camp->start_date} to {$camp->end_date}";
+            }
+            if ($coupon) {
+                $description .= " | Coupon Applied: {$coupon->code}";
+            }
+            $description .= " | Includes {$amountCalculation['processing_fee_percentage']}% processing fee";
+
+            $imageUrl = $this->getValidImageUrl($camp->camp_logo);
+            $productData = [
+                'name' => "Camp Registration: {$camp->camp_name}",
+                'description' => $description,
+            ];
+            if ($imageUrl) {
+                $productData['images'] = [$imageUrl];
+            }
+
+            $sessionData = [
+                'payment_method_types' => ['card'],
+                'line_items' => [[
+                    'price_data' => [
+                        'currency' => 'usd',
+                        'product_data' => $productData,
+                        'unit_amount' => (int)($totalAmount * 100), // Total with fee
+                    ],
+                    'quantity' => 1,
+                ]],
+                'mode' => 'payment',
+                'success_url' => config('payment.success_url') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => config('payment.cancel_url') . '?session_id={CHECKOUT_SESSION_ID}',
+                'metadata' => [
+                    'camp_id' => $camp->id,
+                    'referee_id' => $referee->id,
+                    'camp_name' => $camp->camp_name,
+                    'referee_email' => $referee->email,
+                    'base_price' => $amountCalculation['base_price'],
+                    'sports_fee' => $appliedSportsFee,
+                    'director_price' => $appliedDirectorAmount,
+                    'processing_fee' => $amountCalculation['processing_fee'],
+                    'processing_fee_percentage' => $amountCalculation['processing_fee_percentage'],
+                    'total_amount' => $totalAmount,
+                    'coupon_id' => $coupon ? $coupon->id : null,
+                    'discount_amount' => $discountAmount,
+                    'admin_fee' => $adminFee,
+                    'director_amount' => $directorAmount,
+                    'version' => 'v2-sports-fee'
+                ],
+                'customer_email' => $referee->email,
+                'expires_at' => now()->addMinutes(30)->timestamp
+            ];
+
+            // If director has a connected account, split the payment
+            $director = $camp->director;
+            $directorStripeAccountId = $director ? $director->stripe_account_id : null;
+
+            if ($directorStripeAccountId && $this->isConnectAccountReady($directorStripeAccountId) && $totalAmount > 0) {
+                $sessionData['payment_intent_data'] = [
+                    'application_fee_amount' => (int)($adminFee * 100),
+                    'transfer_data' => [
+                        'destination' => $directorStripeAccountId,
+                    ],
+                ];
+            }
+
+            $session = Session::create($sessionData);
+
+            $attempt = CampPaymentAttempt::create([
+                'camp_id' => $camp->id,
+                'referee_id' => $referee->id,
+                'stripe_session_id' => $session->id,
+                'amount' => $totalAmount,
+                'status' => 'pending',
+                'expires_at' => now()->addMinutes((int) config('payment.retry_cooldown', 2)),
+                'coupon_id' => $coupon ? $coupon->id : null,
+                'discount_amount' => $discountAmount,
+                'admin_fee' => $adminFee,
+                'director_amount' => $directorAmount,
+            ]);
+
+            DB::commit();
+
+            return [
+                'success' => true,
+                'session_id' => $session->id,
+                'checkout_url' => $session->url,
+                'attempt_id' => $attempt->id,
+                'expires_at' => $attempt->expires_at,
+                'amount_breakdown' => [
+                    'camp_price' => (float) $camp->price,
+                    'sports_fee' => (float) $sportsFee,
+                    'director_price' => (float) $directorBasePrice,
+                    'discount' => (float) $discountAmount,
+                    'price_after_discount' => (float) $basePrice,
+                    'processing_fee' => (float) $stripeFee,
+                    'total' => (float) $totalAmount,
+                ],
+                'discount_amount' => (float) $discountAmount
+            ];
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Stripe payment session V2 creation failed', [
+                'camp_id' => $camp->id,
+                'referee_id' => $referee->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Failed to create payment session',
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // STRIPE CONNECT — DIRECTOR ONBOARDING
+    // ─────────────────────────────────────────────────────────────────
+
+    public function createConnectAccount(User $director): string
+    {
+        $account = $this->stripeClient->accounts->create([
+            'type'  => 'express',
+            'email' => $director->email,
+            'metadata' => ['user_id' => (string)$director->id],
+            'capabilities' => [
+                'card_payments' => ['requested' => true],
+                'transfers'     => ['requested' => true],
+            ],
+            'settings' => [
+                'payouts' => [
+                    'schedule' => ['interval' => 'daily'],
+                ],
+            ],
+        ]);
+
+        $director->update(['stripe_account_id' => $account->id]);
+
+        return $account->id;
+    }
+
+    public function createConnectOnboardingLink(string $stripeAccountId, ?string $returnUrl = null, ?string $refreshUrl = null): string
+    {
+        $frontendUrl = rtrim(env('TEST_FRONTEND', env('FRONTEND', config('app.test_frontend_url', config('app.frontend_url', 'https://test.whistleworks.org')))), '/');
+
+        $defaultReturnUrl = $frontendUrl . '/director-dashboard/stripe-connection-success';
+        $defaultRefreshUrl = $frontendUrl . '/director-dashboard/stripe-connect';
+
+        $link = $this->stripeClient->accountLinks->create([
+            'account'     => $stripeAccountId,
+            'refresh_url' => $refreshUrl ?? $defaultRefreshUrl,
+            'return_url'  => $returnUrl ?? $defaultReturnUrl,
+            'type'        => 'account_onboarding',
+            'collect'     => 'eventually_due',
+        ]);
+
+        return $link->url;
+    }
+
+    public function isConnectAccountReady(string $stripeAccountId): bool
+    {
+        try {
+            $account = $this->stripeClient->accounts->retrieve($stripeAccountId);
+            return $account->charges_enabled && $account->payouts_enabled;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    public function getConnectDashboardLink(string $stripeAccountId): string
+    {
+        $link = $this->stripeClient->accounts->createLoginLink($stripeAccountId);
+        return $link->url;
     }
 }

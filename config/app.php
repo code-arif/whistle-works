@@ -54,6 +54,7 @@ return [
 
     'url' => env('APP_URL', 'https://admin.whistleworks.org'),
     'frontend_url' => env('FRONTEND', 'https://whistleworks.org'),
+    'test_frontend_url' => env('TEST_FRONTEND', 'https://whistleworks.org'),
 
     /*
     |--------------------------------------------------------------------------

@@ -3,22 +3,21 @@
 @section('content')
 <!--app-content open-->
 <div class="app-content main-content mt-0">
-    <div class="side-app">
+    <div class="side-app" style="margin-bottom: 50px">
 
         <!-- CONTAINER -->
         <div class="main-container container-fluid">
 
             {{-- PAGE-HEADER --}}
-            <div class="page-header">
+            <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                 <div>
                     <h1 class="page-title">General Settings</h1>
+                    <p class="text-muted mb-0" style="font-size: 13px;">Manage general site configuration</p>
                 </div>
-                <div class="ms-auto pageheader-btn">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="javascript:void(0);">Settings</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">General Settings</li>
-                    </ol>
-                </div>
+                <ol class="breadcrumb mb-0 py-0">
+                    <li class="breadcrumb-item"><a href="{{ route('admin.setting.general.index') }}">Settings</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">General Settings</li>
+                </ol>
             </div>
             {{-- PAGE-HEADER --}}
 
@@ -52,7 +51,7 @@
                                         <span class="text-danger">{{ $message }}</span>
                                         @enderror
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="description" class="form-label">Description:</label>
                                         <textarea class="form-control @error('description') is-invalid @enderror"
@@ -61,8 +60,8 @@
                                         <span class="text-danger">{{ $message }}</span>
                                         @enderror
                                     </div>
-                                 
-                                    
+
+
                                     <div class="form-group">
                                         <label for="author" class="form-label">Author:</label>
                                         <input type="text" class="form-control @error('author') is-invalid @enderror"

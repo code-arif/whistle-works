@@ -36,7 +36,11 @@ class RefereeEvaluationRequest extends FormRequest
                 'NAIA',
                 'JUCO',
                 'HS',
-                'JH/ELEM'
+                'JH/ELEM',
+                'Large School Varsity',
+                'Mid Size School Varsity',
+                'Small School Varsity',
+                'Junior Varsity',
             ])],
 
             'status' => 'nullable|in:draft,submitted',

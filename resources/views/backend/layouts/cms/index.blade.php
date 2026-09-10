@@ -24,12 +24,17 @@ $hasBoth = $hasImage && $hasBg;
 
 
             <!-- PAGE-HEADER -->
-            <div class="page-header">
+            <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                 <div>
-                    <h1 class="page-title">CMS : {{ ucwords(str_replace('_', ' ', $page ?? '')) }} Page {{ ucwords(str_replace('_', ' ', $section ?? '')) }} Section.</h1>
+                    <h1 class="page-title">CMS : {{ ucwords(str_replace('_', ' ', $page ?? '')) }} — {{ ucwords(str_replace('_', ' ', $section ?? '')) }}</h1>
+                    <p class="text-muted mb-0" style="font-size: 13px;">Manage CMS section content and items</p>
                 </div>
-                <div class="ms-auto pageheader-btn">
-                    <button onclick="window.location.href=`{{ route($url . '.display') }}`" class="btn me-2 {{ isset($data->is_display) && $data->is_display == 0 ? 'btn-danger' : 'btn-primary' }}">Display</button>
+                <div class="d-flex align-items-center gap-2">
+                    <button onclick="window.location.href=`{{ route($url . '.display') }}`" class="btn btn-sm {{ isset($data->is_display) && $data->is_display == 0 ? 'btn-danger' : 'btn-primary' }}">Display</button>
+                    <ol class="breadcrumb mb-0 py-0">
+                        <li class="breadcrumb-item">CMS</li>
+                        <li class="breadcrumb-item active" aria-current="page">{{ ucwords(str_replace('_', ' ', $section ?? '')) }}</li>
+                    </ol>
                 </div>
             </div>
             <!-- PAGE-HEADER END -->
@@ -170,6 +175,10 @@ $hasBoth = $hasImage && $hasBg;
 </div>
 <!-- CONTAINER CLOSED -->
 @endsection
+
+@push('scripts')
+    @include('backend.partials._scripts-datatable')
+@endpush
 
 @push('scripts')
 @if(isset($sections) && $sections)

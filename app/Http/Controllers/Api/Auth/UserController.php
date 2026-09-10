@@ -55,10 +55,12 @@ class UserController extends Controller
             'avatar'     => $user->avatar
                 ? asset($user->avatar)
                 : asset('default/profile.jpg'),
-            'slug'       => $user->slug,
-            'role'       => $user->role,
-            'created_at' => $user->created_at,
-            'updated_at' => $user->updated_at,
+            'slug'            => $user->slug,
+            'role'            => $user->role,
+            'is_phone_show'   => (bool) $user->is_phone_show,
+            'is_address_show' => (bool) $user->is_address_show,
+            'created_at'      => $user->created_at,
+            'updated_at'      => $user->updated_at,
         ];
 
         // Extra data only for referee
@@ -96,14 +98,34 @@ class UserController extends Controller
     public function updateProfile(Request $request)
     {
         $validatedData = $request->validate([
-            'first_name' => 'nullable|string|max:100',
-            'last_name'  => 'nullable|string|max:100',
-            'biography'  => 'nullable|string|max:2500',
-            'phone'      => 'required|string|max:150',
-            'address'    => 'required|string',
+            'first_name'      => 'nullable|string|max:100',
+            'last_name'       => 'nullable|string|max:100',
+            'biography'       => 'nullable|string|max:2500',
+            'phone'           => 'nullable|string|max:150',
+            'address'         => 'nullable|string',
+            'is_phone_show'   => 'nullable',
+            'is_address_show' => 'nullable',
         ]);
 
         $user = auth('api')->user();
+
+        if (!$user) {
+            return Helper::jsonResponse(false, 'User not found', 404);
+        }
+
+        if ($request->exists('is_phone_show') && !is_null($request->input('is_phone_show'))) {
+            $input = $request->input('is_phone_show');
+            $validatedData['is_phone_show'] = is_bool($input)
+                ? $input
+                : in_array(strtolower(trim((string) $input)), ['true', '1', 'on', 'yes'], true);
+        }
+
+        if ($request->exists('is_address_show') && !is_null($request->input('is_address_show'))) {
+            $input = $request->input('is_address_show');
+            $validatedData['is_address_show'] = is_bool($input)
+                ? $input
+                : in_array(strtolower(trim((string) $input)), ['true', '1', 'on', 'yes'], true);
+        }
 
         /**
          * Username generator:
@@ -114,24 +136,28 @@ class UserController extends Controller
             $validatedData['username'] = $generated;
         }
 
-        $user->update($validatedData);
+        $user->fill($validatedData);
+        $user->save();
+        $user->refresh();
 
         $response = [
-            'id' => $user->id,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'username' => $user->username,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'address' => $user->address,
-            'biography' => $user->biography,
-            'avatar' => $user->avatar
+            'id'              => $user->id,
+            'first_name'      => $user->first_name,
+            'last_name'       => $user->last_name,
+            'username'        => $user->username,
+            'email'           => $user->email,
+            'phone'           => $user->phone,
+            'address'         => $user->address,
+            'biography'       => $user->biography,
+            'avatar'          => $user->avatar
                 ? asset($user->avatar)
                 : asset('default/profile.jpg'),
-            'slug' => $user->slug,
-            'role' => $user->role,
-            'created_at' => $user->created_at,
-            'updated_at' => $user->updated_at,
+            'slug'            => $user->slug,
+            'role'            => $user->role,
+            'is_phone_show'   => (bool) $user->is_phone_show,
+            'is_address_show' => (bool) $user->is_address_show,
+            'created_at'      => $user->created_at,
+            'updated_at'      => $user->updated_at,
         ];
 
         return Helper::jsonResponse(true, 'Profile updated successfully', 200, $response);

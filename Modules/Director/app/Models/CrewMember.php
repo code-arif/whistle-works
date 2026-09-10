@@ -9,7 +9,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CrewMember extends Model
 {
-    protected $guarded = [];
+    protected $table = 'crew_members';
+
+    protected $fillable = [
+        'crew_id',
+        'referee_id',
+        'position',
+        'joined_at',
+    ];
 
     protected $casts = [
         'joined_at' => 'datetime',

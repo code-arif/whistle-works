@@ -13,9 +13,9 @@ class CampEditResource extends JsonResource
         $checkin = null;
         $evaluatorRegistration = null;
 
-        $adminPercentage = ENV('CAMP_EXTRA_PRICE');
-
-        $finalPrice = ($this->price) - ($adminPercentage);
+        // Use sports_type.sports_fee instead of global CAMP_EXTRA_PRICE
+        $sportsFee = $this->sportsType->sports_fee ?? 0;
+        $finalPrice = ($this->price) - ($sportsFee);
 
         if (auth('api')->check()) {
             $user = auth('api')->user();
@@ -40,9 +40,9 @@ class CampEditResource extends JsonResource
             'start_date'        => $this->start_date->todateString(),
             'end_date'          => $this->end_date->todateString(),
             'camp_details'      => $this->camp_details,
-            // 'price'             => number_format($this->price - ENV('ADMIN_PERCENTAGE'), 2),
-
-            'price' => number_format($finalPrice, 2),
+            'price'             => number_format($finalPrice, 2),
+            'sports_fee'        => number_format($sportsFee, 2),
+            'total_price'       => number_format($this->price, 2),
             'sports_type_id'    => $this->sports_type_id,
             'sports_type_name'  => $this->sports_type_name,
             'status'            => $this->status,

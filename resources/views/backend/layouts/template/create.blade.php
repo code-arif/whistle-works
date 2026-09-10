@@ -9,16 +9,15 @@
         <!-- CONTAINER -->
         <div class="main-container container-fluid">
 
-            <div class="page-header">
+            <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                 <div>
                     <h1 class="page-title">Post</h1>
+                    <p class="text-muted mb-0" style="font-size: 13px;">Create a new blog post</p>
                 </div>
-                <div class="ms-auto pageheader-btn">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="javascript:void(0);">Post</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Create</li>
-                    </ol>
-                </div>
+                <ol class="breadcrumb mb-0 py-0">
+                    <li class="breadcrumb-item"><a href="{{ route('admin.post.index') }}">Post</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Create</li>
+                </ol>
             </div>
 
             <div class="row" id="user-profile">
@@ -128,6 +127,10 @@
 </div>
 <!-- CONTAINER CLOSED -->
 @endsection
+@push('scripts')
+    @include('backend.partials._scripts-summernote')
+@endpush
+
 @push('scripts')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>

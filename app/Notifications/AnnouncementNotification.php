@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Channels\TwilioChannel;
+use App\Channels\TwilioMessage;
 use App\Models\Announcement;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
@@ -22,7 +24,7 @@ class AnnouncementNotification extends Notification
      */
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database', TwilioChannel::class];
     }
 
     /**
@@ -39,5 +41,20 @@ class AnnouncementNotification extends Notification
             'sent_at' => $this->announcement->sent_at,
             'type' => 'announcement', // Distinguish from other notification types
         ];
+    }
+
+    public function toTwilio($notifiable): TwilioMessage
+    {
+        $subject = $this->announcement->subject;
+        $message = html_entity_decode(strip_tags($this->announcement->message), ENT_QUOTES, 'UTF-8');
+        $creator = $this->announcement->creator->first_name . ' ' . $this->announcement->creator->last_name ?? 'Director';
+
+        $body = "New Announcement from {$creator}: {$subject}\n\n{$message}";
+
+        if (mb_strlen($body) > 400) {
+            $body = "A new announcement has been sent by \"{$creator}\". Please log in to Whistle Works for more details.";
+        }
+
+        return (new TwilioMessage)->content($body);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Modules\Director\Http\Controllers\Api\Referee;
 
+use App\Models\AssistantDirectorPermission;
 use Exception;
 use App\Models\User;
 use App\Models\CampPayment;
@@ -29,13 +30,27 @@ class RefereeManageController extends Controller
     {
         $director = auth('api')->user();
 
-        // Verify camp ownership
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $director->id)
+        // Verify camp ownership or assistant director access
+        $camp = Camp::forDirectorOrAssistant($director->id)
+            ->where('id', $campId)
             ->first();
 
         if (!$camp) {
-            return $this->error('Camp not found or you are not authorized.', null, 404);
+            return $this->error('Camp not found.', null, 404);
+        }
+
+        if ($camp->director_id !== $director->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $director->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error('Unauthorized.', null, 403);
+            }
+
+            if (!$permission->manage_roster_referees) {
+                return $this->error('You do not have permission to manual referees for this camp.', null, 403);
+            }
         }
 
         // Find registration record
@@ -134,7 +149,7 @@ class RefereeManageController extends Controller
                 ],
                 200
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
 
             Log::error('Failed to manually check in referee', [
@@ -258,7 +273,7 @@ class RefereeManageController extends Controller
                 ],
                 200
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
 
             Log::error('Bulk manual check-in failed', [
@@ -288,13 +303,27 @@ class RefereeManageController extends Controller
             'jourcy_number' => 'nullable|string|max:3',
         ]);
 
-        // Verify camp ownership
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $director->id)
+        // Find the camp (accessible by director or assistant director)
+        $camp = Camp::forDirectorOrAssistant($director->id)
+            ->where('id', $campId)
             ->first();
 
         if (!$camp) {
-            return $this->error('Camp not found or unauthorized.', null, 404);
+            return $this->error('Camp not found.', null, 404);
+        }
+
+        if ($camp->director_id !== $director->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $director->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error('Unauthorized.', null, 403);
+            }
+
+            if (!$permission->manage_roster_referees) {
+                return $this->error('You do not have permission to update jersey numbers for this camp.', null, 403);
+            }
         }
 
         // Check if schedule is published
@@ -367,16 +396,16 @@ class RefereeManageController extends Controller
             );
 
             // Send notification to referee
-            Notification::send(
-                $referee,
-                new JourcyNumberNotification(
-                    $referee,
-                    $camp,
-                    $director,
-                    $request->jourcy_number,
-                    $oldJerseyNumber
-                )
-            );
+            // Notification::send(
+            //     $referee,
+            //     new JourcyNumberNotification(
+            //         $referee,
+            //         $camp,
+            //         $director,
+            //         $request->jourcy_number,
+            //         $oldJerseyNumber
+            //     )
+            // );
 
             DB::commit();
 
@@ -448,14 +477,28 @@ class RefereeManageController extends Controller
     {
         $director = auth('api')->user();
 
-        // Find the camp and verify ownership
-        $camp = Camp::where('id', $campId)
-            ->where('director_id', $director->id) // Important: only his own camp
+        // Find the camp (accessible by director or assistant director)
+        $camp = Camp::forDirectorOrAssistant($director->id)
+            ->where('id', $campId)
             ->where('status', 'active')
             ->first();
 
         if (!$camp) {
-            return $this->error('Camp not found or you are not authorized to manage this camp.', null, 404);
+            return $this->error('Camp not found.', null, 404);
+        }
+
+        if ($camp->director_id !== $director->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $director->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error('Unauthorized.', null, 403);
+            }
+
+            if (!$permission->manage_roster_referees) {
+                return $this->error('You do not have permission to remove referees for this camp.', null, 403);
+            }
         }
 
         if ($camp->schedule && $camp->schedule->status === 'published') {

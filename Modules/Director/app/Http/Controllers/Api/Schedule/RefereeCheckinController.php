@@ -711,6 +711,58 @@ class RefereeCheckinController extends Controller
         );
     }
 
+    /**
+     * Get previous/completed camps for director only
+     */
+    public function getDirectorPreviousCamps(Request $request)
+    {
+        $director = auth('api')->user();
+        $today = now()->toDateString();
+
+        // Get per_page from request, default 10
+        $perPage = $request->get('per_page', 10);
+
+        $camps = Camp::where('director_id', $director->id)
+            ->with(['sportsType', 'checkedInReferees', 'schedule'])
+            ->orderBy('created_at', 'desc')
+            ->where('end_date', '<', $today)
+            ->paginate($perPage);
+
+        $formatted = $camps->getCollection()->map(function ($camp) {
+            return [
+                'id' => $camp->id,
+                'name' => $camp->camp_name,
+                'logo' => $camp->camp_logo ? asset($camp->camp_logo) : asset('default/no_image.webp'),
+                'location' => $camp->location,
+                'address' => $camp->address ?? null,
+                'timezone' => $camp->timezone ?? null,
+                'sports_type' => $camp->sportsType ?? null,
+                'status' => $camp->status,
+                'total_referees' => $camp->checkedInReferees->count(),
+                'total_courts'    => $camp->schedule ? $camp->schedule->gameSlots()->count() : 0,
+                'start_date' => $camp->start_date->toDateString(),
+                'end_date' => $camp->end_date->toDateString(),
+                'completed_status' => 'completed',
+            ];
+        });
+
+        return $this->success(
+            'Previous camps fetched successfully.',
+            [
+                'previous_camps' => $formatted->values(),
+                'pagination' => [
+                    'total' => $camps->total(),
+                    'per_page' => $camps->perPage(),
+                    'current_page' => $camps->currentPage(),
+                    'last_page' => $camps->lastPage(),
+                ],
+            ],
+            200
+        );
+    }
+
+
+
 
     /**
      * Send check-in notification to camp directors

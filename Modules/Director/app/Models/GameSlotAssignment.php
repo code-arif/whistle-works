@@ -23,7 +23,6 @@ class GameSlotAssignment extends Model
         'assignable_id',
         'assignable_type',
         'assignment_type',
-        'position',
         'is_auto_assigned',
         'assigned_at',
     ];
@@ -37,6 +36,16 @@ class GameSlotAssignment extends Model
     public function gameSlot(): BelongsTo
     {
         return $this->belongsTo(GameSlot::class, 'game_slot_id');
+    }
+
+    public function gameSlotAssignmentPosition()
+    {
+        return $this->hasOne(GameSlotAssignmentPosition::class, 'game_slot_assignment_id');
+    }
+
+    public function getPositionAttribute()
+    {
+        return $this->gameSlotAssignmentPosition?->position ?? $this->attributes['position'] ?? null;
     }
 
     // relation with schedule table.

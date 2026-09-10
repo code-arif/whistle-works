@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RefereeEvaluationRequest;
 use App\Http\Resources\RefereeEvaluationListResource;
 use App\Http\Resources\RefereeEvaluationResource;
+use App\Models\AssistantDirectorPermission;
 use App\Models\CampEvaluatorRegistration;
 use App\Models\CampRefereeJearsyNumber;
 use App\Models\RecommendedLevel;
 use App\Models\RefereeEvaluation;
+use App\Models\SportsType;
 use App\Models\User;
 use App\Traits\ApiResponse;
 use Exception;
@@ -18,6 +20,9 @@ use Illuminate\Support\Facades\DB;
 use Modules\Director\Models\Camp;
 use Modules\Director\Models\CampRefereeCheckin;
 use Modules\Director\Transformers\Referee\CheckedInRefereeResource;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Csv;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class RefereeEvaluationController extends Controller
 {
@@ -171,8 +176,15 @@ class RefereeEvaluationController extends Controller
             return $this->error([], 'Camp not found.', 404);
         }
 
-        if ($user->hasRole('director') && $camp->director_id !== $user->id) {
-            return $this->error([], 'You can only view evaluations from your own camps.', 403);
+        if ($user->hasRole('director')) {
+            $isOwner = $camp->director_id === $user->id;
+            $isAssistant = AssistantDirectorPermission::where('camp_id', $campId)
+                ->where('assistant_director_id', $user->id)
+                ->exists();
+
+            if (!$isOwner && !$isAssistant) {
+                return $this->error([], 'You can only view evaluations from your own or assigned camps.', 403);
+            }
         }
 
         if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
@@ -302,6 +314,215 @@ class RefereeEvaluationController extends Controller
                 'total_evaluations' => $evaluations->count(),
             ]
         );
+    }
+
+
+    /**
+     * Export referee evaluations by camp as CSV or Excel (Director only)
+     */
+    public function exportEvaluationsByCamp(Request $request, $campId)
+    {
+        $user = auth('api')->user();
+
+        if (!$user || !$user->hasRole('director')) {
+            return $this->error([], 'Unauthorized access. Only directors can export evaluations.', 403);
+        }
+
+        $camp = Camp::find($campId);
+        if (!$camp) {
+            return $this->error([], 'Camp not found.', 404);
+        }
+
+        $isOwner = $camp->director_id === $user->id;
+        $isAssistant = AssistantDirectorPermission::where('camp_id', $campId)
+            ->where('assistant_director_id', $user->id)
+            ->exists();
+
+        if (!$isOwner && !$isAssistant) {
+            return $this->error([], 'You can only export evaluations from your own or assigned camps.', 403);
+        }
+
+        // Get all evaluations with relationships
+        $query = RefereeEvaluation::with(['referee', 'evaluator', 'gameSlot', 'recommendedLevels'])
+            ->forCamp($campId);
+
+        $evaluations = $query->orderBy('created_at', 'asc')->get();
+
+        // Group by referee
+        $groupedByReferee = $evaluations->groupBy('referee_id');
+
+        $formattedData = [];
+
+        foreach ($groupedByReferee as $refereeId => $refereeEvaluations) {
+            $referee = $refereeEvaluations->first()->referee;
+
+            // Calculate averages for this referee
+            $avgCallAccuracy = round($refereeEvaluations->avg('call_accuracy'), 3);
+            $avgCommunication = round($refereeEvaluations->avg('communication_skills'), 3);
+            $avgConsistency = round($refereeEvaluations->avg('consistency_of_calls'), 3);
+            $avgCourtPosition = round($refereeEvaluations->avg('court_position_mechanics'), 3);
+            $avgFitness = round($refereeEvaluations->avg('fitness_mobility'), 3);
+            $avgGameAwareness = round($refereeEvaluations->avg('game_awareness'), 3);
+
+            // Calculate overall average
+            $overallAvg = round(($avgCallAccuracy + $avgCommunication + $avgConsistency +
+                $avgCourtPosition + $avgFitness + $avgGameAwareness) / 6, 3);
+
+            // Get all recommended levels with count for fixed levels
+            $fixedLevels = ['NCAA D1', 'NCAA D2', 'NAIA', 'JUCO', 'HS', 'JH/ELEM'];
+            $levelCounts = array_fill_keys($fixedLevels, 0);
+
+            foreach ($refereeEvaluations as $evaluation) {
+                foreach ($evaluation->recommendedLevels as $level) {
+                    if (array_key_exists($level->level, $levelCounts)) {
+                        $levelCounts[$level->level]++;
+                    } else {
+                        $levelCounts[$level->level] = 1;
+                    }
+                }
+            }
+
+            // Format recommended levels for display / highest level calculation
+            $recommendedLevelsFormatted = [];
+            foreach ($levelCounts as $level => $count) {
+                if ($count > 0) {
+                    $recommendedLevelsFormatted[] = [
+                        'level' => $level,
+                        'count' => $count
+                    ];
+                }
+            }
+
+            // Sort by count descending
+            usort($recommendedLevelsFormatted, fn($a, $b) => $b['count'] <=> $a['count']);
+
+            // Get the highest recommended level (most frequent)
+            $highestRecommendedLevel = !empty($recommendedLevelsFormatted)
+                ? $recommendedLevelsFormatted[0]['level']
+                : 'N/A';
+
+            // Collect all evaluator names
+            $evaluators = $refereeEvaluations->map(function ($eval) {
+                return $eval->evaluator ? ($eval->evaluator->first_name . ' ' . $eval->evaluator->last_name) : 'N/A';
+            })->unique()->filter()->implode(', ');
+
+            // Collect all comments
+            $allComments = $refereeEvaluations->filter(function ($eval) {
+                return !empty($eval->referee_feedback);
+            })->pluck('referee_feedback')->implode(' | ');
+
+            $formattedData[] = [
+                'referee_name' => $referee ? trim($referee->first_name . ' ' . $referee->last_name) : 'N/A',
+                'referee_email' => $referee->email ?? 'N/A',
+                'referee_address' => $referee->address ?? 'N/A',
+                'total_evaluations' => $refereeEvaluations->count(),
+                'overall_avg' => $overallAvg,
+                'call_accuracy' => $avgCallAccuracy,
+                'communication_skills' => $avgCommunication,
+                'consistency_of_calls' => $avgConsistency,
+                'court_position_mechanics' => $avgCourtPosition,
+                'fitness_mobility' => $avgFitness,
+                'game_awareness' => $avgGameAwareness,
+                'highest_recommended_level' => $highestRecommendedLevel ?: 'N/A',
+                'ncaa_d1_count' => !empty($levelCounts['NCAA D1']) ? $levelCounts['NCAA D1'] : '-',
+                'ncaa_d2_count' => !empty($levelCounts['NCAA D2']) ? $levelCounts['NCAA D2'] : '-',
+                'naia_count' => !empty($levelCounts['NAIA']) ? $levelCounts['NAIA'] : '-',
+                'juco_count' => !empty($levelCounts['JUCO']) ? $levelCounts['JUCO'] : '-',
+                'hs_count' => !empty($levelCounts['HS']) ? $levelCounts['HS'] : '-',
+                'jh_elem_count' => !empty($levelCounts['JH/ELEM']) ? $levelCounts['JH/ELEM'] : '-',
+                'evaluators' => $evaluators ?: 'N/A',
+                'comments' => $allComments ?: 'N/A',
+            ];
+        }
+
+        // Sort by overall average descending
+        usort($formattedData, fn($a, $b) => $b['overall_avg'] <=> $a['overall_avg']);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $campName = $camp->camp_name ?? 'Camp';
+
+        // Title Row
+        $sheet->setCellValue('A1', 'Camp Name:');
+        $sheet->setCellValue('B1', $campName . ' - Referee Evaluations Export');
+
+        // Header Row
+        $headers = [
+            'A3' => 'Referee Name',
+            'B3' => 'Email',
+            'C3' => 'Address',
+            'D3' => 'Total Evaluations',
+            'E3' => 'Overall Avg Score',
+            'F3' => 'Call Accuracy Avg',
+            'G3' => 'Communication Skills Avg',
+            'H3' => 'Consistency of Calls Avg',
+            'I3' => 'Court Position Mechanics Avg',
+            'J3' => 'Fitness & Mobility Avg',
+            'K3' => 'Game Awareness Avg',
+            'L3' => 'Highest Recommended Level',
+            'M3' => 'NCAA D1',
+            'N3' => 'NCAA D2',
+            'O3' => 'NAIA',
+            'P3' => 'JUCO',
+            'Q3' => 'HS',
+            'R3' => 'JH/ELEM',
+            'S3' => 'Evaluators',
+            'T3' => 'Comments / Feedback',
+        ];
+
+        foreach ($headers as $cell => $value) {
+            $sheet->setCellValue($cell, $value);
+        }
+
+        $rowIndex = 4;
+        foreach ($formattedData as $data) {
+            $sheet->setCellValue('A' . $rowIndex, $data['referee_name']);
+            $sheet->setCellValue('B' . $rowIndex, $data['referee_email']);
+            $sheet->setCellValue('C' . $rowIndex, $data['referee_address']);
+            $sheet->setCellValue('D' . $rowIndex, $data['total_evaluations']);
+            $sheet->setCellValue('E' . $rowIndex, $data['overall_avg']);
+            $sheet->setCellValue('F' . $rowIndex, $data['call_accuracy']);
+            $sheet->setCellValue('G' . $rowIndex, $data['communication_skills']);
+            $sheet->setCellValue('H' . $rowIndex, $data['consistency_of_calls']);
+            $sheet->setCellValue('I' . $rowIndex, $data['court_position_mechanics']);
+            $sheet->setCellValue('J' . $rowIndex, $data['fitness_mobility']);
+            $sheet->setCellValue('K' . $rowIndex, $data['game_awareness']);
+            $sheet->setCellValue('L' . $rowIndex, $data['highest_recommended_level']);
+            $sheet->setCellValue('M' . $rowIndex, $data['ncaa_d1_count']);
+            $sheet->setCellValue('N' . $rowIndex, $data['ncaa_d2_count']);
+            $sheet->setCellValue('O' . $rowIndex, $data['naia_count']);
+            $sheet->setCellValue('P' . $rowIndex, $data['juco_count']);
+            $sheet->setCellValue('Q' . $rowIndex, $data['hs_count']);
+            $sheet->setCellValue('R' . $rowIndex, $data['jh_elem_count']);
+            $sheet->setCellValue('S' . $rowIndex, $data['evaluators']);
+            $sheet->setCellValue('T' . $rowIndex, $data['comments']);
+            $rowIndex++;
+        }
+
+        $format = strtolower($request->query('format', $request->query('type', 'csv')));
+        $isExcel = in_array($format, ['excel', 'xlsx']);
+
+        $safeCampName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $campName);
+
+        if ($isExcel) {
+            $writer = new Xlsx($spreadsheet);
+            $fileName = $safeCampName . '_referee_evaluations_' . date('Y_m_d') . '.xlsx';
+            $contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        } else {
+            $writer = new Csv($spreadsheet);
+            $writer->setUseBOM(true);
+            $fileName = $safeCampName . '_referee_evaluations_' . date('Y_m_d') . '.csv';
+            $contentType = 'text/csv; charset=UTF-8';
+        }
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => $contentType,
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Pragma' => 'public',
+        ]);
     }
 
 
@@ -509,7 +730,7 @@ class RefereeEvaluationController extends Controller
     /**
      * Get all checked-in referees for a camp that the evaluator can evaluate
      */
-    public function getAllRegisteredInReferees($campId)
+    public function getAllRegisteredInReferees(Request $request, $campId)
     {
         $user = auth('api')->user();
 
@@ -530,6 +751,8 @@ class RefereeEvaluationController extends Controller
 
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $campId)
             ->pluck('jersey_number', 'referee_id');
+
+        $perPage = $request->get('per_page', 15);
 
         $checkedInReferees = CampRefereeCheckin::select('camp_referee_checkins.*')
             ->where('camp_referee_checkins.camp_id', $campId)
@@ -576,7 +799,7 @@ class RefereeEvaluationController extends Controller
         // **NEW: Check if user can evaluate in this camp**
         if (!RefereeEvaluation::canEvaluateInCamp($user, $campId)) {
             if ($user->hasRole('director')) {
-                return $this->error([], 'You can only view referees from your own camps.', 403);
+                return $this->error([], 'You can only view referees from your own or assigned camps.', 403);
             } else {
                 return $this->error([], 'You must be registered and approved for this camp.', 403);
             }
@@ -626,8 +849,15 @@ class RefereeEvaluationController extends Controller
         }
 
         // Permission check for director
-        if ($user->hasRole('director') && $camp->director_id !== $user->id) {
-            return $this->error([], 'You can only view evaluations from your own camps.', 403);
+        if ($user->hasRole('director')) {
+            $isOwner = $camp->director_id === $user->id;
+            $isAssistant = AssistantDirectorPermission::where('camp_id', $campId)
+                ->where('assistant_director_id', $user->id)
+                ->exists();
+
+            if (!$isOwner && !$isAssistant) {
+                return $this->error([], 'You can only view evaluations from your own or assigned camps.', 403);
+            }
         }
 
         // Permission check for evaluator
@@ -810,4 +1040,37 @@ class RefereeEvaluationController extends Controller
             ]
         );
     }
+
+    public function getSportTypes(Request $request)
+    {
+        $requestInfo = $request->name;
+
+        $sportType = SportsType::where('status', 'active')
+            ->where('sports_name', $requestInfo)
+            ->first();
+
+        if ($sportType && $sportType->sports_name == 'HS Basketball') {
+            // If SportsType exists (only HS Basketball)
+            $data = [
+                'Large School Varsity',
+                'Mid Size School Varsity',
+                'Small School Varsity',
+                'Junior Varsity',
+                'JH/ELEM',
+            ];
+        } else {
+            // If SportsType does not exist
+            $data = [
+                'NCAA D1',
+                'NCAA D2',
+                'NAIA',
+                'JUCO',
+                'HS',
+                'JH/ELEM',
+            ];
+        }
+
+        return $this->success('Data retrieved successfully.', $data, 200);
+    }
+
 }

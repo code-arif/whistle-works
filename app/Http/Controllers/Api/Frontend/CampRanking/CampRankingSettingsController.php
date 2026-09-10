@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Frontend\CampRanking;
 
+use App\Models\AssistantDirectorPermission;
 use Exception;
 use Illuminate\Http\Request;
 use App\Traits\ApiResponse;
@@ -30,12 +31,19 @@ class CampRankingSettingsController extends Controller
 
         // Check if camp exists and belongs to this director
         $camp = Camp::find($campId);
+
         if (!$camp) {
             return $this->error([], 'Camp not found.', 404);
         }
 
         if ($camp->director_id !== $user->id) {
-            return $this->error([], 'You can only manage settings for your own camps.', 403);
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error('Unauthorized.', null, 403);
+            }
         }
 
         // Get current settings
@@ -71,7 +79,17 @@ class CampRankingSettingsController extends Controller
         }
 
         if ($camp->director_id !== $user->id) {
-            return $this->error([], 'You can only manage settings for your own camps.', 403);
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error('You can only manage ranking reports for your own camps.', null, 403);
+            }
+
+            if (!$permission->manage_ranking_reports) {
+                return $this->error('You do not have permission to manage ranking reports for this camp.', null, 403);
+            }
         }
 
         // Validate request

@@ -2,23 +2,20 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Stripe\Plan;
-use Stripe\Product;
 use Modules\Director\Models\Camp;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Notifications\AnnouncementNotification;
 use Modules\Director\Models\CampRefereeCheckin;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles, SoftDeletes;
 
     protected $guard_name = ['api'];
 
@@ -49,6 +46,9 @@ class User extends Authenticatable implements JWTSubject
         'biography',
         'jourcy_number',
 
+        'is_phone_show',
+        'is_address_show',
+
         'otp',
         'otp_expires_at',
         'otp_verified_at',
@@ -65,6 +65,7 @@ class User extends Authenticatable implements JWTSubject
 
         'email_verification_token',
         'email_verification_token_expires_at',
+        'receive_sms_notifications',
     ];
 
 
@@ -87,7 +88,11 @@ class User extends Authenticatable implements JWTSubject
         return [
             'otp_verified_at' => 'datetime',
             'password' => 'hashed',
-            'last_activity_at' => 'datetime'
+            'last_activity_at' => 'datetime',
+            'stripe_onboarded_at' => 'datetime',
+            'receive_sms_notifications' => 'boolean',
+            'is_phone_show' => 'boolean',
+            'is_address_show' => 'boolean',
         ];
     }
 
@@ -116,7 +121,6 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(FirebaseTokens::class);
     }
-
 
     public function profile()
     {
@@ -177,6 +181,16 @@ class User extends Authenticatable implements JWTSubject
      */
     public function routeNotificationForTwilio(): ?string
     {
+        // Skip test users (IDs 3 through 90)
+        if ($this->id >= 3 && $this->id <= 90) {
+            return null;
+        }
+
+        // Skip users who opted out of SMS notifications
+        if (isset($this->receive_sms_notifications) && !$this->receive_sms_notifications) {
+            return null;
+        }
+
         if (empty($this->phone)) {
             return null;
         }
@@ -197,4 +211,25 @@ class User extends Authenticatable implements JWTSubject
         // Already includes country code without +  (e.g. 8801XXXXXXXXX)
         return '+' . $phone;
     }
+
+    /**
+     * Relation with Assistant Director Permission
+     */
+
+    public function assistantDirectorPermissions(): HasMany
+    {
+        return $this->hasMany(
+            AssistantDirectorPermission::class,
+            'assistant_director_id'
+        );
+    }
+
+    public function directorPermissions(): HasMany
+    {
+        return $this->hasMany(
+            AssistantDirectorPermission::class,
+            'director_id'
+        );
+    }
+
 }

@@ -8,10 +8,17 @@
             <div class="container-fluid">
 
                 {{-- PAGE HEADER --}}
-                <div class="page-header">
-                    <h1 class="page-title">About Page – CMS</h1>
-                    <div class="ms-auto">
+                <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
+                    <div>
+                        <h1 class="page-title">Getting Started</h1>
+                        <p class="text-muted mb-0" style="font-size: 13px;">Manage getting started section content</p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
                         <span class="badge bg-primary">All Sections Editable</span>
+                        <ol class="breadcrumb mb-0 py-0">
+                            <li class="breadcrumb-item"><a href="{{ route('admin.cms.about.index') }}">About</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Getting Started</li>
+                        </ol>
                     </div>
                 </div>
                 {{-- ========================================

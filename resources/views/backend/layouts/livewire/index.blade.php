@@ -14,16 +14,15 @@
 
 
             <!-- PAGE-HEADER -->
-            <div class="page-header">
+            <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                 <div>
                     <h1 class="page-title">Post</h1>
+                    <p class="text-muted mb-0" style="font-size: 13px;">Manage livewire CRUD posts</p>
                 </div>
-                <div class="ms-auto pageheader-btn">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="javascript:void(0);">Post</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Index</li>
-                    </ol>
-                </div>
+                <ol class="breadcrumb mb-0 py-0">
+                    <li class="breadcrumb-item"><a href="{{ route('admin.livewire.crud.index') }}">Post</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Index</li>
+                </ol>
             </div>
             <!-- PAGE-HEADER END -->
 

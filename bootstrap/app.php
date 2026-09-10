@@ -4,11 +4,8 @@ use App\Helpers\Helper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
-use App\Http\Middleware\ApiAdminMiddleware;
 use App\Http\Middleware\WebAdminMiddleware;
 use Illuminate\Auth\AuthenticationException;
-use App\Http\Middleware\ApiCustomerMiddleware;
-use App\Http\Middleware\ApiRetailerMiddleware;
 use Illuminate\Validation\ValidationException;
 use App\Http\Middleware\WebAuthCheckMiddleware;
 use App\Http\Middleware\WebDeveloperMiddleware;
@@ -32,12 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function () {
             Route::middleware(['web'])->prefix('ajax')->name('ajax.')->group(base_path('routes/ajax.php'));
-            Route::middleware(['web', 'web-developer'])->prefix('developer')->name('developer.')->group(base_path('routes/web-developer.php'));
             Route::middleware(['web', 'web-admin'])->prefix('admin')->name('admin.')->group(base_path('routes/web-admin.php'));
-            Route::middleware(['api', 'api-admin'])->prefix('api.admin')->name('api.admin.')->group(base_path('routes/api-admin.php'));
-            Route::middleware(['api', 'api-retailer'])->prefix('api/retailer')->name('api.retailer.')->group(base_path('routes/api-retailer.php'));
-            Route::middleware(['api', 'otp', 'api-customer'])->prefix('api/customer')->name('api.customer.')->group(base_path('routes/api-customer.php'));
-            Route::middleware(['api'])->group(base_path('routes/api-stripe.php'));
         }
     )
     ->withBroadcasting(
@@ -48,9 +40,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'web-developer'         => WebDeveloperMiddleware::class,
             'web-admin'             => WebAdminMiddleware::class,
-            'api-admin'             => ApiAdminMiddleware::class,
-            'api-customer'          => ApiCustomerMiddleware::class,
-            'api-retailer'          => ApiRetailerMiddleware::class,
             'api-otp'               => ApiOtpVerifiedMiddleware::class,
             'web-otp'               => WebOtpVerifiedMiddleware::class,
             'check'                 => WebAuthCheckMiddleware::class,
@@ -60,6 +49,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->validateCsrfTokens(except: [
             'webhook/stripe',
+            'webhook/stripe/*',
+            'api/webhook/stripe',
+            'api/webhook/stripe/*',
             'https://whistle-works.netlify.app/*',
             'http://localhost:5173',
             'http://localhost:5173/*',
@@ -81,6 +73,17 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (Throwable $e, Request $request) {
             if ($request->is('api/*')) {
+                \Illuminate\Support\Facades\Log::info('[API Error Debug Log]', [
+                    'exception' => get_class($e),
+                    'message'   => $e->getMessage(),
+                    'url'       => $request->fullUrl(),
+                    'method'    => $request->method(),
+                    'user_id'   => auth('api')->id(),
+                    'user_email'=> auth('api')->user()?->email,
+                    'user_roles'=> auth('api')->user()?->getRoleNames()->toArray(),
+                    'user_roles_db' => auth('api')->user()?->roles->toArray(),
+                ]);
+
                 if ($e instanceof ValidationException) {
                     return Helper::jsonErrorResponse($e->getMessage(), 422, $e->errors());
                 }

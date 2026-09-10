@@ -23,6 +23,12 @@
     window.authUserId = {{ auth()->id() ?? 'null' }};
 </script>
 
+    {{-- Google Fonts: preconnect + non-blocking load --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+
     @vite(['resources/js/app.js'])
 
     @include('backend.partials._styles')
@@ -33,8 +39,6 @@
 </head>
 
 <body class="ltr app sidebar-mini">
-    @include('backend.partials._switcher')
-
     @include('backend.partials._loader')
 
     <!-- PAGE -->

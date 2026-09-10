@@ -22,7 +22,7 @@ class Crew extends Model
     {
         return $this->belongsToMany(User::class, 'crew_members', 'crew_id', 'referee_id')
             ->withTimestamps()
-            ->withPivot('joined_at');
+            ->withPivot('joined_at', 'position');
     }
 
     public function crewMembers(): HasMany
@@ -44,7 +44,7 @@ class Crew extends Model
             'assignable',                     // morph name (table e assignable_type & assignable_id)
             'game_slot_assignments'           // pivot table name
         )
-            ->withPivot('position', 'is_auto_assigned', 'assigned_at', 'assignment_type') // jodi extra fields lagbe
+            ->withPivot('is_auto_assigned', 'assigned_at', 'assignment_type') // jodi extra fields lagbe
             ->withTimestamps();
     }
 

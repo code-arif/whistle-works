@@ -27,6 +27,8 @@ class ScheduleCreateRequest extends FormRequest
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'address' => 'nullable|string|max:255',
+            'referee_positions' => 'nullable|array',
+            'referee_positions.*' => 'required|string|max:255',
         ];
     }
 

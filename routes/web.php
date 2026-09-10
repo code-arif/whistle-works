@@ -7,7 +7,6 @@ use App\Http\Controllers\Api\Auth\SocialLoginController;
 use App\Http\Controllers\Api\Auth\V2\V2RegisterController;
 use App\Http\Controllers\Web\Frontend\AffiliateController;
 use App\Http\Controllers\Web\Frontend\SubscriberController;
-use App\Https\App\Http\Controllers\Api\Gateway\Stripe\StripeWebhookController;
 use App\Http\Controllers\Api\StripeWebhookController as ApiStripeWebhookController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');

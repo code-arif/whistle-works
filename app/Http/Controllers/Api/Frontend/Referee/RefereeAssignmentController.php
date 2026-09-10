@@ -334,6 +334,7 @@ class RefereeAssignmentController extends Controller
                                 'phone'     => $member->phone,
                                 'type'      => 'crew_member',
                                 'crew_name' => $crew->name ?? 'N/A',
+                                'position'  => $member->pivot->position ?? null,
                                 'is_me'     => $member->id === $referee->id,
                             ];
                         }
@@ -343,13 +344,14 @@ class RefereeAssignmentController extends Controller
                     if (!$assignedReferee) continue;
 
                     $individualReferees[] = [
-                        'id'     => $assignedReferee->id,
-                        'name'   => $assignedReferee->first_name . ' ' . $assignedReferee->last_name,
-                        'avatar' => $assignedReferee->avatar ? asset($assignedReferee->avatar) : asset('default/profile.jpg'),
-                        'email'  => $assignedReferee->email,
-                        'phone'  => $assignedReferee->phone,
-                        'type'   => 'individual',
-                        'is_me'  => $assignedReferee->id === $referee->id,
+                        'id'       => $assignedReferee->id,
+                        'name'     => $assignedReferee->first_name . ' ' . $assignedReferee->last_name,
+                        'avatar'   => $assignedReferee->avatar ? asset($assignedReferee->avatar) : asset('default/profile.jpg'),
+                        'email'    => $assignedReferee->email,
+                        'phone'    => $assignedReferee->phone,
+                        'type'     => 'individual',
+                        'position' => $slotAssignment->position ?? null,
+                        'is_me'    => $assignedReferee->id === $referee->id,
                     ];
                 }
             }

@@ -92,6 +92,7 @@ class RefereeAssignmentCrewController extends Controller
                     'email' => $member->email,
                     'phone' => $member->phone ?? null,
                     'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                    'position' => $member->pivot->position ?? null,
                     'joined_at' => $member->pivot->joined_at ?? null,
                     'is_me' => $member->id === $referee->id
                 ];
@@ -254,6 +255,7 @@ class RefereeAssignmentCrewController extends Controller
                     'email' => $member->email,
                     'phone' => $member->phone ?? null,
                     'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                    'position' => $member->pivot->position ?? null,
                     'joined_at' => $member->pivot->joined_at ?? null,
                     'is_me' => $member->id === $referee->id
                 ];
@@ -308,7 +310,7 @@ class RefereeAssignmentCrewController extends Controller
         // Find crew
         $crew = Crew::with([
             'camp',
-            'members.referee'
+            'members'
         ])->find($crewId);
 
         if (!$crew) {
@@ -316,7 +318,7 @@ class RefereeAssignmentCrewController extends Controller
         }
 
         // Check if referee is a member of this crew
-        $isMember = $crew->members->contains('referee_id', $referee->id);
+        $isMember = $crew->members->contains('id', $referee->id);
         if (!$isMember) {
             return $this->error('You are not a member of this crew.', null, 403);
         }
@@ -369,15 +371,15 @@ class RefereeAssignmentCrewController extends Controller
 
         // Format crew members
         $members = $crew->members->map(function ($member) use ($referee) {
-            $memberReferee = $member->referee;
             return [
-                'id' => $memberReferee->id,
-                'name' => $memberReferee->first_name . ' ' . $memberReferee->last_name,
-                'email' => $memberReferee->email,
-                'phone' => $memberReferee->phone,
-                'avatar' => $memberReferee->avatar ? asset($memberReferee->avatar) : asset('default/profile.jpg'),
-                'joined_at' => $member->joined_at,
-                'is_me' => $memberReferee->id === $referee->id
+                'id' => $member->id,
+                'name' => $member->first_name . ' ' . $member->last_name,
+                'email' => $member->email,
+                'phone' => $member->phone,
+                'avatar' => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                'position' => $member->pivot->position ?? null,
+                'joined_at' => $member->pivot->joined_at ?? null,
+                'is_me' => $member->id === $referee->id
             ];
         })->values();
 

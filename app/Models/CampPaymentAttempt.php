@@ -15,14 +15,26 @@ class CampPaymentAttempt extends Model
         'amount',
         'status',
         'expires_at',
-        'completed_at'
+        'completed_at',
+        'coupon_id',
+        'discount_amount',
+        'admin_fee',
+        'director_amount',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'admin_fee' => 'decimal:2',
+        'director_amount' => 'decimal:2',
         'expires_at' => 'datetime',
         'completed_at' => 'datetime'
     ];
+
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class);
+    }
 
     public function camp(): BelongsTo
     {

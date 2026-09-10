@@ -31,9 +31,6 @@
 <link rel='stylesheet' href="{{ asset('default') }}/nprogress/nprogress.css" />
 
 
-<!-- Toster -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
-
 
 <style>
     .header-brand-img {

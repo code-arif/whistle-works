@@ -15,13 +15,15 @@ class GameSlotRefereeResource extends JsonResource
      */
     public function toArray($request)
     {
+        $referee = $this->assignable;
+
         return [
-            'assignment_id' => $this->id,                    // GameSlotAssignment er id
-            'referee_id'    => $this->assignable_id,         // since polymorphic User
-            'name'          => $this->assignable->full_name ?? ($this->assignable->first_name . ' ' . $this->assignable->last_name),
-            'email'         => $this->assignable->email,
-            'avatar'        => $this->assignable->avatar ? asset($this->assignable->avatar) : asset('default/profile.jpg'),
-            // jodi extra field lagbe, add korte paro
+            'assignment_id' => $this->id,
+            'position'      => $this->position,
+            'referee_id'    => $this->assignable_id,
+            'name'          => $referee ? ($referee->full_name ?? trim(($referee->first_name ?? '') . ' ' . ($referee->last_name ?? ''))) : null,
+            'email'         => $referee?->email,
+            'avatar'        => $referee?->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
         ];
     }
 }

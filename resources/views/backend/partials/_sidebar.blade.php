@@ -4,8 +4,14 @@
     <div class="app-sidebar" style="overflow: scroll">
         <div class="side-header">
             <a class="header-brand1" href="{{ route('admin.dashboard') }}">
-                <img src="{{ asset(settings()->logo ?? 'default/logo.png') }}" id="header-brand-logo" alt="logo"
-                    width="{{ settings()->logo_width ?? 200 }}" height="{{ settings()->logo_height ?? 100 }}">
+                <img src="{{ asset($settings->logo ?? 'default/logo-mini.png') }}" class="header-brand-img desktop-logo"
+                    alt="logo">
+                <img src="{{ asset($settings->logo ?? 'default/logo-mini.png') }}" class="header-brand-img toggle-logo"
+                    alt="logo">
+                <img src="{{ asset($settings->logo ?? 'default/logo-mini.png') }}" class="header-brand-img light-logo"
+                    alt="logo">
+                <img src="{{ asset($settings->logo ?? 'default/logo.png') }}" class="header-brand-img light-logo1"
+                    alt="logo">
             </a>
         </div>
         <div class="main-sidemenu">
@@ -14,51 +20,67 @@
                     <path d="M13.293 6.293 7.586 12l5.707 5.707 1.414-1.414L10.414 12l4.293-4.293z" />
                 </svg>
             </div>
+
             <ul class="side-menu mt-2">
-                <li>
-                    <h3>Menu</h3>
-                </li>
+                {{-- Dashboard --}}
                 <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('dashboard') ? 'has-link active' : '' }}"
+                    <a class="side-menu__item {{ request()->routeIs('admin.dashboard') ? 'has-link' : '' }}"
                         href="{{ route('admin.dashboard') }}">
-                        <i class="fa-solid fa-gauge-high side-menu__icon"></i>
-                        <span class=" side-menu__label">Dashboard</span>
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span class="side-menu__label">Dashboard</span>
                     </a>
                 </li>
 
+                {{-- Sports type --}}
                 <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.sports-type.*') ? 'has-link active' : '' }}"
+                    <a class="side-menu__item {{ request()->routeIs('admin.sports-type.*') ? 'has-link' : '' }}"
                         href="{{ route('admin.sports-type.index') }}">
-                        <i class="fa-solid fa-baseball-bat-ball side-menu__icon"></i>
+                        <i class="fa-solid fa-baseball-bat-ball"></i>
                         <span class="side-menu__label">Sports Type</span>
-
                     </a>
                 </li>
 
                 {{-- user list --}}
                 <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.users.manage.*') ? 'has-link active' : '' }}"
+                    <a class="side-menu__item {{ request()->routeIs('admin.users.manage.*') ? 'has-link' : '' }}"
                         href="{{ route('admin.users.manage.index') }}">
-                        <i class="fa-solid fa-users side-menu__icon"></i>
+                        <i class="fa-solid fa-users"></i>
                         <span class="side-menu__label">User List</span>
-
                     </a>
                 </li>
 
                 {{-- manage camps --}}
                 <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.camps.index.*') ? 'has-link active' : '' }}"
+                    <a class="side-menu__item {{ request()->routeIs('admin.camps.*') ? 'has-link' : '' }}"
                         href="{{ route('admin.camps.index') }}">
-                        <i class="fa-solid fa-tent side-menu__icon"></i>
-                        {{-- <i class="fa-solid fa-tent"></i> --}}
+                        <i class="fa-solid fa-tent"></i>
                         <span class="side-menu__label">Manage Camps</span>
-
                     </a>
                 </li>
+
+                {{-- coupons --}}
                 <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.setting.*') ? 'has-link active' : '' }}"
+                    <a class="side-menu__item {{ request()->routeIs('admin.coupon.*') ? 'has-link' : '' }}"
+                        href="{{ route('admin.coupon.index') }}">
+                        <i class="fa-solid fa-tag"></i>
+                        <span class="side-menu__label">Coupons</span>
+                    </a>
+                </li>
+
+                {{-- payment monitor --}}
+                <li class="slide">
+                    <a class="side-menu__item {{ request()->routeIs('admin.monitor.*') ? 'has-link' : '' }}"
+                        href="{{ route('admin.monitor.index') }}">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span class="side-menu__label">Payment Monitor</span>
+                    </a>
+                </li>
+
+                {{-- Terms & Privacy --}}
+                <li class="slide">
+                    <a class="side-menu__item {{ request()->routeIs('admin.cms.privecyandterms.*') ? 'has-link' : '' }}"
                         data-bs-toggle="slide" href="#">
-                        <i class="side-menu__icon fa fa-file-contract"></i>
+                        <i class="fa-solid fa-file-contract"></i>
                         <span class="side-menu__label">Terms & Privacy</span>
                         <i class="angle fa fa-angle-right"></i>
                     </a>
@@ -68,19 +90,16 @@
                                 Condition</a></li>
                         <li><a href="{{ route('admin.cms.privecyandterms.privacy') }}" class="slide-item">Privacy
                                 Policy</a></li>
-
                     </ul>
                 </li>
 
-                <li>
-                    <h3>CMS</h3>
-                </li>
+                <hr>
 
                 {{-- home page --}}
                 <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.cms.home*') ? 'has-link active' : '' }}"
+                    <a class="side-menu__item {{ request()->routeIs('admin.cms.home*') ? 'has-link' : '' }}"
                         data-bs-toggle="slide" href="#">
-                        <i class="side-menu__icon fa fa-home"></i>
+                        <i class="fa-solid fa-home"></i>
                         <span class="side-menu__label">Home Page</span>
                         <i class="angle fa fa-angle-right"></i>
                     </a>
@@ -103,9 +122,9 @@
 
                 {{-- About page --}}
                 <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.cms.about*') ? 'has-link active' : '' }}"
-                        data-bs-toggle="slide" href="/">
-                        <i class="side-menu__icon fa fa-user"></i>
+                    <a class="side-menu__item {{ request()->routeIs('admin.cms.about*') ? 'has-link' : '' }}"
+                        data-bs-toggle="slide" href="#">
+                        <i class="fa-solid fa-address-card"></i>
                         <span class="side-menu__label">About Page</span>
                         <i class="angle fa fa-angle-right"></i>
                     </a>
@@ -118,23 +137,19 @@
                                 Started</a></li>
                     </ul>
                 </li>
-                <li>
-                    <h3>Settings</h3>
-                </li>
 
+                <hr>
+
+                {{-- Settings --}}
                 <li class="slide">
-                    <a class="side-menu__item {{ request()->routeIs('admin.setting.*') ? 'has-link active' : '' }}"
+                    <a class="side-menu__item {{ request()->routeIs('admin.setting.*') ? 'has-link' : '' }}"
                         data-bs-toggle="slide" href="#">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 512 512">
-                            <path
-                                d="M495.9 166.6c3.2 8.7 .5 18.4-6.4 24.6l-43.3 39.4c1.1 8.3 1.7 16.8 1.7 25.4s-.6 17.1-1.7 25.4l43.3 39.4c6.9 6.2 9.6 15.9 6.4 24.6c-4.4 11.9-9.7 23.3-15.8 34.3l-4.7 8.1c-6.6 11-14 21.4-22.1 31.2c-5.9 7.2-15.7 9.6-24.5 6.8l-55.7-17.7c-13.4 10.3-28.2 18.9-44 25.4l-12.5 57.1c-2 9.1-9 16.3-18.2 17.8c-13.8 2.3-28 3.5-42.5 3.5s-28.7-1.2-42.5-3.5c-9.2-1.5-16.2-8.7-18.2-17.8l-12.5-57.1c-15.8-6.5-30.6-15.1-44-25.4L83.1 425.9c-8.8 2.8-18.6 .3-24.5-6.8c-8.1-9.8-15.5-20.2-22.1-31.2l-4.7-8.1c-6.1-11-11.4-22.4-15.8-34.3c-3.2-8.7-.5-18.4 6.4-24.6l43.3-39.4C64.6 273.1 64 264.6 64 256s.6-17.1 1.7-25.4L22.4 191.2c-6.9-6.2-9.6-15.9-6.4-24.6c4.4-11.9 9.7-23.3 15.8-34.3l4.7-8.1c6.6-11 14-21.4 22.1-31.2c5.9-7.2 15.7-9.6 24.5-6.8l55.7 17.7c13.4-10.3 28.2-18.9 44-25.4l12.5-57.1c2-9.1 9-16.3 18.2-17.8C227.3 1.2 241.5 0 256 0s28.7 1.2 42.5 3.5c9.2 1.5 16.2 8.7 18.2 17.8l12.5 57.1c15.8 6.5 30.6 15.1 44 25.4l55.7-17.7c8.8-2.8 18.6-.3 24.5 6.8c8.1 9.8 15.5 20.2 22.1 31.2l4.7 8.1c6.1 11 11.4 22.4 15.8 34.3zM256 336a80 80 0 1 0 0-160 80 80 0 1 0 0 160z" />
-                        </svg>
+                        <i class="fa-solid fa-gear"></i>
                         <span class="side-menu__label">Settings</span><i class="angle fa fa-angle-right"></i>
                     </a>
                     <ul class="slide-menu">
                         <li><a href="{{ route('admin.setting.general.index') }}" class="slide-item">General
                                 Settings</a></li>
-                        <!-- <li><a href="{{ route('admin.setting.env.index') }}" class="slide-item">Environment Settings</a></li> -->
                         <li><a href="{{ route('admin.setting.logo.index') }}" class="slide-item">Logo Settings</a>
                         </li>
                         <li><a href="{{ route('admin.setting.profile.index') }}" class="slide-item">Profile
@@ -143,61 +158,213 @@
                         </li>
                         <li><a href="{{ route('admin.setting.stripe.index') }}" class="slide-item">Stripe
                                 Settings</a></li>
-                        {{-- <li><a href="{{ route('admin.setting.firebase.index') }}" class="slide-item">Firebase
-                                Settings</a></li> --}}
                     </ul>
                 </li>
             </ul>
-            <div class="slide-right" id="slide-right"><svg xmlns="http://www.w3.org/2000/svg" fill="#7b8191"
-                    width="24" height="24" viewBox="0 0 24 24">
-                    <path d="M10.707 17.707 16.414 12l-5.707-5.707-1.414 1.414L13.586 12l-4.293 4.293z" />
-                </svg>
-            </div>
         </div>
     </div>
 </div>
-
-<script>
-    const sportsIcons = [
-        "fa-football", "fa-basketball", "fa-baseball", "fa-volleyball", "fa-table-tennis", "fa-dumbbell",
-        "fa-golf-ball-tee", "fa-hockey-puck"
-    ];
-
-    const iconElement = document.getElementById("sportsIcon");
-
-    function changeIcon() {
-        // Remove previous icon classes
-        sportsIcons.forEach(icon => iconElement.classList.remove(icon));
-
-        // Pick a random icon
-        const randomIcon = sportsIcons[Math.floor(Math.random() * sportsIcons.length)];
-
-        // Add new icon
-        iconElement.classList.add(randomIcon);
-    }
-
-    // Change every 2 seconds
-    setInterval(changeIcon, 2000);
-
-    // Set one icon instantly on load
-    changeIcon();
-</script>
-
 <!--/APP-SIDEBAR-->
 
+<script>
+    // Auto-expand parent slide menus when a sub-item is already marked active by Blade
+    (function() {
+        'use strict';
+
+        function expandActiveParents() {
+            document.querySelectorAll('.slide-menu .slide-item.active').forEach(function(item) {
+                var parentUl = item.closest('.slide-menu');
+                var parentLi = item.closest('.slide');
+                if (parentLi && !parentLi.classList.contains('is-expanded')) {
+                    parentUl.classList.add('open');
+                    parentUl.style.display = '';
+                    parentLi.classList.add('is-expanded');
+                    var toggle = parentLi.querySelector('[data-bs-toggle="slide"]');
+                    if (toggle) toggle.setAttribute('aria-expanded', 'true');
+                }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', expandActiveParents);
+        } else {
+            expandActiveParents();
+        }
+        setTimeout(expandActiveParents, 300);
+    })();
+</script>
+
 <style>
-    .side-header {
-        width: 100px;
-        height: 75px;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .side-menu {
+        padding-top: 10px;
     }
 
-    #header-brand-logo {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
+    /* Section Divider */
+    .side-menu hr {
+        margin: 16px 20px;
+        border: 0;
+        height: 1px;
+        background: linear-gradient(to right, transparent, #E5E7EB, transparent);
+        opacity: 0.6;
+    }
+
+    /* Base Menu Item (Slim) */
+    .side-menu__item {
+        display: flex;
+        align-items: center;
+        padding: 12px 10px;
+        color: #4B5563;
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 8px;
+        margin: 2px 12px;
+        border: 1px solid transparent;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+    }
+
+    /* Hover effect */
+    .side-menu__item:hover {
+        background: linear-gradient(118deg, rgba(0, 174, 239, 0.08), rgba(0, 174, 239, 0.02));
+        color: #00AEEF;
+        transform: translateX(3px);
+    }
+
+    /* Active / expanded link */
+    .side-menu__item.has-link,
+    .side-menu__item[aria-expanded="true"] {
+        background: linear-gradient(118deg, rgba(0, 174, 239, 0.12), rgba(0, 174, 239, 0.03));
+        color: #00AEEF;
+        font-weight: 600;
+        border-color: rgba(0, 174, 239, 0.2);
+        box-shadow: 0 2px 6px 0 rgba(0, 174, 239, 0.1);
+    }
+
+    /* Active accent line */
+    .side-menu__item.has-link::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 12%;
+        height: 76%;
+        width: 3px;
+        background-color: #00AEEF;
+        border-radius: 0 3px 3px 0;
+    }
+
+    /* Icons (FontAwesome & SVG) */
+    .side-menu__item i,
+    .side-menu__item svg {
+        width: 20px;
+        height: 20px;
+        font-size: 15px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+        color: #6B7280;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Active / hover icons */
+    .side-menu__item:hover i,
+    .side-menu__item:hover svg,
+    .side-menu__item.has-link i,
+    .side-menu__item.has-link svg,
+    .side-menu__item[aria-expanded="true"] i,
+    .side-menu__item[aria-expanded="true"] svg {
+        color: #00AEEF;
+        transform: scale(1.1);
+    }
+
+    /* Dropdown Arrow */
+    .side-menu__item .angle {
+        margin-left: auto;
+        font-size: 13px;
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        color: #9CA3AF;
+        width: auto;
+        height: auto;
+        margin-right: 0;
+    }
+
+    .side-menu__item[aria-expanded="true"] .angle,
+    .side-menu__item.has-link .angle {
+        color: #00AEEF;
+        transform: rotate(90deg);
+    }
+
+    /* Submenu Container */
+    .slide-menu {
+        padding-left: 16px;
+        margin: 2px 0;
+        position: relative;
+    }
+
+    /* Submenu Item */
+    .slide-menu .slide-item {
+        display: flex;
+        align-items: center;
+        padding: 7px 14px 7px 28px;
+        color: #6B7280;
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 6px;
+        margin: 1px 12px 1px 6px;
+        position: relative;
+    }
+
+    /* Clean up any default theme injected icons or pseudo elements */
+    .app-sidebar .side-menu .slide-menu .slide-item::after,
+    .app-sidebar .side-menu .slide-menu .slide-item i {
+        display: none !important;
+        content: none !important;
+    }
+
+    /* Submenu circle indicator */
+    .app-sidebar .side-menu .slide-menu .slide-item::before {
+        content: '' !important;
+        position: absolute !important;
+        left: 12px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        width: 6px !important;
+        height: 6px !important;
+        background-color: #D1D5DB !important;
+        background-image: none !important;
+        border: none !important;
+        border-radius: 50% !important;
+        transition: all 0.2s ease !important;
+        font-family: inherit !important;
+        font-size: 0 !important;
+    }
+
+    /* Active circle - filled with brand color */
+    .app-sidebar .side-menu .slide-menu .slide-item.active::before {
+        background-color: #00AEEF !important;
+        box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.15) !important;
+    }
+
+    /* Hover circle - filled with brand color */
+    .app-sidebar .side-menu .slide-menu .slide-item:hover::before {
+        background-color: #00AEEF !important;
+    }
+
+    .app-sidebar .side-menu .slide-menu .slide-item:hover {
+        background-color: rgba(0, 174, 239, 0.05);
+        color: #00AEEF;
+        transform: translateX(3px);
+    }
+
+    .slide-menu .slide-item.active {
+        color: #00AEEF;
+        font-weight: 600;
+        background-color: rgba(0, 174, 239, 0.08);
     }
 </style>

@@ -3,23 +3,24 @@
 @section('content')
     <!--app-content open-->
     <div class="app-content main-content mt-0">
-        <div class="side-app">
+        <div class="side-app" style="margin-bottom: 50px">
 
             <!-- CONTAINER -->
             <div class="main-container container-fluid">
 
                 {{-- PAGE-HEADER --}}
-                <div class="page-header">
+                <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
                     <div>
-                        <h1 class="page-title">Stripe Settings <i class="fa-solid fa-triangle-exclamation text-danger"
-                                title="Warning"></i></h1>
+                        <h1 class="page-title">Stripe Settings
+                            {{-- <i class="fa-solid fa-triangle-exclamation text-danger"
+                                title="Warning"></i> --}}
+                            </h1>
+                        <p class="text-muted mb-0" style="font-size: 13px;">Configure Stripe payment gateway credentials</p>
                     </div>
-                    <div class="ms-auto pageheader-btn">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="javascript:void(0);">Settings</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Stripe</li>
-                        </ol>
-                    </div>
+                    <ol class="breadcrumb mb-0 py-0">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.setting.general.index') }}">Settings</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Stripe</li>
+                    </ol>
                 </div>
                 {{-- PAGE-HEADER --}}
 
@@ -169,50 +170,55 @@
                 </div> --}}
 
 
-                    {{-- for admin and seller percentage --}}
+                    {{-- Sports Fee per Sports Type (replaces global CAMP_EXTRA_PRICE) --}}
                     <div class="row col-md-6">
                         <div class="col-lg-12 col-xl-12 col-md-12 col-sm-12">
-                            <h3>Software fee</h3>
+                            {{-- <h3>Sports Fees <i class="fa-solid fa-circle-info text-primary" title="Fees are now configured per sports type"></i> --}}
+                            </h3>
                             <div class="card box-shadow-0">
                                 <div class="card-body">
-                                    <form class="form form-horizontal" method="post"
-                                        action="{{ route('admin.setting.stripe.update-percentage') }}"
-                                        enctype="multipart/form-data">
-                                        @csrf
-                                        @method('PATCH')
-                                        <div class="row mb-4">
-                                            <label for="admin_percentage" class="col-md-3 form-label">Add software fee</label>
-                                            <div class="col-md-9">
-                                                <input class="form-control @error('CAMP_EXTRA_PRICE') is-invalid @enderror"
-                                                    id="admin_percentage" name="admin_percentage"
-                                                    placeholder="Enter the software fee" type="text"
-                                                    value="{{ env('CAMP_EXTRA_PRICE') ?? old('admin_percentage') }}">
-                                                @error('admin_percentage')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </div>
+                                    <div class="alert alert-info d-flex align-items-center" role="alert">
+                                        {{-- <i class="fe fe-info me-2"></i> --}}
+                                        <div>
+                                            <strong>Per-Sports-Type Fees Active</strong><br>
+                                            The software fee is now configured individually for each sports type.
+                                            <a href="{{ route('admin.sports-type.index') }}" class="alert-link">Manage Sports Fees</a>
                                         </div>
+                                    </div>
 
-                                        {{-- <div class="row mb-4">
-                                        <label for="seller_percentage" class="col-md-3 form-label">Seller Percentage</label>
-                                        <div class="col-md-9">
-                                            <input class="form-control @error('seller_percentage') is-invalid @enderror" id="seller_percentage"
-                                                name="seller_percentage" placeholder="Enter the seller percentage" type="text"
-                                                value="{{ env('SELLER_PERCENTAGE') ?? old('seller_percentage') }}">
-                                            @error('seller_percentage')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                    <p class="text-muted mb-2" style="font-size: 13px;">Current sports fees:</p>
+                                    @php
+                                        $sportsTypes = \App\Models\SportsType::where('status', 'active')->get();
+                                    @endphp
+                                    @if($sportsTypes->count() > 0)
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Sports Type</th>
+                                                        <th class="text-end">Fee ($)</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($sportsTypes as $st)
+                                                        <tr>
+                                                            <td>{{ $st->sports_name }}</td>
+                                                            <td class="text-end fw-bold">${{ number_format($st->sports_fee, 2) }}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
                                         </div>
-                                    </div> --}}
+                                    @else
+                                        <p class="text-muted">No active sports types found.</p>
+                                    @endif
 
-                                        <div class="row justify-content-end">
-                                            <div class="col-sm-9">
-                                                <div>
-                                                    <button class="submit btn btn-primary" type="submit">Submit</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </form>
+                                    <hr>
+                                    <p class="text-muted mb-0" style="font-size: 12px;">
+                                        {{-- <i class="fe fe-alert-circle"></i> --}}
+                                        The global <code>CAMP_EXTRA_PRICE</code> env setting is no longer used.
+                                        Each sports type has its own fee configured in <a href="{{ route('admin.sports-type.index') }}">Sports Type Management</a>.
+                                    </p>
                                 </div>
                             </div>
                         </div>

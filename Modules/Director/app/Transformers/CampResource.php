@@ -12,6 +12,7 @@ class CampResource extends JsonResource
     {
         $checkin = null;
         $evaluatorRegistration = null;
+        $permission = $this->assistantDirectorPermissions->first();
 
         if (auth('api')->check()) {
             $user = auth('api')->user();
@@ -37,6 +38,7 @@ class CampResource extends JsonResource
             'end_date'          => $this->end_date->todateString(),
             'camp_details'      => $this->camp_details,
             'price'             => number_format($this->price, 2),
+            'sports_fee'        => number_format($this->sportsType->sports_fee ?? 0, 2),
             'sports_type_id'    => $this->sports_type_id,
             'sports_type_name'  => $this->sports_type_name,
             'status'            => $this->status,
@@ -65,6 +67,9 @@ class CampResource extends JsonResource
                 'phone'      => $this->director->phone ?? null,
                 'address'    => $this->director->address ?? null,
             ],
+
+            // Assistant Director Permission
+            'permission' => $permission,
 
             $this->mergeWhen(
                 auth('api')->check() && auth('api')->user()->hasRole('referee'),

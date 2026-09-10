@@ -14,7 +14,18 @@ return new class extends Migration
         Schema::create('recommended_levels', function (Blueprint $table) {
             $table->id();
             $table->foreignId('evaluation_id')->constrained('referee_evaluations')->onDelete('cascade');
-            $table->enum('level', ['NCAA D1', 'NCAA D2', 'NAIA', 'JUCO', 'HS', 'JH/ELEM']);
+            $table->enum('level', [
+                'NCAA D1',
+                'NCAA D2',
+                'NAIA',
+                'JUCO',
+                'HS',
+                'JH/ELEM',
+                'Large School Varsity',
+                'Mid Size School Varsity',
+                'Small School Varsity',
+                'Junior Varsity',
+            ]);
             $table->timestamps();
 
             $table->index('evaluation_id');

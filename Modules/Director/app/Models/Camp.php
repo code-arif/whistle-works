@@ -2,6 +2,7 @@
 
 namespace Modules\Director\Models;
 
+use App\Models\AssistantDirectorPermission;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\SportsType;
@@ -52,6 +53,11 @@ class Camp extends Model
     public function schedule(): HasOne
     {
         return $this->hasOne(Schedule::class);
+    }
+
+    public function gameSlotAssignmentPositions(): HasMany
+    {
+        return $this->hasMany(GameSlotAssignmentPosition::class, 'camp_id');
     }
 
     /**
@@ -201,4 +207,30 @@ class Camp extends Model
         )->withPivot('jersey_number')
             ->withTimestamps();
     }
+
+    /**
+     * Relation with Assistant Director Permission
+     */
+
+    public function assistantDirectorPermissions(): HasMany
+    {
+        return $this->hasMany(
+            AssistantDirectorPermission::class,
+            'camp_id'
+        );
+    }
+
+    /**
+     * Scope query to camps owned by user OR where user is assigned as assistant director
+     */
+    public function scopeForDirectorOrAssistant($query, $userId)
+    {
+        return $query->where(function ($q) use ($userId) {
+            $q->where('director_id', $userId)
+                ->orWhereHas('assistantDirectorPermissions', function ($sub) use ($userId) {
+                    $sub->where('assistant_director_id', $userId);
+                });
+        });
+    }
+
 }

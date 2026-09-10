@@ -9,6 +9,10 @@ class CampRegistraionsListResource extends JsonResource
 {
     public function toArray($request)
     {
+        $showContactDetails = in_array($this->status, ['approved', 'pending'])
+            || $request->is('*approved*')
+            || $request->is('*pending*');
+
         return [
             'id' => $this->id,
             'status' => $this->status,
@@ -20,12 +24,12 @@ class CampRegistraionsListResource extends JsonResource
 
             // evaluator nested – limited fields only
             'evaluator' => [
-                'id' => $this->evaluator->id,
-                'name' => $this->evaluator->first_name . ' ' . $this->evaluator->last_name ?? null,
-                'email' => $this->evaluator->email,
-                'phone' => $this->evaluator->phone,
-                'address' => $this->evaluator->address,
-                'avatar' => $this->evaluator->avatar ? asset('' . $this->evaluator->avatar) : asset('default/profile.jpg'),
+                'id' => $this->evaluator?->id,
+                'name' => $this->evaluator ? trim(($this->evaluator->first_name ?? '') . ' ' . ($this->evaluator->last_name ?? '')) : null,
+                'email' => $this->evaluator?->email,
+                'phone' => ($showContactDetails || $this->evaluator?->is_phone_show) ? $this->evaluator?->phone : null,
+                'address' => ($showContactDetails || $this->evaluator?->is_address_show) ? $this->evaluator?->address : null,
+                'avatar' => $this->evaluator?->avatar ? asset('' . $this->evaluator->avatar) : asset('default/profile.jpg'),
             ],
         ];
     }

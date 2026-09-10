@@ -8,8 +8,15 @@
             <div class="container-fluid">
 
                 {{-- PAGE HEADER --}}
-                <div class="page-header">
-                    <h1 class="page-title">About Page – CMS</h1>
+                <div class="page-header d-flex flex-wrap align-items-center justify-content-between">
+                    <div>
+                        <h1 class="page-title">About Page — CMS</h1>
+                        <p class="text-muted mb-0" style="font-size: 13px;">Manage about page content and sections</p>
+                    </div>
+                    <ol class="breadcrumb mb-0 py-0">
+                        <li class="breadcrumb-item">CMS</li>
+                        <li class="breadcrumb-item active" aria-current="page">About</li>
+                    </ol>
                 </div>
 
                 <div class="row">
@@ -274,6 +281,10 @@
 
 @push('styles')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Dropify/0.2.2/css/dropify.min.css">
+@endpush
+
+@push('scripts')
+    @include('backend.partials._scripts-datatable')
 @endpush
 
 @push('scripts')

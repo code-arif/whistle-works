@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Frontend;
 
+use App\Models\AssistantDirectorPermission;
 use Exception;
 use App\Models\User;
 use App\Traits\ApiResponse;
@@ -22,24 +23,37 @@ class AnnouncementController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'camp_id'           => 'required|integer|exists:camps,id',
-            'subject'           => 'required|string|max:255',
-            'message'           => 'required|string',
-            'announcement_to'   => 'required|in:all,referees,evaluators,specific',
+            'camp_id' => 'required|integer|exists:camps,id',
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string',
+            'announcement_to' => 'required|in:all,referees,evaluators,specific',
             'specific_user_ids' => 'required_if:announcement_to,specific|array'
         ]);
 
         $director = auth()->user();
 
-        // Verify this camp belongs to this director and is active
+        // Verify this camp exists and is active
         $camp = DB::table('camps')
             ->where('id', $request->camp_id)
-            ->where('director_id', $director->id)
             ->where('status', 'active')
             ->first();
 
         if (!$camp) {
-            return $this->error([], 'Camp not found or you are not authorized for this camp', 403);
+            return $this->error([], 'Camp not found.', 404);
+        }
+
+        if ($camp->director_id !== $director->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $director->id)
+                ->first();
+
+            if (!$permission) {
+                return $this->error([], 'You can only manage announcements for your own camps.', 403);
+            }
+
+            if (!$permission->manage_announcements) {
+                return $this->error([], 'You do not have permission to manage announcements for this camp.', 403);
+            }
         }
 
         DB::beginTransaction();
@@ -47,13 +61,13 @@ class AnnouncementController extends Controller
         try {
             // Store camp_id on the announcement for proper scoping
             $announcement = Announcement::create([
-                'camp_id'         => $request->camp_id, // <-- required fix
-                'created_by'      => $director->id,
-                'subject'         => $request->subject,
-                'message'         => $request->message,
+                'camp_id' => $request->camp_id, // <-- required fix
+                'created_by' => $director->id,
+                'subject' => $request->subject,
+                'message' => $request->message,
                 'announcement_to' => $request->announcement_to,
-                'status'          => 'sent',
-                'sent_at'         => now()
+                'status' => 'sent',
+                'sent_at' => now()
             ]);
 
             $recipients = $this->getCampRecipients(
@@ -69,10 +83,10 @@ class AnnouncementController extends Controller
 
             $recipientData = $recipients->map(fn($user) => [
                 'announcement_id' => $announcement->id,
-                'user_id'         => $user->id,
-                'is_read'         => false,
-                'created_at'      => now(),
-                'updated_at'      => now(),
+                'user_id' => $user->id,
+                'is_read' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
             ])->toArray();
 
             DB::table('announcement_recipients')->insert($recipientData);
@@ -162,6 +176,31 @@ class AnnouncementController extends Controller
                 $query->where('name', 'director');
             })
             ->get();
+    }
+
+    /**
+     * Get all announcements created by the authenticated director (across all camps).
+     * A director can only see their own announcements, not those of other directors.
+     */
+    public function myAnnouncements(Request $request)
+    {
+        $director = auth()->user();
+
+        $announcements = Announcement::with(['camp:id,camp_name'])
+            ->where('created_by', $director->id)
+            ->withCount('recipients')
+            ->orderBy('created_at', 'desc')
+            ->paginate($request->get('per_page', 15));
+
+        return $this->success('Announcements fetched successfully', [
+            'announcements' => $announcements->items(),
+            'pagination'    => [
+                'total'        => $announcements->total(),
+                'per_page'     => $announcements->perPage(),
+                'current_page' => $announcements->currentPage(),
+                'last_page'    => $announcements->lastPage(),
+            ],
+        ], 200);
     }
 
     /**

@@ -12,6 +12,7 @@ use App\Models\Testimonials;
 class HomePageController extends Controller
 {
     use ApiResponse;
+
     // get home page all cms data
     public function home()
     {
