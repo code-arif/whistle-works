@@ -46,6 +46,3 @@ Route::get('/verify-email', [V2RegisterController::class, 'verifyEmail'])
 
 
 // Route::post('/rental/webhook', [RentedPaymentController::class, 'handleWebhook']);
-
-
-//
