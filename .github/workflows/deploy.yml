@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - deploy
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -16,7 +15,7 @@ jobs:
           username: ${{ secrets.MAIN_SSH_USER }}
           key: ${{ secrets.MAIN_SSH_PRIVATE_KEY }}
           script: |
-            cd /home/whistleworks-admin/htdocs/main.yourdomain.com
+            cd /home/whistleworks-admin/htdocs/https://admin.whistleworks.org/
             git pull origin main
             composer install --no-dev --optimize-autoloader
             php artisan migrate --force
