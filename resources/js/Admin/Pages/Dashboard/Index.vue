@@ -7,7 +7,6 @@ import RevenueAnalyticsChart from '@/Admin/Components/Dashboard/RevenueAnalytics
 import CommunityRoleDistribution from '@/Admin/Components/Dashboard/CommunityRoleDistribution.vue';
 import TopCampsTable from '@/Admin/Components/Dashboard/TopCampsTable.vue';
 import RecentPaymentsFeed from '@/Admin/Components/Dashboard/RecentPaymentsFeed.vue';
-import SystemHealthBar from '@/Admin/Components/Dashboard/SystemHealthBar.vue';
 
 defineProps({
   userStats: { type: Object, default: () => ({}) },
@@ -20,7 +19,6 @@ defineProps({
   topCamps: { type: Array, default: () => [] },
   recentPayments: { type: Array, default: () => [] },
   dailyActivities: { type: Array, default: () => [] },
-  systemInfo: { type: Object, default: () => ({}) },
   error: { type: String, default: null },
 });
 </script>
@@ -30,14 +28,13 @@ defineProps({
     <Head title="Executive Dashboard - Whistle-Works" />
 
     <!-- Error Alert (If Any) -->
-    <div v-if="error" class="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm">
+    <div v-if="error" class="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs shadow-xs">
       {{ error }}
     </div>
 
     <!-- 1. Executive BI Hero Banner -->
     <ExecutiveHero 
       :user-total="userStats.total"
-      :payment-success-rate="paymentStats.rate ?? 100"
     />
 
     <!-- 2. Financial & Operational KPI Cards Grid -->
@@ -49,7 +46,7 @@ defineProps({
     />
 
     <!-- 3. Revenue Analytics Chart & Role Split -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
       <div class="lg:col-span-2">
         <RevenueAnalyticsChart 
           :monthly-revenue="monthlyRevenue"
@@ -64,7 +61,7 @@ defineProps({
     </div>
 
     <!-- 4. Top Camps & Recent Payments Feed -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
       <div class="lg:col-span-2">
         <TopCampsTable 
           :top-camps="topCamps"
@@ -76,11 +73,6 @@ defineProps({
         />
       </div>
     </div>
-
-    <!-- 5. System Diagnostics & Cache Bar -->
-    <SystemHealthBar 
-      :system-info="systemInfo"
-    />
 
   </AdminLayout>
 </template>

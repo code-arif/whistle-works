@@ -1,14 +1,25 @@
 <script setup>
+const currentYear = new Date().getFullYear();
 </script>
 
 <template>
-  <footer class="border-t border-slate-800/80 py-4 px-6 lg:px-8 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 bg-[#070A0F]/60">
+  <footer class="border-t border-slate-200 dark:border-white/[0.08] py-4 px-4 sm:px-6 lg:px-8 text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/40 dark:bg-[#1E1E2C]/80 transition-colors duration-150">
     <div class="flex items-center gap-2">
-      <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-      <span>Whistle-Works Operations Platform &bull; Production v2.0</span>
+      <span>&copy; {{ currentYear }} Whistle-Works, Inc. All rights reserved.</span>
     </div>
-    <div class="font-mono text-[11px] text-slate-500">
-      Executive Stack: Laravel 11 + Inertia + Vue 3 + Tailwind
+    
+    <div class="flex items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+      <a href="/admin/faq" class="hover:text-slate-900 dark:hover:text-slate-200 transition-colors">
+        Support
+      </a>
+      <span>&bull;</span>
+      <a href="/admin/cms/privecyandterms/privacy" class="hover:text-slate-900 dark:hover:text-slate-200 transition-colors">
+        Privacy Policy
+      </a>
+      <span>&bull;</span>
+      <a href="/admin/cms/privecyandterms/terms" class="hover:text-slate-900 dark:hover:text-slate-200 transition-colors">
+        Terms
+      </a>
     </div>
   </footer>
 </template>
