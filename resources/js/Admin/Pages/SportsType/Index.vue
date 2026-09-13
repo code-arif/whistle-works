@@ -325,17 +325,17 @@ const toggleStatus = (item) => {
 
       <!-- Custom Cell: Actions -->
       <template #cell(actions)="{ row }">
-        <div class="flex items-center justify-end gap-1">
+        <div class="flex items-center justify-end gap-1.5">
           <button
             @click="openEditModal(row)"
-            class="p-1.5 rounded-md text-slate-500 hover:text-[#3B8FF3] hover:bg-slate-100 dark:hover:bg-[#1E1E2C] transition-colors cursor-pointer"
+            class="p-1.5 rounded-md text-[#3B8FF3] bg-[#3B8FF3]/10 hover:bg-[#3B8FF3]/20 border border-[#3B8FF3]/30 dark:border-[#3B8FF3]/30 transition-all duration-150 cursor-pointer shadow-2xs"
             title="Edit Sports Type"
           >
             <Edit2 class="w-3.5 h-3.5" />
           </button>
           <button
             @click="openDeleteModal(row)"
-            class="p-1.5 rounded-md text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
+            class="p-1.5 rounded-md text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 dark:border-rose-500/30 transition-all duration-150 cursor-pointer shadow-2xs"
             title="Delete Sports Type"
           >
             <Trash2 class="w-3.5 h-3.5" />
