@@ -15,11 +15,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 
+    {{-- Theme Initializer (Prevents FOUC) --}}
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+
     {{-- Scripts & Styles --}}
     @vite(['resources/css/app.css', 'resources/js/Admin/app.js'])
     @inertiaHead
 </head>
-<body class="font-sans antialiased bg-[#0B0F17] text-slate-100 selection:bg-indigo-500 selection:text-white min-h-screen">
+<body class="font-sans antialiased bg-slate-50 text-slate-900 dark:bg-[#070A0F] dark:text-slate-100 selection:bg-indigo-500 selection:text-white min-h-screen transition-colors duration-200">
     @inertia
 </body>
 </html>

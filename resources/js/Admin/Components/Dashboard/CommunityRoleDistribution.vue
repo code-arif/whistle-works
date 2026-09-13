@@ -14,12 +14,12 @@ const formatNumber = (val) => {
 </script>
 
 <template>
-  <div class="rounded-xl bg-[#111827]/80 border border-slate-800/80 p-5 sm:p-6 backdrop-blur-xl shadow-sm flex flex-col justify-between h-full">
+  <div class="rounded-lg bg-white dark:bg-[#111827]/80 border border-slate-200 dark:border-slate-800/80 p-5 sm:p-6 backdrop-blur-xl shadow-xs flex flex-col justify-between h-full transition-colors duration-150">
     <div>
       <div class="flex items-center justify-between mb-5">
         <div>
-          <h3 class="text-base sm:text-lg font-bold font-display text-white">Community Roles</h3>
-          <p class="text-xs text-slate-400">Distribution across active platform personas</p>
+          <h3 class="text-base sm:text-lg font-bold font-display text-slate-900 dark:text-white">Community Roles</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Distribution across active platform personas</p>
         </div>
       </div>
 
@@ -27,50 +27,50 @@ const formatNumber = (val) => {
       <div class="space-y-4">
         <div>
           <div class="flex justify-between text-xs mb-1.5">
-            <span class="text-slate-300 font-medium">Referees</span>
-            <span class="text-indigo-400 font-mono font-bold">{{ formatNumber(userStats.referees) }}</span>
+            <span class="text-slate-700 dark:text-slate-300 font-medium">Referees</span>
+            <span class="text-indigo-600 dark:text-indigo-400 font-mono font-bold">{{ formatNumber(userStats.referees) }}</span>
           </div>
-          <div class="h-2 rounded-full bg-slate-800 overflow-hidden">
+          <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
             <div class="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full" :style="{ width: `${userStats.total ? (userStats.referees / userStats.total) * 100 : 50}%` }"></div>
           </div>
         </div>
 
         <div>
           <div class="flex justify-between text-xs mb-1.5">
-            <span class="text-slate-300 font-medium">Directors & Managers</span>
-            <span class="text-amber-400 font-mono font-bold">{{ formatNumber(userStats.directors) }}</span>
+            <span class="text-slate-700 dark:text-slate-300 font-medium">Directors & Managers</span>
+            <span class="text-amber-600 dark:text-amber-400 font-mono font-bold">{{ formatNumber(userStats.directors) }}</span>
           </div>
-          <div class="h-2 rounded-full bg-slate-800 overflow-hidden">
+          <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
             <div class="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full" :style="{ width: `${userStats.total ? (userStats.directors / userStats.total) * 100 : 25}%` }"></div>
           </div>
         </div>
 
         <div>
           <div class="flex justify-between text-xs mb-1.5">
-            <span class="text-slate-300 font-medium">Evaluators</span>
-            <span class="text-emerald-400 font-mono font-bold">{{ formatNumber(userStats.evaluators) }}</span>
+            <span class="text-slate-700 dark:text-slate-300 font-medium">Evaluators</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-mono font-bold">{{ formatNumber(userStats.evaluators) }}</span>
           </div>
-          <div class="h-2 rounded-full bg-slate-800 overflow-hidden">
+          <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
             <div class="h-full bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-full" :style="{ width: `${userStats.total ? (userStats.evaluators / userStats.total) * 100 : 15}%` }"></div>
           </div>
         </div>
       </div>
 
       <!-- Growth Summary Pill -->
-      <div class="mt-6 p-3.5 rounded-lg bg-indigo-950/40 border border-indigo-500/20 flex items-center gap-3">
-        <div class="w-9 h-9 rounded-md bg-indigo-500/20 flex items-center justify-center text-indigo-300 flex-shrink-0">
+      <div class="mt-6 p-3.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-500/20 flex items-center gap-3">
+        <div class="w-8 h-8 rounded bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-300 flex-shrink-0">
           <TrendingUp class="w-4 h-4" />
         </div>
         <div class="min-w-0">
-          <p class="text-xs font-semibold text-white truncate">+{{ userStats.newThisMonth }} New Registrations</p>
-          <p class="text-[11px] text-slate-400 truncate">Joined in the current month</p>
+          <p class="text-xs font-semibold text-slate-900 dark:text-white truncate">+{{ userStats.newThisMonth }} New Registrations</p>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">Joined in the current month</p>
         </div>
       </div>
     </div>
 
-    <div class="mt-6 pt-3.5 border-t border-slate-800 flex items-center justify-between text-xs">
+    <div class="mt-6 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
       <span class="text-slate-500">Active Ratio</span>
-      <span class="text-emerald-400 font-semibold font-mono">
+      <span class="text-emerald-600 dark:text-emerald-400 font-semibold font-mono">
         {{ userStats.total ? Math.round((userStats.active / userStats.total) * 100) : 0 }}% Healthy
       </span>
     </div>

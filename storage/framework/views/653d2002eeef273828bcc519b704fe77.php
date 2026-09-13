@@ -16,10 +16,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 
     
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+
+    
     <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/Admin/app.js']); ?>
     <?php $__inertiaSsrResponse = app(\Inertia\Ssr\SsrState::class)->setPage($page)->dispatch();  if ($__inertiaSsrResponse) { echo $__inertiaSsrResponse->head; } ?>
 </head>
-<body class="font-sans antialiased bg-[#0B0F17] text-slate-100 selection:bg-indigo-500 selection:text-white min-h-screen">
+<body class="font-sans antialiased bg-slate-50 text-slate-900 dark:bg-[#070A0F] dark:text-slate-100 selection:bg-indigo-500 selection:text-white min-h-screen transition-colors duration-200">
     <?php $__inertiaSsrResponse = app(\Inertia\Ssr\SsrState::class)->setPage($page)->dispatch();  if ($__inertiaSsrResponse) { echo $__inertiaSsrResponse->body; } else { ?><script data-page="app" type="application/json"><?php echo json_encode($page, JSON_HEX_TAG); ?></script><div id="app"></div><?php } ?>
 </body>
 </html>
