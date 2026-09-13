@@ -15,8 +15,9 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['"Plus Jakarta Sans"', 'Inter', ...defaultTheme.fontFamily.sans],
-                display: ['"Space Grotesk"', '"Plus Jakarta Sans"', ...defaultTheme.fontFamily.sans],
+                sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', ...defaultTheme.fontFamily.sans],
+                display: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', ...defaultTheme.fontFamily.sans],
+                mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
             },
             colors: {
                 brand: {
