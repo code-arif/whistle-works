@@ -14,27 +14,27 @@ const formatCurrency = (val) => {
 </script>
 
 <template>
-  <div class="rounded-3xl bg-[#111827]/80 border border-slate-800/80 p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between">
+  <div class="rounded-xl bg-[#111827]/80 border border-slate-800/80 p-5 sm:p-6 backdrop-blur-xl shadow-sm flex flex-col justify-between h-full">
     <div>
       <div class="flex items-center justify-between mb-4">
         <div>
-          <h3 class="text-lg font-bold font-display text-white">Live Transactions</h3>
+          <h3 class="text-base sm:text-lg font-bold font-display text-white">Live Transactions</h3>
           <p class="text-xs text-slate-400">Real-time payment records</p>
         </div>
-        <a href="/admin/monitor" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5">
+        <a href="/admin/monitor" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5 transition-colors">
           <span>Monitor</span>
           <ChevronRight class="w-3.5 h-3.5" />
         </a>
       </div>
 
-      <div class="space-y-3">
+      <div class="space-y-2.5">
         <div 
           v-for="pmt in recentPayments" 
           :key="pmt.id"
-          class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/70 hover:border-slate-700 transition-all flex items-center justify-between gap-3"
+          class="p-3 rounded-lg bg-slate-900/60 border border-slate-800/70 hover:border-slate-700 transition-all flex items-center justify-between gap-3"
         >
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+            <div class="w-8 h-8 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
               <CreditCard class="w-4 h-4" />
             </div>
             <div class="min-w-0">
@@ -52,15 +52,15 @@ const formatCurrency = (val) => {
           </div>
         </div>
 
-        <div v-if="recentPayments.length === 0" class="py-8 text-center text-slate-500 text-xs">
+        <div v-if="recentPayments.length === 0" class="py-6 text-center text-slate-500 text-xs">
           No recent payment transactions.
         </div>
       </div>
     </div>
 
-    <div class="mt-4 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-      <span>Stripe Webhooks: Active</span>
-      <span class="text-emerald-400">100% Synced</span>
+    <div class="mt-4 pt-3.5 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+      <span>Stripe Webhooks</span>
+      <span class="text-emerald-400 font-semibold">100% Synced</span>
     </div>
   </div>
 </template>

@@ -14,7 +14,7 @@ defineProps({
 
 const page = usePage();
 const flash = computed(() => page.props.flash || {});
-const isSidebarOpen = ref(true);
+const isSidebarOpen = ref(false); // Default collapsed on mobile, visible on desktop
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
@@ -22,8 +22,15 @@ const toggleSidebar = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#070A0F] text-slate-100 dark:bg-[#070A0F] dark:text-slate-100 flex transition-colors duration-300">
+  <div class="min-h-screen bg-[#070A0F] text-slate-100 dark:bg-[#070A0F] dark:text-slate-100 flex transition-colors duration-300 relative">
     
+    <!-- Mobile Backdrop Overlay -->
+    <div 
+      v-if="isSidebarOpen" 
+      @click="isSidebarOpen = false" 
+      class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden transition-opacity"
+    ></div>
+
     <!-- Modular Sidebar -->
     <AdminSidebar 
       :is-open="isSidebarOpen" 
@@ -40,23 +47,23 @@ const toggleSidebar = () => {
       />
 
       <!-- Flash Notifications -->
-      <div v-if="flash.success || flash.error" class="px-6 lg:px-8 pt-4">
+      <div v-if="flash.success || flash.error" class="px-4 sm:px-6 lg:px-8 pt-4">
         <div 
           v-if="flash.success" 
-          class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between"
+          class="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between"
         >
           <span>{{ flash.success }}</span>
         </div>
         <div 
           v-if="flash.error" 
-          class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between"
+          class="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between"
         >
           <span>{{ flash.error }}</span>
         </div>
       </div>
 
-      <!-- Main Slot -->
-      <main class="flex-1 p-6 lg:p-8 space-y-8">
+      <!-- Main Slot (100% Mobile Responsive Padding & Spacing) -->
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
         <slot />
       </main>
 
