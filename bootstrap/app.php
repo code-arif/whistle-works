@@ -1,24 +1,23 @@
 <?php
 
 use App\Helpers\Helper;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Foundation\Application;
+use App\Http\Middleware\ApiOtpVerifiedMiddleware;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\WebAdminMiddleware;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Validation\ValidationException;
 use App\Http\Middleware\WebAuthCheckMiddleware;
 use App\Http\Middleware\WebDeveloperMiddleware;
-use Illuminate\Session\Middleware\StartSession;
-use Spatie\Permission\Middleware\RoleMiddleware;
-use App\Http\Middleware\ApiOtpVerifiedMiddleware;
 use App\Http\Middleware\WebOtpVerifiedMiddleware;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -30,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function () {
             Route::middleware(['web'])->prefix('ajax')->name('ajax.')->group(base_path('routes/ajax.php'));
             Route::middleware(['web', 'web-admin'])->prefix('admin')->name('admin.')->group(base_path('routes/web-admin.php'));
+            Route::middleware(['web', 'web-admin', HandleInertiaRequests::class])->prefix('admin/v2')->name('admin.v2.')->group(base_path('routes/web-admin-v2.php'));
         }
     )
     ->withBroadcasting(

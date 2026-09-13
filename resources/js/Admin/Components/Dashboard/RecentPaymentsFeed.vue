@@ -1,0 +1,66 @@
+<script setup>
+import { CreditCard, ChevronRight } from 'lucide-vue-next';
+
+defineProps({
+  recentPayments: {
+    type: Array,
+    default: () => [],
+  },
+});
+
+const formatCurrency = (val) => {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
+};
+</script>
+
+<template>
+  <div class="rounded-3xl bg-[#111827]/80 border border-slate-800/80 p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between">
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-bold font-display text-white">Live Transactions</h3>
+          <p class="text-xs text-slate-400">Real-time payment records</p>
+        </div>
+        <a href="/admin/monitor" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5">
+          <span>Monitor</span>
+          <ChevronRight class="w-3.5 h-3.5" />
+        </a>
+      </div>
+
+      <div class="space-y-3">
+        <div 
+          v-for="pmt in recentPayments" 
+          :key="pmt.id"
+          class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/70 hover:border-slate-700 transition-all flex items-center justify-between gap-3"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+              <CreditCard class="w-4 h-4" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs font-semibold text-slate-200 truncate">
+                {{ pmt.referee ? `${pmt.referee.first_name || ''} ${pmt.referee.last_name || ''}`.trim() : 'Referee Member' }}
+              </p>
+              <p class="text-[10px] text-slate-500 truncate">
+                {{ pmt.camp?.camp_name || 'Camp Registration' }}
+              </p>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="text-xs font-bold font-mono text-emerald-400">+{{ formatCurrency(pmt.amount) }}</p>
+            <p class="text-[10px] text-slate-500 font-mono">{{ pmt.paid_at ? new Date(pmt.paid_at).toLocaleDateString() : 'Paid' }}</p>
+          </div>
+        </div>
+
+        <div v-if="recentPayments.length === 0" class="py-8 text-center text-slate-500 text-xs">
+          No recent payment transactions.
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+      <span>Stripe Webhooks: Active</span>
+      <span class="text-emerald-400">100% Synced</span>
+    </div>
+  </div>
+</template>
