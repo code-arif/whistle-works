@@ -47,7 +47,7 @@ const navGroups = [
     name: 'Camp Operations',
     items: [
       { name: 'Camps Management', href: '/admin/camps', icon: Tent, v2: false },
-      { name: 'Sports Types', href: '/admin/sports-type', icon: Layers, v2: false },
+      { name: 'Sports Types', href: '/admin/v2/sports-types', icon: Layers, v2: true },
       { name: 'Game Schedules', href: '/admin/camps', icon: CalendarCheck, v2: false },
     ]
   },
