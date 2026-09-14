@@ -87,11 +87,11 @@ The design is **ultra-premium, executive, and modern** for both Light and Dark m
 
 When migrating any feature (e.g. Camps, Users, CMS, Coupons, Settings):
 
-1. **Step 1: Create V2 Controller:**
-   - Place in `app/Http/Controllers/Web/Backend/V2/{Feature}Controller.php`.
-   - Return Inertia responses: `Inertia::render('{Feature}/Index', $data)`.
+1. **Step 1: Create Skinny Admin Controller & Dedicated Service:**
+   - **Controller:** `app/Http/Controllers/Admin/{Feature}Controller.php` (Skinny controller, handles HTTP requests & returns Inertia responses: `Inertia::render('{Feature}/Index', $data)`).
+   - **Service:** `app/Services/Admin/{Feature}Service.php` (Encapsulates all query filters, KPI aggregations, caching, and data mutations).
 2. **Step 2: Add Route to `routes/web-admin-v2.php`:**
-   - Prefix route with `admin.v2.{feature}.*`.
+   - Prefix route with `admin.v2.{feature}.*` using `App\Http\Controllers\Admin\{Feature}Controller`.
 3. **Step 3: Build Isolated Components:**
    - Create `resources/js/Admin/Components/{Feature}/...` for individual UI elements (forms, tables, modals).
    - Create `resources/js/Admin/Pages/{Feature}/Index.vue` using `<AdminLayout>`.
