@@ -34,6 +34,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  menuClass: {
+    type: String,
+    default: '',
+  },
 });
 
 const emit = defineEmits(['update:modelValue', 'change']);
@@ -54,8 +58,14 @@ const normalizedOptions = computed(() => {
   });
 });
 
+const isSelected = (optVal) => {
+  if (optVal === props.modelValue) return true;
+  if (optVal !== null && props.modelValue !== null && String(optVal) === String(props.modelValue)) return true;
+  return false;
+};
+
 const selectedOption = computed(() => {
-  return normalizedOptions.value.find((opt) => opt.value === props.modelValue);
+  return normalizedOptions.value.find((opt) => isSelected(opt.value));
 });
 
 const displayLabel = computed(() => {
@@ -123,7 +133,8 @@ onUnmounted(() => {
         v-if="isOpen"
         :class="[
           align === 'right' ? 'right-0' : 'left-0',
-          'absolute z-50 mt-1 min-w-[120px] max-h-60 overflow-y-auto rounded-lg bg-white dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] shadow-xl p-1 backdrop-blur-xl focus:outline-none'
+          'absolute z-50 mt-1 min-w-full min-w-[120px] max-h-60 overflow-y-auto rounded-lg bg-white dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] shadow-xl p-1 backdrop-blur-xl focus:outline-none',
+          menuClass
         ]"
       >
         <button
@@ -132,14 +143,14 @@ onUnmounted(() => {
           type="button"
           @click="select(opt)"
           :class="[
-            opt.value === modelValue
+            isSelected(opt.value)
               ? 'bg-[#F29F67]/10 text-[#E08A50] dark:text-[#F29F67] font-semibold'
               : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#32324A] hover:text-slate-900 dark:hover:text-white',
             'w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-xs font-mono transition-colors text-left cursor-pointer'
           ]"
         >
           <span class="truncate">{{ opt.label }}</span>
-          <Check v-if="opt.value === modelValue" class="w-3.5 h-3.5 text-[#F29F67] flex-shrink-0" />
+          <Check v-if="isSelected(opt.value)" class="w-3.5 h-3.5 text-[#F29F67] flex-shrink-0" />
         </button>
       </div>
     </Transition>
