@@ -209,7 +209,7 @@ const goToPage = (pageUrl) => {
       <CouponKpiGrid :stats="stats" />
 
       <!-- 2. Coupons List Section -->
-      <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl shadow-xs overflow-hidden">
+      <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg shadow-xs overflow-hidden">
         
         <!-- Search & Filters Header Toolbar -->
         <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -221,7 +221,7 @@ const goToPage = (pageUrl) => {
               v-model="searchQuery"
               type="text"
               placeholder="Search by code, camp, or referee..."
-              class="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#262638] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+              class="w-full pl-9 pr-4 py-1.5 text-xs rounded-md border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#262638] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67]"
             />
           </div>
 
