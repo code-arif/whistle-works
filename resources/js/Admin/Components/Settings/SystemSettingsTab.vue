@@ -22,13 +22,11 @@ const props = defineProps({
 const form = useForm({
   app_name: props.settings.app_name || 'Whistle Works',
   app_url: props.settings.app_url || '',
+  frontend_url: props.settings.frontend_url || '',
   app_debug: Boolean(props.settings.app_debug),
   access: Boolean(props.settings.access),
-  reverb: Boolean(props.settings.reverb),
-  recaptcha_enable: Boolean(props.settings.recaptcha_enable),
   mail_enabled: Boolean(props.settings.mail_enabled),
   sms_enabled: Boolean(props.settings.sms_enabled),
-  pagination: Number(props.settings.pagination) || 10,
 });
 
 const submit = () => {
@@ -47,15 +45,15 @@ const submit = () => {
           <Terminal class="w-4 h-4" />
         </div>
         <div>
-          <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Application Host & URL</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Core system endpoints and default pagination parameters.</p>
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Application Host & Domain URLs</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Backend API environment endpoints and frontend client portal URLs.</p>
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
         <div>
           <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-            Application Base URL
+            Backend App URL (APP_URL)
           </label>
           <input
             v-model="form.app_url"
@@ -67,14 +65,13 @@ const submit = () => {
 
         <div>
           <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-            Default Table Pagination Rows
+            Frontend Client URL (FRONTEND)
           </label>
           <input
-            v-model="form.pagination"
-            type="number"
-            min="5"
-            max="100"
-            class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F29F67]/50 focus:border-[#F29F67] text-slate-900 dark:text-white transition-colors"
+            v-model="form.frontend_url"
+            type="url"
+            class="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F29F67]/50 focus:border-[#F29F67] text-slate-900 dark:text-white transition-colors"
+            placeholder="https://whistleworks.org"
           />
         </div>
       </div>
@@ -138,52 +135,6 @@ const submit = () => {
             <span
               :class="[
                 form.access ? 'translate-x-5' : 'translate-x-0',
-                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out'
-              ]"
-            />
-          </button>
-        </div>
-
-        <!-- Reverb WebSockets Toggle -->
-        <div class="p-4 rounded-xl bg-slate-50/70 dark:bg-[#262638]/50 border border-slate-200/80 dark:border-white/[0.06] flex items-center justify-between gap-4">
-          <div>
-            <span class="text-sm font-medium text-slate-900 dark:text-white">Laravel Reverb WebSockets</span>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Enables high-frequency live updates without polling.</p>
-          </div>
-          <button
-            type="button"
-            @click="form.reverb = !form.reverb"
-            :class="[
-              form.reverb ? 'bg-[#34B1AA]' : 'bg-slate-300 dark:bg-[#36364E]',
-              'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out'
-            ]"
-          >
-            <span
-              :class="[
-                form.reverb ? 'translate-x-5' : 'translate-x-0',
-                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out'
-              ]"
-            />
-          </button>
-        </div>
-
-        <!-- reCAPTCHA Toggle -->
-        <div class="p-4 rounded-xl bg-slate-50/70 dark:bg-[#262638]/50 border border-slate-200/80 dark:border-white/[0.06] flex items-center justify-between gap-4">
-          <div>
-            <span class="text-sm font-medium text-slate-900 dark:text-white">reCAPTCHA Verification</span>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Enforce bot challenge on authentication and camp forms.</p>
-          </div>
-          <button
-            type="button"
-            @click="form.recaptcha_enable = !form.recaptcha_enable"
-            :class="[
-              form.recaptcha_enable ? 'bg-[#34B1AA]' : 'bg-slate-300 dark:bg-[#36364E]',
-              'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out'
-            ]"
-          >
-            <span
-              :class="[
-                form.recaptcha_enable ? 'translate-x-5' : 'translate-x-0',
                 'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out'
               ]"
             />

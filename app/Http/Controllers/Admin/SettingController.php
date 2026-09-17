@@ -148,15 +148,13 @@ class SettingController extends Controller
     public function updateSystem(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'app_name'         => ['nullable', 'string', 'max:100'],
-            'app_url'          => ['nullable', 'url'],
-            'app_debug'        => ['nullable', 'boolean'],
-            'access'           => ['nullable', 'boolean'],
-            'reverb'           => ['nullable', 'boolean'],
-            'recaptcha_enable' => ['nullable', 'boolean'],
-            'mail_enabled'     => ['nullable', 'boolean'],
-            'sms_enabled'      => ['nullable', 'boolean'],
-            'pagination'       => ['nullable', 'integer', 'min:5', 'max:100'],
+            'app_name'     => ['nullable', 'string', 'max:100'],
+            'app_url'      => ['nullable', 'url'],
+            'frontend_url' => ['nullable', 'url'],
+            'app_debug'    => ['nullable', 'boolean'],
+            'access'       => ['nullable', 'boolean'],
+            'mail_enabled' => ['nullable', 'boolean'],
+            'sms_enabled'  => ['nullable', 'boolean'],
         ]);
 
         try {

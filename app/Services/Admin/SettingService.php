@@ -63,14 +63,12 @@ class SettingService
             'system' => [
                 'app_name'         => env('APP_NAME', 'Whistle Works'),
                 'app_url'          => env('APP_URL', config('app.url')),
+                'frontend_url'     => env('FRONTEND', config('app.frontend_url', 'https://whistleworks.org')),
                 'app_env'          => env('APP_ENV', 'local'),
                 'app_debug'        => filter_var(env('APP_DEBUG', false), FILTER_VALIDATE_BOOLEAN),
                 'access'           => filter_var(env('ACCESS', true), FILTER_VALIDATE_BOOLEAN),
-                'reverb'           => env('REVERB', 'off') === 'on',
-                'recaptcha_enable' => env('RECAPTCHA_ENABLE', 'no') === 'yes',
                 'mail_enabled'     => env('MAIL', 'on') === 'on',
                 'sms_enabled'      => env('SMS', 'off') === 'on',
-                'pagination'       => (int) env('PAGINATION', 10),
             ],
             'signature' => [
                 'signature' => $setting->signature ? (str_starts_with($setting->signature, 'data:image') ? $setting->signature : 'data:image/png;base64,' . $setting->signature) : null,
@@ -185,26 +183,20 @@ class SettingService
         if (isset($data['app_url'])) {
             $keys['APP_URL'] = $data['app_url'];
         }
+        if (isset($data['frontend_url'])) {
+            $keys['FRONTEND'] = $data['frontend_url'];
+        }
         if (isset($data['app_debug'])) {
             $keys['APP_DEBUG'] = $data['app_debug'] ? 'true' : 'false';
         }
         if (isset($data['access'])) {
             $keys['ACCESS'] = $data['access'] ? 'true' : 'false';
         }
-        if (isset($data['reverb'])) {
-            $keys['REVERB'] = $data['reverb'] ? 'on' : 'off';
-        }
-        if (isset($data['recaptcha_enable'])) {
-            $keys['RECAPTCHA_ENABLE'] = $data['recaptcha_enable'] ? 'yes' : 'no';
-        }
         if (isset($data['mail_enabled'])) {
             $keys['MAIL'] = $data['mail_enabled'] ? 'on' : 'off';
         }
         if (isset($data['sms_enabled'])) {
             $keys['SMS'] = $data['sms_enabled'] ? 'on' : 'off';
-        }
-        if (isset($data['pagination'])) {
-            $keys['PAGINATION'] = (string) $data['pagination'];
         }
 
         $this->updateEnv($keys);
