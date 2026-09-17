@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import Dropdown from '../Common/Dropdown.vue';
+import DatePicker from '../Common/DatePicker.vue';
 import {
   X,
   Ticket,
@@ -354,12 +355,15 @@ const submit = () => {
                   <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 font-mono uppercase tracking-wider">
                     Expiration Date
                   </label>
-                  <input
+                  <DatePicker
                     v-model="form.expires_at"
-                    type="date"
-                    class="w-full px-3 py-2 text-sm font-mono rounded-lg border border-slate-300 dark:border-white/[0.1] bg-white dark:bg-[#262638] text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67]"
+                    placeholder="No expiry (∞)"
+                    size="md"
                   />
-                  <span class="text-[10px] text-slate-400">Empty for no expiry</span>
+                  <span class="text-[10px] text-slate-400 block mt-1">Empty for no expiry</span>
+                  <p v-if="form.errors.expires_at" class="text-xs text-rose-500 mt-1 font-mono">
+                    {{ form.errors.expires_at }}
+                  </p>
                 </div>
 
                 <!-- Status -->
