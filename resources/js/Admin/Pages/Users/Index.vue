@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { router, Head, Link } from '@inertiajs/vue3';
 import AdminLayout from '../../Layouts/AdminLayout.vue';
 import DataTable from '../../Components/Common/DataTable.vue';
+import Breadcrumb from '../../Components/Common/Breadcrumb.vue';
 import ConfirmationModal from '../../Components/Common/ConfirmationModal.vue';
 import {
   Users,
@@ -202,6 +203,8 @@ const getRoleBadgeColor = (roleName) => {
       <!-- 1. Executive Hero Header -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
+          <Breadcrumb :items="[{ label: 'Management' }, { label: 'Users' }]" />
+
           <div class="flex items-center gap-2 mb-1">
             <div class="w-2 h-2 rounded-full bg-[#F29F67] animate-pulse"></div>
             <span class="text-[11px] font-mono font-bold uppercase tracking-widest text-[#E08A50] dark:text-[#F29F67]">

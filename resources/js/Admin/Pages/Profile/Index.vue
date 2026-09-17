@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Admin/Layouts/AdminLayout.vue';
+import Breadcrumb from '@/Admin/Components/Common/Breadcrumb.vue';
 import ProfileHeaderCard from '@/Admin/Components/Profile/ProfileHeaderCard.vue';
 import ProfileDetailsForm from '@/Admin/Components/Profile/ProfileDetailsForm.vue';
 import ChangePasswordForm from '@/Admin/Components/Profile/ChangePasswordForm.vue';
@@ -10,8 +11,7 @@ import {
   UserCheck, 
   Clock, 
   ExternalLink,
-  Lock,
-  ChevronRight
+  Lock
 } from 'lucide-vue-next';
 
 defineProps({
@@ -31,13 +31,7 @@ defineProps({
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <!-- Breadcrumb path -->
-          <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1 font-mono">
-            <Link href="/admin/v2/dashboard" class="hover:text-[#F29F67] transition-colors">Dashboard</Link>
-            <ChevronRight class="w-3 h-3 text-slate-400" />
-            <Link href="/admin/v2/settings" class="hover:text-[#F29F67] transition-colors">Settings</Link>
-            <ChevronRight class="w-3 h-3 text-slate-400" />
-            <span class="text-[#F29F67] font-semibold">Profile</span>
-          </div>
+          <Breadcrumb :items="[{ label: 'Settings', href: '/admin/v2/settings' }, { label: 'Profile' }]" />
 
           <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Account Profile Settings

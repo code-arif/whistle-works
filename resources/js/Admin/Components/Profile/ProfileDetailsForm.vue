@@ -37,8 +37,8 @@ const submit = () => {
   <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-6 shadow-sm">
     <!-- Header -->
     <div class="flex items-center gap-3 pb-4 mb-6 border-b border-slate-100 dark:border-white/[0.06]">
-      <div class="w-9 h-9 rounded-lg bg-[#F29F67]/10 flex items-center justify-center text-[#F29F67]">
-        <User class="w-4.5 h-4.5" />
+      <div class="w-10 h-10 rounded-lg bg-[#F29F67]/10 flex items-center justify-center text-[#F29F67] shrink-0">
+        <User class="w-5 h-5" />
       </div>
       <div>
         <h3 class="text-base font-semibold text-slate-900 dark:text-white">Personal & Contact Details</h3>

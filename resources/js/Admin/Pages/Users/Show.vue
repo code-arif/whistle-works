@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '../../Layouts/AdminLayout.vue';
+import Breadcrumb from '../../Components/Common/Breadcrumb.vue';
 import ConfirmationModal from '../../Components/Common/ConfirmationModal.vue';
 import {
   ArrowLeft,
@@ -112,6 +113,9 @@ const getRoleBadgeColor = (roleName) => {
     <Head :title="`${user.full_name} — User Profile — Whistle Works Admin V2`" />
 
     <div class="space-y-6 pb-12">
+      <!-- Breadcrumb Navigation -->
+      <Breadcrumb :items="[{ label: 'Users', href: '/admin/v2/users' }, { label: user.full_name || 'User Profile' }]" />
+
       <!-- 1. Top Navigation Bar -->
       <div class="flex items-center justify-between">
         <Link

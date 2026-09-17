@@ -3,13 +3,10 @@ import { ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { 
   Camera, 
-  ShieldCheck, 
   Mail, 
   Phone, 
   Calendar, 
-  CheckCircle2,
-  Loader2,
-  Sparkles
+  Loader2
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -108,13 +105,6 @@ const handleFileChange = (e) => {
             <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               {{ profile.full_name }}
             </h2>
-            <span class="px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-full bg-[#34B1AA]/10 text-[#258a84] dark:text-[#34B1AA] border border-[#34B1AA]/30">
-              {{ profile.role }}
-            </span>
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Active
-            </span>
           </div>
 
           <div class="flex items-center justify-center sm:justify-start gap-4 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
@@ -131,17 +121,6 @@ const handleFileChange = (e) => {
               Joined {{ profile.created_at }}
             </span>
           </div>
-        </div>
-      </div>
-
-      <!-- Right Side Trust Badges -->
-      <div class="flex items-center gap-3 self-center sm:self-end">
-        <div class="px-3.5 py-2 rounded-lg bg-slate-50 dark:bg-[#262638] border border-slate-200/80 dark:border-white/[0.06] text-center">
-          <p class="text-[10px] uppercase font-mono font-semibold tracking-wider text-slate-400">Account Access</p>
-          <p class="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-center gap-1 mt-0.5">
-            <ShieldCheck class="w-3.5 h-3.5 text-emerald-500" />
-            Full Admin
-          </p>
         </div>
       </div>
 

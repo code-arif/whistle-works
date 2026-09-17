@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useForm, router, Head } from '@inertiajs/vue3';
 import AdminLayout from '../../Layouts/AdminLayout.vue';
 import DataTable from '../../Components/Common/DataTable.vue';
+import Breadcrumb from '../../Components/Common/Breadcrumb.vue';
 import Modal from '../../Components/Common/Modal.vue';
 import ConfirmationModal from '../../Components/Common/ConfirmationModal.vue';
 import {
@@ -188,6 +189,8 @@ const toggleStatus = (item) => {
   <AdminLayout title="Sports Types Management">
     <Head title="Sports Types - Whistle-Works Admin" />
     
+    <Breadcrumb :items="[{ label: 'Configuration' }, { label: 'Sports Types' }]" />
+
     <!-- Header Overview & KPI Bar -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
       

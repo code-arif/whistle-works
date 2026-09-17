@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '../../Layouts/AdminLayout.vue';
+import Breadcrumb from '../../Components/Common/Breadcrumb.vue';
 import CouponKpiGrid from '../../Components/Coupons/CouponKpiGrid.vue';
 import CouponTable from '../../Components/Coupons/CouponTable.vue';
 import CouponModal from '../../Components/Coupons/CouponModal.vue';
@@ -181,6 +182,8 @@ const goToPage = (pageUrl) => {
       <!-- Executive Header Banner -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/[0.08]">
         <div>
+          <Breadcrumb :items="[{ label: 'Marketing' }, { label: 'Coupons' }]" />
+
           <div class="flex items-center gap-2">
             <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               Discount Coupons & Campaigns
