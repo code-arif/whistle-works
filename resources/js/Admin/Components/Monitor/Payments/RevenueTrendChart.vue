@@ -215,11 +215,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 shadow-xs relative">
+  <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-4 sm:p-5 shadow-xs relative">
     <!-- Header Row -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100 dark:border-white/[0.06]">
       <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-500 flex items-center justify-center">
+        <div class="w-8 h-8 rounded-md bg-[#34B1AA]/10 border border-[#34B1AA]/20 text-[#34B1AA] flex items-center justify-center">
           <TrendingUp class="w-4 h-4" />
         </div>
         <div>
@@ -233,7 +233,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Time Range Selector Tabs -->
-      <div class="inline-flex items-center p-1 rounded-lg bg-slate-100 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.06] self-start sm:self-auto">
+      <div class="inline-flex items-center p-1 rounded-md bg-slate-100 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.06] self-start sm:self-auto">
         <button
           v-for="m in [6, 12, 24]"
           :key="m"

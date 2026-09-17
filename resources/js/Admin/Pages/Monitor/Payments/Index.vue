@@ -159,9 +159,9 @@ const goToPage = (pageUrl) => {
           <button
             @click="handleRefresh"
             :disabled="isRefreshing"
-            class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#262638] transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
+            class="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-md bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#262638] transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
           >
-            <RotateCw class="w-3.5 h-3.5 text-emerald-500" :class="{ 'animate-spin': isRefreshing }" />
+            <RotateCw class="w-3.5 h-3.5 text-[#F29F67]" :class="{ 'animate-spin': isRefreshing }" />
             <span>{{ isRefreshing ? 'Refreshing...' : 'Refresh Stats' }}</span>
           </button>
         </div>
@@ -171,7 +171,7 @@ const goToPage = (pageUrl) => {
       <PaymentKpiGrid :stats="stats" />
 
       <!-- 2. Interactive Analytics Chart + System Pulse Summary Row -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
         <div class="lg:col-span-2">
           <RevenueTrendChart
             :chartData="revenueChart"
@@ -185,13 +185,13 @@ const goToPage = (pageUrl) => {
       </div>
 
       <!-- 3. Detailed Audit Logs Data Tables Section -->
-      <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl shadow-xs overflow-hidden">
+      <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg shadow-xs overflow-hidden">
         
         <!-- Table Header & Controls -->
         <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-4">
           
           <!-- Tab Buttons -->
-          <div class="inline-flex p-1 rounded-lg bg-slate-100 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.06] self-start">
+          <div class="inline-flex p-1 rounded-md bg-slate-100 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.06] self-start">
             <button
               v-for="t in [
                 { id: 'payments', label: 'Successful Payments' },
@@ -219,7 +219,7 @@ const goToPage = (pageUrl) => {
               v-model="searchQuery"
               type="text"
               placeholder="Search by camp, user, coupon..."
-              class="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#262638] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+              class="w-full pl-9 pr-4 py-1.5 text-xs rounded-md border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#262638] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67]"
             />
           </div>
         </div>
