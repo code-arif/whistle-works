@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\LogViewerController;
 use App\Http\Controllers\Admin\PaymentMonitorController;
 use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TermsPrivacyController;
 use App\Http\Controllers\Admin\UserController;
@@ -57,6 +58,18 @@ Route::prefix('users')->name('users.')->group(function () {
     Route::delete('/{id}', [UserController::class, 'destroy'])->name('destroy');
     Route::post('/{id}/restore', [UserController::class, 'restore'])->name('restore');
     Route::delete('/{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
+});
+
+// V2 Roles & Permissions Management
+Route::prefix('roles')->name('roles.')->group(function () {
+    Route::get('/', [RolePermissionController::class, 'index'])->name('index');
+    Route::post('/', [RolePermissionController::class, 'store'])->name('store');
+    Route::put('/{role}', [RolePermissionController::class, 'update'])->name('update');
+    Route::delete('/{role}', [RolePermissionController::class, 'destroy'])->name('destroy');
+
+    // Permission Management Routes
+    Route::post('/permissions', [RolePermissionController::class, 'storePermission'])->name('permissions.store');
+    Route::delete('/permissions/{id}', [RolePermissionController::class, 'destroyPermission'])->name('permissions.destroy');
 });
 
 // V2 Payment Monitor

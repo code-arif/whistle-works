@@ -82,7 +82,7 @@ const navGroups = [
   {
     name: 'System Governance',
     items: [
-      { name: 'Roles & Permissions', href: '/admin/roles', icon: Shield },
+      { name: 'Roles & Permissions', href: '/admin/v2/roles', icon: Shield },
       { name: 'Terms & Privacy', href: '/admin/v2/terms-privacy', icon: FileText },
       { name: 'Global Settings', href: '/admin/v2/settings', icon: Settings },
       { name: 'System Logs', href: '/admin/v2/logs', icon: Terminal },
