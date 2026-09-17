@@ -205,12 +205,6 @@ const getRoleBadgeColor = (roleName) => {
         <div>
           <Breadcrumb :items="[{ label: 'Management' }, { label: 'Users' }]" />
 
-          <div class="flex items-center gap-2 mb-1">
-            <div class="w-2 h-2 rounded-full bg-[#F29F67] animate-pulse"></div>
-            <span class="text-[11px] font-mono font-bold uppercase tracking-widest text-[#E08A50] dark:text-[#F29F67]">
-              Identity & Access Management
-            </span>
-          </div>
           <h1 class="text-2xl sm:text-3xl font-bold font-display tracking-tight text-slate-900 dark:text-white">
             User Directory
           </h1>
