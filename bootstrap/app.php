@@ -1,11 +1,11 @@
 <?php
 
+use \Illuminate\Support\Facades\Log;
 use App\Helpers\Helper;
 use App\Http\Middleware\ApiOtpVerifiedMiddleware;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\WebAdminMiddleware;
 use App\Http\Middleware\WebAuthCheckMiddleware;
-use App\Http\Middleware\WebDeveloperMiddleware;
 use App\Http\Middleware\WebOtpVerifiedMiddleware;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
+
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -38,7 +39,6 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'web-developer'         => WebDeveloperMiddleware::class,
             'web-admin'             => WebAdminMiddleware::class,
             'api-otp'               => ApiOtpVerifiedMiddleware::class,
             'web-otp'               => WebOtpVerifiedMiddleware::class,
@@ -73,7 +73,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (Throwable $e, Request $request) {
             if ($request->is('api/*')) {
-                \Illuminate\Support\Facades\Log::info('[API Error Debug Log]', [
+                Log::info('[API Error Debug Log]', [
                     'exception' => get_class($e),
                     'message'   => $e->getMessage(),
                     'url'       => $request->fullUrl(),

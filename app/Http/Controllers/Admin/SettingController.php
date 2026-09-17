@@ -157,7 +157,10 @@ class SettingController extends Controller
             'app_debug'    => ['nullable', 'boolean'],
             'access'       => ['nullable', 'boolean'],
             'mail_enabled' => ['nullable', 'boolean'],
-            'sms_enabled'  => ['nullable', 'boolean'],
+            'sms_enabled'           => ['nullable', 'boolean'],
+            'session_http_only'     => ['nullable', 'boolean'],
+            'session_secure_cookie' => ['nullable', 'boolean'],
+            'session_same_site'     => ['nullable', 'string', 'in:lax,strict,none'],
         ]);
 
         try {

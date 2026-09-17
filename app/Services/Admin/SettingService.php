@@ -70,8 +70,11 @@ class SettingService
                 'app_env'          => env('APP_ENV', 'local'),
                 'app_debug'        => filter_var(env('APP_DEBUG', false), FILTER_VALIDATE_BOOLEAN),
                 'access'           => filter_var(env('ACCESS', true), FILTER_VALIDATE_BOOLEAN),
-                'mail_enabled'     => env('MAIL', 'on') === 'on',
-                'sms_enabled'      => env('SMS', 'off') === 'on',
+                'mail_enabled'          => env('MAIL', 'on') === 'on',
+                'sms_enabled'           => env('SMS', 'off') === 'on',
+                'session_http_only'     => filter_var(env('SESSION_HTTP_ONLY', true), FILTER_VALIDATE_BOOLEAN),
+                'session_secure_cookie' => filter_var(env('SESSION_SECURE_COOKIE', false), FILTER_VALIDATE_BOOLEAN),
+                'session_same_site'     => env('SESSION_SAME_SITE', 'lax'),
             ],
         ];
     }
@@ -200,6 +203,15 @@ class SettingService
         }
         if (isset($data['sms_enabled'])) {
             $keys['SMS'] = $data['sms_enabled'] ? 'on' : 'off';
+        }
+        if (isset($data['session_http_only'])) {
+            $keys['SESSION_HTTP_ONLY'] = $data['session_http_only'] ? 'true' : 'false';
+        }
+        if (isset($data['session_secure_cookie'])) {
+            $keys['SESSION_SECURE_COOKIE'] = $data['session_secure_cookie'] ? 'true' : 'false';
+        }
+        if (isset($data['session_same_site'])) {
+            $keys['SESSION_SAME_SITE'] = $data['session_same_site'];
         }
 
         $this->updateEnv($keys);

@@ -16,9 +16,12 @@ Route::middleware('check')->group(function () {
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::get('login', [AuthenticatedSessionController::class, 'create'])
+        ->middleware(\App\Http\Middleware\HandleInertiaRequests::class)
+        ->name('login');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware(\App\Http\Middleware\HandleInertiaRequests::class);
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
 

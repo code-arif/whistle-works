@@ -9,8 +9,16 @@ import {
   CheckCircle2, 
   AlertTriangle,
   Layers,
-  Database
+  Database,
+  Lock
 } from 'lucide-vue-next';
+import Dropdown from '../Common/Dropdown.vue';
+
+const sameSiteOptions = [
+  { label: 'Lax (Standard CSRF protection — Recommended)', value: 'lax' },
+  { label: 'Strict (Restricted to first-party navigation only)', value: 'strict' },
+  { label: 'None (Third-party contexts — Requires HTTPS)', value: 'none' },
+];
 
 const props = defineProps({
   settings: {
@@ -27,6 +35,9 @@ const form = useForm({
   access: Boolean(props.settings.access),
   mail_enabled: Boolean(props.settings.mail_enabled),
   sms_enabled: Boolean(props.settings.sms_enabled),
+  session_http_only: props.settings.session_http_only ?? true,
+  session_secure_cookie: Boolean(props.settings.session_secure_cookie),
+  session_same_site: props.settings.session_same_site || 'lax',
 });
 
 const submit = () => {
@@ -185,6 +196,95 @@ const submit = () => {
               ]"
             />
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session & Cookie Security Policy Card -->
+    <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-sm">
+      <div class="flex items-center gap-3 pb-4 mb-5 border-b border-slate-100 dark:border-white/[0.06]">
+        <div class="w-8 h-8 rounded-lg bg-[#3B8FF3]/10 flex items-center justify-center text-[#3B8FF3]">
+          <Lock class="w-4 h-4" />
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Session Security & Cookie Policies</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Configure cookie security hardening, XSS prevention, and HTTPS-only flags.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- HTTP Only Cookie Switch -->
+        <div class="p-4 rounded-xl bg-slate-50/70 dark:bg-[#262638]/50 border border-slate-200/80 dark:border-white/[0.06] flex items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-slate-900 dark:text-white">SESSION_HTTP_ONLY</span>
+              <span v-if="form.session_http_only" class="px-1.5 py-0.5 text-[10px] font-bold font-mono bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded">
+                Protected
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Prevents JavaScript from reading session cookies to protect against XSS token theft.</p>
+          </div>
+          <button
+            type="button"
+            @click="form.session_http_only = !form.session_http_only"
+            :class="[
+              form.session_http_only ? 'bg-[#34B1AA]' : 'bg-slate-300 dark:bg-[#36364E]',
+              'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out'
+            ]"
+          >
+            <span
+              :class="[
+                form.session_http_only ? 'translate-x-5' : 'translate-x-0',
+                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out'
+              ]"
+            />
+          </button>
+        </div>
+
+        <!-- HTTPS-Only Secure Cookie Switch -->
+        <div class="p-4 rounded-xl bg-slate-50/70 dark:bg-[#262638]/50 border border-slate-200/80 dark:border-white/[0.06] flex items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-slate-900 dark:text-white">SESSION_SECURE_COOKIE</span>
+              <span :class="[
+                form.session_secure_cookie ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+                'px-1.5 py-0.5 text-[10px] font-bold font-mono rounded'
+              ]">
+                {{ form.session_secure_cookie ? 'HTTPS Only' : 'HTTP / Local Mode' }}
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Transmits cookies only over SSL/HTTPS. Keep OFF in local development, toggle ON in production.</p>
+          </div>
+          <button
+            type="button"
+            @click="form.session_secure_cookie = !form.session_secure_cookie"
+            :class="[
+              form.session_secure_cookie ? 'bg-[#34B1AA]' : 'bg-slate-300 dark:bg-[#36364E]',
+              'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out'
+            ]"
+          >
+            <span
+              :class="[
+                form.session_secure_cookie ? 'translate-x-5' : 'translate-x-0',
+                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out'
+              ]"
+            />
+          </button>
+        </div>
+
+        <!-- SameSite Cookie Policy -->
+        <div class="p-4 rounded-xl bg-slate-50/70 dark:bg-[#262638]/50 border border-slate-200/80 dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:col-span-2">
+          <div>
+            <span class="text-sm font-medium text-slate-900 dark:text-white">SESSION_SAME_SITE Policy</span>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Controls cross-site cookie transmission to mitigate CSRF attacks.</p>
+          </div>
+          <Dropdown
+            v-model="form.session_same_site"
+            :options="sameSiteOptions"
+            size="sm"
+            align="right"
+            menu-class="w-full sm:w-80"
+          />
         </div>
       </div>
     </div>
