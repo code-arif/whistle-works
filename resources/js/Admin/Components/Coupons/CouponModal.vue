@@ -194,13 +194,13 @@ const submit = () => {
     <!-- Modal Dialog -->
     <div class="flex min-h-full items-center justify-center p-4">
       <div 
-        class="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] shadow-2xl transition-all"
+        class="relative w-full max-w-2xl overflow-hidden rounded-xl bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] shadow-2xl transition-all"
         @keydown.ctrl.enter.prevent="submit"
       >
         <!-- Modal Header -->
         <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-white/[0.08]">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#F29F67]/15 border border-[#F29F67]/30 text-[#F29F67] flex items-center justify-center">
+            <div class="w-10 h-10 rounded-lg bg-[#F29F67]/15 border border-[#F29F67]/30 text-[#F29F67] flex items-center justify-center">
               <Ticket class="w-5 h-5" />
             </div>
             <div>
@@ -382,7 +382,7 @@ const submit = () => {
               </div>
 
               <!-- Usage Progress (if editing) -->
-              <div v-if="isEditing && coupon?.used_count !== undefined" class="p-3.5 rounded-xl bg-slate-50 dark:bg-[#262638]/50 border border-slate-200 dark:border-white/[0.06]">
+              <div v-if="isEditing && coupon?.used_count !== undefined" class="p-3.5 rounded-lg bg-slate-50 dark:bg-[#262638]/50 border border-slate-200 dark:border-white/[0.06]">
                 <div class="flex justify-between items-center text-xs mb-1.5">
                   <span class="text-slate-500 dark:text-slate-400 font-medium">Redemption Progress</span>
                   <span class="font-mono font-bold text-slate-900 dark:text-white">
@@ -438,7 +438,7 @@ const submit = () => {
                 </div>
 
                 <!-- Referee Selector Pill Box -->
-                <div class="max-h-48 overflow-y-auto rounded-xl border border-slate-200 dark:border-white/[0.08] p-2 space-y-1 bg-slate-50/50 dark:bg-[#262638]/30">
+                <div class="max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-white/[0.08] p-2 space-y-1 bg-slate-50/50 dark:bg-[#262638]/30">
                   <div
                     v-for="r in filteredReferees"
                     :key="r.id"
@@ -483,7 +483,7 @@ const submit = () => {
               </div>
 
               <!-- Scope Live Summary Box -->
-              <div class="p-3.5 rounded-xl bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20 flex items-start gap-2.5 text-xs text-indigo-900 dark:text-indigo-300">
+              <div class="p-3.5 rounded-lg bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20 flex items-start gap-2.5 text-xs text-indigo-900 dark:text-indigo-300">
                 <Info class="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <span class="font-bold">Scope Summary:</span>
