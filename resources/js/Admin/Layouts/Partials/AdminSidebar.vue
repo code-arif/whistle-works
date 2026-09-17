@@ -13,7 +13,6 @@ import {
   ChevronRight,
   ExternalLink,
   Sparkles,
-  CalendarCheck,
   X
 } from 'lucide-vue-next';
 
@@ -40,30 +39,29 @@ const navGroups = [
   {
     name: 'Core Overview',
     items: [
-      { name: 'Dashboard', href: '/admin/v2/dashboard', icon: LayoutDashboard, v2: true },
+      { name: 'Dashboard', href: '/admin/v2/dashboard', icon: LayoutDashboard },
     ]
   },
   {
     name: 'Camp Operations',
     items: [
-      { name: 'Camps Management', href: '/admin/v2/camps', icon: Tent, v2: true },
-      { name: 'Sports Types', href: '/admin/v2/sports-types', icon: Layers, v2: true },
-      { name: 'Game Schedules', href: '/admin/camps', icon: CalendarCheck, v2: false },
+      { name: 'Camps Management', href: '/admin/v2/camps', icon: Tent },
+      { name: 'Sports Types', href: '/admin/v2/sports-types', icon: Layers },
     ]
   },
   {
     name: 'Monetization & Users',
     items: [
-      { name: 'User Directory', href: '/admin/v2/users', icon: Users, v2: true },
-      { name: 'Payment Monitor', href: '/admin/v2/monitor/payments', icon: CreditCard, v2: true },
-      { name: 'Discount Coupons', href: '/admin/v2/coupons', icon: Ticket, v2: true },
+      { name: 'User Directory', href: '/admin/v2/users', icon: Users },
+      { name: 'Payment Monitor', href: '/admin/v2/monitor/payments', icon: CreditCard },
+      { name: 'Discount Coupons', href: '/admin/v2/coupons', icon: Ticket },
     ]
   },
   {
     name: 'System Governance',
     items: [
-      { name: 'Roles & Permissions', href: '/admin/roles', icon: Shield, v2: false },
-      { name: 'Global Settings', href: '/admin/setting/general', icon: Settings, v2: false },
+      { name: 'Roles & Permissions', href: '/admin/roles', icon: Shield },
+      { name: 'Global Settings', href: '/admin/setting/general', icon: Settings },
     ]
   }
 ];
@@ -102,52 +100,47 @@ const navGroups = [
       </div>
 
       <!-- Navigation Links -->
-      <div class="px-2.5 sm:px-3 py-4 space-y-4 overflow-y-auto max-h-[calc(100vh-120px)]">
-        <div v-for="group in navGroups" :key="group.name" class="space-y-0.5">
-          <p v-show="isOpen" class="px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono">
+      <div class="px-3 py-5 space-y-5 overflow-y-auto max-h-[calc(100vh-130px)]">
+        <div v-for="group in navGroups" :key="group.name" class="space-y-1">
+          <p v-show="isOpen" class="px-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono mb-2">
             {{ group.name }}
           </p>
-          <div class="space-y-0.5 pt-0.5">
+          <div class="space-y-1">
             <Link
               v-for="item in group.items"
               :key="item.name"
               :href="item.href"
+              :title="!isOpen ? item.name : undefined"
               :class="[
                 isCurrent(item.href) 
-                  ? 'bg-[#F29F67]/10 dark:bg-[#F29F67]/15 text-[#E08A50] dark:text-[#F29F67] border-l-2 border-[#F29F67] font-semibold shadow-2xs' 
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#262638] hover:text-slate-900 dark:hover:text-slate-100',
-                'group flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs sm:text-sm transition-all duration-150'
+                  ? 'bg-gradient-to-r from-[#F29F67]/15 via-[#F29F67]/10 to-transparent dark:from-[#F29F67]/20 dark:via-[#F29F67]/10 dark:to-transparent text-[#E08A50] dark:text-[#F29F67] border border-[#F29F67]/25 font-semibold shadow-xs' 
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-slate-100 border border-transparent',
+                isOpen ? 'px-3 py-2.5 gap-3' : 'px-0 py-2.5 justify-center',
+                'relative group flex items-center rounded-lg text-[13px] sm:text-sm transition-all duration-150'
               ]"
             >
-              <div class="flex items-center gap-2.5">
-                <component 
-                  :is="item.icon" 
-                  :class="[
-                    isCurrent(item.href) ? 'text-[#F29F67]' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200',
-                    'w-4 h-4 transition-colors flex-shrink-0'
-                  ]" 
-                />
-                <span v-show="isOpen" class="truncate">{{ item.name }}</span>
-              </div>
-              <div v-show="isOpen" class="flex items-center gap-1.5">
-                <span 
-                  v-if="item.v2" 
-                  :class="[
-                    isCurrent(item.href)
-                      ? 'bg-[#F29F67]/20 text-[#E08A50] dark:text-[#F29F67] border-[#F29F67]/40'
-                      : 'bg-slate-100 dark:bg-[#262638] text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/[0.08]',
-                    'px-1.5 py-0.5 text-[9px] font-semibold uppercase font-mono rounded border'
-                  ]"
-                >
-                  Vue 3
-                </span>
-                <span 
-                  v-else 
-                  class="px-1.5 py-0.5 text-[9px] font-semibold uppercase font-mono rounded bg-slate-100 dark:bg-[#262638] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-transparent"
-                >
-                  V1
-                </span>
-              </div>
+              <!-- Floating Active Left Accent Bar -->
+              <span 
+                v-if="isCurrent(item.href)" 
+                class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-[#F29F67] shadow-[0_0_8px_rgba(242,159,103,0.7)]"
+              ></span>
+
+              <component 
+                :is="item.icon" 
+                :class="[
+                  isCurrent(item.href) 
+                    ? 'text-[#F29F67]' 
+                    : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200',
+                  'w-[18px] h-[18px] transition-colors flex-shrink-0'
+                ]" 
+              />
+              <span v-show="isOpen" class="truncate">{{ item.name }}</span>
+
+              <!-- Active Status Micro-dot -->
+              <span 
+                v-if="isCurrent(item.href) && isOpen" 
+                class="ml-auto w-1.5 h-1.5 rounded-full bg-[#F29F67] shadow-[0_0_8px_rgba(242,159,103,0.8)] shrink-0"
+              ></span>
             </Link>
           </div>
         </div>
@@ -155,13 +148,17 @@ const navGroups = [
     </div>
 
     <!-- Quick Switch to Legacy Blade Admin -->
-    <div class="p-2.5 sm:p-3 border-t border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#181824]">
+    <div class="p-3 border-t border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#181824]">
       <a 
         href="/admin/dashboard" 
-        class="flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium text-amber-800 dark:text-[#E0B50F] bg-amber-500/10 hover:bg-amber-500/20 border border-[#E0B50F]/30 transition-all duration-150"
+        :class="[
+          isOpen ? 'px-3 py-2 justify-between' : 'px-0 py-2 justify-center',
+          'flex items-center rounded-lg text-xs font-medium text-amber-800 dark:text-[#E0B50F] bg-amber-500/10 hover:bg-amber-500/20 border border-[#E0B50F]/30 transition-all duration-150'
+        ]"
+        :title="!isOpen ? 'Legacy Admin' : undefined"
       >
-        <div class="flex items-center gap-2 truncate">
-          <ExternalLink class="w-3.5 h-3.5 text-[#E0B50F] flex-shrink-0" />
+        <div class="flex items-center gap-2.5 truncate">
+          <ExternalLink class="w-4 h-4 text-[#E0B50F] flex-shrink-0" />
           <span v-show="isOpen" class="truncate">Legacy Admin</span>
         </div>
         <ChevronRight v-show="isOpen" class="w-3.5 h-3.5 text-[#E0B50F] flex-shrink-0" />
