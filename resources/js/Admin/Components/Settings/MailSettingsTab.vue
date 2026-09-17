@@ -221,7 +221,7 @@ const sendTest = () => {
         <button
           type="submit"
           :disabled="form.processing"
-          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-[#F29F67] to-[#E08A50] hover:from-[#e08a50] hover:to-[#d07b43] shadow-md shadow-[#F29F67]/20 disabled:opacity-60 transition-all cursor-pointer"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-bold text-slate-950 bg-[#F29F67] hover:bg-[#E08A50] active:bg-[#C06D35] shadow-xs disabled:opacity-60 transition-all cursor-pointer"
         >
           <Save class="w-4 h-4" />
           <span>{{ form.processing ? 'Saving Changes...' : 'Save Mail Settings' }}</span>

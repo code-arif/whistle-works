@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\PaymentMonitorController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Web\Backend\V2\CampController;
@@ -78,6 +79,14 @@ Route::prefix('settings')->name('settings.')->group(function () {
     Route::post('/mail/test', [SettingController::class, 'sendTestMail'])->name('mail.test');
     Route::post('/integrations', [SettingController::class, 'updateIntegrations'])->name('integrations');
     Route::post('/system', [SettingController::class, 'updateSystem'])->name('system');
+});
+
+// V2 Admin Profile Settings
+Route::prefix('profile')->name('profile.')->group(function () {
+    Route::get('/', [ProfileController::class, 'index'])->name('index');
+    Route::post('/update', [ProfileController::class, 'updateProfile'])->name('update');
+    Route::post('/password', [ProfileController::class, 'updatePassword'])->name('password');
+    Route::post('/avatar', [ProfileController::class, 'updateAvatar'])->name('avatar');
 });
 
 

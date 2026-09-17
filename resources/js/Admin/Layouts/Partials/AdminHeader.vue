@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { usePage, router } from '@inertiajs/vue3';
+import { usePage, router, Link } from '@inertiajs/vue3';
 import {
   Sun,
   Moon,
@@ -9,7 +9,8 @@ import {
   Settings,
   LogOut,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  User
 } from 'lucide-vue-next';
 
 defineProps({
@@ -159,13 +160,14 @@ onMounted(() => {
             <p class="text-xs font-semibold text-slate-900 dark:text-white truncate">{{ user.name }}</p>
             <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">{{ user.email }}</p>
           </div>
-          <a 
-            href="/admin/setting/profile" 
-            class="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#32324A] hover:text-slate-900 dark:hover:text-white transition-colors"
+          <Link 
+            href="/admin/v2/profile" 
+            @click="showUserDropdown = false"
+            class="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#32324A] hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
           >
-            <Settings class="w-3.5 h-3.5 text-slate-400" />
+            <User class="w-3.5 h-3.5 text-[#F29F67]" />
             <span>Account Profile</span>
-          </a>
+          </Link>
           <a 
             href="/logout" 
             class="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
