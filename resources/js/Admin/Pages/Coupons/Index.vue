@@ -184,14 +184,9 @@ const goToPage = (pageUrl) => {
         <div>
           <Breadcrumb :items="[{ label: 'Marketing' }, { label: 'Coupons' }]" />
 
-          <div class="flex items-center gap-2">
-            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Discount Coupons & Campaigns
-            </h1>
-            <span class="px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-              Promotions
-            </span>
-          </div>
+          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Discount Coupons & Campaigns
+          </h1>
           <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Manage promotional codes, camp discounts, and referee-specific grants
           </p>
