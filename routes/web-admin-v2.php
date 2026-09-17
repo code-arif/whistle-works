@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\CmsAboutController;
+use App\Http\Controllers\Admin\CmsHomeController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\PaymentMonitorController;
 use App\Http\Controllers\Admin\ProfileController;
@@ -95,6 +97,61 @@ Route::prefix('terms-privacy')->name('terms-privacy.')->group(function () {
     Route::get('/', [TermsPrivacyController::class, 'index'])->name('index');
     Route::post('/', [TermsPrivacyController::class, 'update'])->name('update');
 });
+
+// V2 Content Management System (CMS)
+Route::prefix('cms')->name('cms.')->group(function () {
+    // Home Page CMS
+    Route::prefix('home')->name('home.')->group(function () {
+        Route::get('/', [CmsHomeController::class, 'index'])->name('index');
+        Route::post('/hero', [CmsHomeController::class, 'updateHero'])->name('hero');
+        Route::post('/training-camp', [CmsHomeController::class, 'updateTrainingCamp'])->name('training-camp');
+        Route::post('/operations', [CmsHomeController::class, 'updateOperations'])->name('operations');
+
+        // Partners / Sliders
+        Route::post('/partners/header', [CmsHomeController::class, 'updatePartnerHeader'])->name('partners.header');
+        Route::post('/partners/slider', [CmsHomeController::class, 'storeSlider'])->name('partners.slider.store');
+        Route::post('/partners/slider/{id}', [CmsHomeController::class, 'updateSlider'])->name('partners.slider.update');
+        Route::post('/partners/slider/{id}/status', [CmsHomeController::class, 'toggleSliderStatus'])->name('partners.slider.status');
+        Route::delete('/partners/slider/{id}', [CmsHomeController::class, 'destroySlider'])->name('partners.slider.destroy');
+
+        // Features
+        Route::post('/features/header', [CmsHomeController::class, 'updateFeatureHeader'])->name('features.header');
+        Route::post('/features/card', [CmsHomeController::class, 'storeFeatureCard'])->name('features.card.store');
+        Route::post('/features/card/{id}', [CmsHomeController::class, 'updateFeatureCard'])->name('features.card.update');
+        Route::delete('/features/card/{id}', [CmsHomeController::class, 'destroyFeatureCard'])->name('features.card.destroy');
+
+        // Testimonials
+        Route::post('/testimonials/header', [CmsHomeController::class, 'updateTestimonialHeader'])->name('testimonials.header');
+        Route::post('/testimonials/card', [CmsHomeController::class, 'storeTestimonialCard'])->name('testimonials.card.store');
+        Route::post('/testimonials/card/{id}', [CmsHomeController::class, 'updateTestimonialCard'])->name('testimonials.card.update');
+        Route::delete('/testimonials/card/{id}', [CmsHomeController::class, 'destroyTestimonialCard'])->name('testimonials.card.destroy');
+    });
+
+    // About Page CMS
+    Route::prefix('about')->name('about.')->group(function () {
+        Route::get('/', [CmsAboutController::class, 'index'])->name('index');
+        Route::post('/page-title', [CmsAboutController::class, 'updatePageTitle'])->name('page-title');
+        Route::post('/mission', [CmsAboutController::class, 'updateMission'])->name('mission');
+        Route::post('/key-to-excellence', [CmsAboutController::class, 'updateKeyToExcellence'])->name('key-to-excellence');
+        Route::post('/bottom-description', [CmsAboutController::class, 'updateBottomDescription'])->name('bottom-description');
+        Route::post('/getting-started', [CmsAboutController::class, 'updateGettingStarted'])->name('getting-started');
+
+        // Owner Info
+        Route::post('/owner-info', [CmsAboutController::class, 'updateOwnerInfo'])->name('owner-info');
+
+        // Feature Highlights
+        Route::post('/feature-cards', [CmsAboutController::class, 'storeFeatureCard'])->name('feature-cards.store');
+        Route::post('/feature-cards/{id}', [CmsAboutController::class, 'updateFeatureCard'])->name('feature-cards.update');
+        Route::delete('/feature-cards/{id}', [CmsAboutController::class, 'destroyFeatureCard'])->name('feature-cards.destroy');
+
+        // Team
+        Route::post('/team/header', [CmsAboutController::class, 'updateTeamHeader'])->name('team.header');
+        Route::post('/team/members', [CmsAboutController::class, 'storeTeamMember'])->name('team.members.store');
+        Route::post('/team/members/{id}', [CmsAboutController::class, 'updateTeamMember'])->name('team.members.update');
+        Route::delete('/team/members/{id}', [CmsAboutController::class, 'destroyTeamMember'])->name('team.members.destroy');
+    });
+});
+
 
 
 

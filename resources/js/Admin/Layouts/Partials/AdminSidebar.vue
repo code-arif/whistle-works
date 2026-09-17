@@ -11,6 +11,8 @@ import {
   Shield,
   FileText,
   Layers,
+  LayoutTemplate,
+  BookOpen,
   ChevronRight,
   ExternalLink,
   Sparkles,
@@ -56,6 +58,13 @@ const navGroups = [
       { name: 'User Directory', href: '/admin/v2/users', icon: Users },
       { name: 'Payment Monitor', href: '/admin/v2/monitor/payments', icon: CreditCard },
       { name: 'Discount Coupons', href: '/admin/v2/coupons', icon: Ticket },
+    ]
+  },
+  {
+    name: 'Content & CMS',
+    items: [
+      { name: 'Home Page CMS', href: '/admin/v2/cms/home', icon: LayoutTemplate },
+      { name: 'About Page CMS', href: '/admin/v2/cms/about', icon: BookOpen },
     ]
   },
   {
