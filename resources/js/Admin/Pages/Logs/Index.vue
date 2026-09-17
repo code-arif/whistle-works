@@ -4,6 +4,7 @@ import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Admin/Layouts/AdminLayout.vue';
 import Breadcrumb from '@/Admin/Components/Common/Breadcrumb.vue';
 import Dropdown from '@/Admin/Components/Common/Dropdown.vue';
+import { useToast } from '@/Admin/Composables/useToast';
 import {
   Terminal,
   RefreshCw,
@@ -79,7 +80,7 @@ const bulkCopied = ref(false);
 const isRefreshing = ref(false);
 const autoRefreshInterval = ref('off'); // 'off', '5', '10', '30'
 const showClearModal = ref(false);
-const toastMessage = ref('');
+const toast = useToast();
 let autoRefreshTimer = null;
 
 // Watch props updates from Inertia navigation
@@ -99,14 +100,13 @@ watch(() => props.selectedFile, (newVal) => {
   currentFile.value = newVal;
 });
 
-// Toast notification helper
-const showToast = (msg) => {
-  toastMessage.value = msg;
-  setTimeout(() => {
-    if (toastMessage.value === msg) {
-      toastMessage.value = '';
-    }
-  }, 2500);
+// Toast notification helper delegating to global useToast
+const showToast = (msg, type = 'success') => {
+  if (type === 'error') {
+    toast.error(msg);
+  } else {
+    toast.success(msg);
+  }
 };
 
 // Switch file
@@ -309,24 +309,6 @@ const fileOptions = computed(() => {
 <template>
   <AdminLayout>
     <Head title="System Logs Monitor" />
-
-    <!-- Floating Toast Notification -->
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="transform translate-y-2 opacity-0"
-      enter-to-class="transform translate-y-0 opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="transform translate-y-0 opacity-100"
-      leave-to-class="transform translate-y-2 opacity-0"
-    >
-      <div 
-        v-if="toastMessage" 
-        class="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-md bg-slate-900/95 dark:bg-white/95 text-white dark:text-slate-950 text-xs font-mono shadow-2xl backdrop-blur-md border border-white/10 dark:border-slate-900/10"
-      >
-        <Check class="w-4 h-4 text-[#F29F67]" />
-        <span>{{ toastMessage }}</span>
-      </div>
-    </Transition>
 
     <div class="space-y-5 max-w-7xl mx-auto pb-12">
       <!-- Breadcrumb & Header Title -->
