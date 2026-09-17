@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\PaymentMonitorController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\TermsPrivacyController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Web\Backend\V2\CampController;
 use App\Http\Controllers\Web\Backend\V2\DashboardController;
@@ -88,6 +89,13 @@ Route::prefix('profile')->name('profile.')->group(function () {
     Route::post('/password', [ProfileController::class, 'updatePassword'])->name('password');
     Route::post('/avatar', [ProfileController::class, 'updateAvatar'])->name('avatar');
 });
+
+// V2 Admin Terms & Privacy Management
+Route::prefix('terms-privacy')->name('terms-privacy.')->group(function () {
+    Route::get('/', [TermsPrivacyController::class, 'index'])->name('index');
+    Route::post('/', [TermsPrivacyController::class, 'update'])->name('update');
+});
+
 
 
 

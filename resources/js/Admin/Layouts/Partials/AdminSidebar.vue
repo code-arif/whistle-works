@@ -9,6 +9,7 @@ import {
   Ticket,
   Settings,
   Shield,
+  FileText,
   Layers,
   ChevronRight,
   ExternalLink,
@@ -61,6 +62,7 @@ const navGroups = [
     name: 'System Governance',
     items: [
       { name: 'Roles & Permissions', href: '/admin/roles', icon: Shield },
+      { name: 'Terms & Privacy', href: '/admin/v2/terms-privacy', icon: FileText },
       { name: 'Global Settings', href: '/admin/v2/settings', icon: Settings },
     ]
   }
