@@ -329,7 +329,7 @@ const executeDeleteMember = () => {
       <div v-show="currentTab === 'overview'" class="space-y-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- 1. Page Title Section -->
-          <form @submit.prevent="submitPageTitle" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 shadow-xs space-y-4">
+          <form @submit.prevent="submitPageTitle" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 shadow-xs space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
               <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Compass class="w-4 h-4 text-[#F29F67]" />
@@ -372,7 +372,7 @@ const executeDeleteMember = () => {
           </form>
 
           <!-- 2. Our Mission Section -->
-          <form @submit.prevent="submitMission" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 shadow-xs space-y-4">
+          <form @submit.prevent="submitMission" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 shadow-xs space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
               <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Target class="w-4 h-4 text-[#F29F67]" />
@@ -416,7 +416,7 @@ const executeDeleteMember = () => {
           </form>
 
           <!-- 3. Key to Excellence Section -->
-          <form @submit.prevent="submitExcellence" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 shadow-xs space-y-4">
+          <form @submit.prevent="submitExcellence" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 shadow-xs space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
               <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Sparkles class="w-4 h-4 text-[#F29F67]" />
@@ -460,7 +460,7 @@ const executeDeleteMember = () => {
           </form>
 
           <!-- 4. Getting Started Section -->
-          <form @submit.prevent="submitGettingStarted" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 shadow-xs space-y-4">
+          <form @submit.prevent="submitGettingStarted" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 shadow-xs space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
               <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Compass class="w-4 h-4 text-[#F29F67]" />
@@ -503,7 +503,7 @@ const executeDeleteMember = () => {
           </form>
 
           <!-- 5. Bottom Description Section (Full Width) -->
-          <form @submit.prevent="submitBottomDesc" class="lg:col-span-2 bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 shadow-xs space-y-4">
+          <form @submit.prevent="submitBottomDesc" class="lg:col-span-2 bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 shadow-xs space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
               <div>
                 <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -540,7 +540,7 @@ const executeDeleteMember = () => {
            TAB 2: FOUNDER / OWNER PROFILE
       ==================================================== -->
       <div v-show="currentTab === 'owner'" class="space-y-6">
-        <form @submit.prevent="submitOwner" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-6">
+        <form @submit.prevent="submitOwner" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-6">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -563,8 +563,8 @@ const executeDeleteMember = () => {
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Left: Owner Image Upload -->
-            <div class="flex flex-col items-center justify-center p-5 bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-xl text-center">
-              <div class="w-32 h-32 rounded-xl overflow-hidden border-2 border-[#F29F67]/40 mb-3 bg-white dark:bg-[#262638] flex items-center justify-center">
+            <div class="flex flex-col items-center justify-center p-5 bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-md text-center">
+              <div class="w-32 h-32 rounded-md overflow-hidden border-2 border-[#F29F67]/40 mb-3 bg-white dark:bg-[#262638] flex items-center justify-center">
                 <img
                   v-if="ownerPreview"
                   :src="ownerPreview"
@@ -648,7 +648,7 @@ const executeDeleteMember = () => {
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <!-- Stat 1 -->
-              <div class="p-3 bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-lg space-y-2">
+              <div class="p-3 bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-md space-y-2">
                 <span class="text-[10px] font-bold uppercase text-[#E08A50] dark:text-[#F29F67]">Statistic 1</span>
                 <div>
                   <label class="block text-[11px] text-slate-500 mb-1">Value (e.g. 25+)</label>
@@ -671,7 +671,7 @@ const executeDeleteMember = () => {
               </div>
 
               <!-- Stat 2 -->
-              <div class="p-3 bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-lg space-y-2">
+              <div class="p-3 bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-md space-y-2">
                 <span class="text-[10px] font-bold uppercase text-[#E08A50] dark:text-[#F29F67]">Statistic 2</span>
                 <div>
                   <label class="block text-[11px] text-slate-500 mb-1">Value (e.g. 500+)</label>
@@ -694,7 +694,7 @@ const executeDeleteMember = () => {
               </div>
 
               <!-- Stat 3 -->
-              <div class="p-3 bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-lg space-y-2">
+              <div class="p-3 bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-md space-y-2">
                 <span class="text-[10px] font-bold uppercase text-[#E08A50] dark:text-[#F29F67]">Statistic 3</span>
                 <div>
                   <label class="block text-[11px] text-slate-500 mb-1">Value (e.g. 10+)</label>
@@ -724,7 +724,7 @@ const executeDeleteMember = () => {
            TAB 3: FEATURE HIGHLIGHTS
       ==================================================== -->
       <div v-show="currentTab === 'features'" class="space-y-6">
-        <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+        <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -753,11 +753,11 @@ const executeDeleteMember = () => {
             <div
               v-for="card in props.data.featureCards"
               :key="card.id"
-              class="bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-lg p-4 flex flex-col justify-between hover:border-[#F29F67]/50 transition-all group"
+              class="bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-md p-4 flex flex-col justify-between hover:border-[#F29F67]/50 transition-all group"
             >
               <div>
                 <div class="flex items-start justify-between gap-3 mb-3">
-                  <div class="w-10 h-10 rounded-lg bg-white dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center p-1.5 shrink-0">
+                  <div class="w-10 h-10 rounded-md bg-white dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center p-1.5 shrink-0">
                     <img v-if="card.image" :src="card.image" alt="Icon" class="max-h-full max-w-full object-contain" />
                     <Award v-else class="w-5 h-5 text-[#F29F67]" />
                   </div>
@@ -800,7 +800,7 @@ const executeDeleteMember = () => {
       ==================================================== -->
       <div v-show="currentTab === 'team'" class="space-y-6">
         <!-- Team Header Form -->
-        <form @submit.prevent="submitTeamHeader" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+        <form @submit.prevent="submitTeamHeader" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -852,7 +852,7 @@ const executeDeleteMember = () => {
         </form>
 
         <!-- Team Members Grid -->
-        <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+        <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h3 class="text-sm font-bold text-slate-900 dark:text-white">Team Members</h3>
@@ -878,7 +878,7 @@ const executeDeleteMember = () => {
             <div
               v-for="member in props.data.teamMembers"
               :key="member.id"
-              class="bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-lg p-4 flex flex-col items-center text-center justify-between hover:border-[#F29F67]/50 transition-all group"
+              class="bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-md p-4 flex flex-col items-center text-center justify-between hover:border-[#F29F67]/50 transition-all group"
             >
               <div class="w-full">
                 <div class="flex justify-end gap-1 mb-2">

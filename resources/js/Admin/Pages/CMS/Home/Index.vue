@@ -386,7 +386,7 @@ const executeDeleteTestimonial = () => {
            TAB 1: HERO SECTION
       ==================================================== -->
       <div v-show="currentTab === 'hero'" class="space-y-6">
-        <form @submit.prevent="submitHero" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-5">
+        <form @submit.prevent="submitHero" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-5">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -442,7 +442,7 @@ const executeDeleteTestimonial = () => {
            TAB 2: TRAINING CAMP SECTION
       ==================================================== -->
       <div v-show="currentTab === 'training-camp'" class="space-y-6">
-        <form @submit.prevent="submitCamp" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-5">
+        <form @submit.prevent="submitCamp" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-5">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -498,7 +498,7 @@ const executeDeleteTestimonial = () => {
            TAB 3: OPERATIONS SECTION
       ==================================================== -->
       <div v-show="currentTab === 'operations'" class="space-y-6">
-        <form @submit.prevent="submitOperations" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-5">
+        <form @submit.prevent="submitOperations" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-5">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -555,7 +555,7 @@ const executeDeleteTestimonial = () => {
       ==================================================== -->
       <div v-show="currentTab === 'partners'" class="space-y-6">
         <!-- Partner Section Header Form -->
-        <form @submit.prevent="submitPartnerHeader" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+        <form @submit.prevent="submitPartnerHeader" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -592,7 +592,7 @@ const executeDeleteTestimonial = () => {
         </form>
 
         <!-- Partner Logos Grid -->
-        <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+        <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h3 class="text-sm font-bold text-slate-900 dark:text-white">Partner Logos & Brands</h3>
@@ -618,7 +618,7 @@ const executeDeleteTestimonial = () => {
             <div
               v-for="slider in props.data.sliders"
               :key="slider.id"
-              class="relative group bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-lg p-3 flex flex-col items-center justify-between gap-3 hover:border-[#F29F67]/50 transition-all"
+              class="relative group bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-md p-3 flex flex-col items-center justify-between gap-3 hover:border-[#F29F67]/50 transition-all"
             >
               <!-- Status Micro-badge -->
               <span
@@ -690,7 +690,7 @@ const executeDeleteTestimonial = () => {
       ==================================================== -->
       <div v-show="currentTab === 'features'" class="space-y-6">
         <!-- Feature Header Form -->
-        <form @submit.prevent="submitFeatureHeader" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+        <form @submit.prevent="submitFeatureHeader" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -742,7 +742,7 @@ const executeDeleteTestimonial = () => {
         </form>
 
         <!-- Feature Cards Grid -->
-        <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+        <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h3 class="text-sm font-bold text-slate-900 dark:text-white">Feature Highlight Cards</h3>
@@ -768,11 +768,11 @@ const executeDeleteTestimonial = () => {
             <div
               v-for="card in props.data.featuresCards"
               :key="card.id"
-              class="bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-lg p-4 flex flex-col justify-between hover:border-[#F29F67]/50 transition-all group"
+              class="bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-md p-4 flex flex-col justify-between hover:border-[#F29F67]/50 transition-all group"
             >
               <div>
                 <div class="flex items-start justify-between gap-3 mb-3">
-                  <div class="w-10 h-10 rounded-lg bg-white dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center p-1.5 shrink-0">
+                  <div class="w-10 h-10 rounded-md bg-white dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center p-1.5 shrink-0">
                     <img v-if="card.image" :src="card.image" alt="Icon" class="max-h-full max-w-full object-contain" />
                     <Layers v-else class="w-5 h-5 text-[#F29F67]" />
                   </div>
@@ -811,7 +811,7 @@ const executeDeleteTestimonial = () => {
       ==================================================== -->
       <div v-show="currentTab === 'testimonials'" class="space-y-6">
         <!-- Testimonial Header Form -->
-        <form @submit.prevent="submitTestimonialHeader" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+        <form @submit.prevent="submitTestimonialHeader" class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -863,7 +863,7 @@ const executeDeleteTestimonial = () => {
         </form>
 
         <!-- Testimonial Cards Grid -->
-        <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+        <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-lg p-5 sm:p-6 shadow-xs space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div>
               <h3 class="text-sm font-bold text-slate-900 dark:text-white">Referee Testimonials</h3>
@@ -889,7 +889,7 @@ const executeDeleteTestimonial = () => {
             <div
               v-for="item in props.data.testimonials"
               :key="item.id"
-              class="bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-lg p-4 flex flex-col justify-between hover:border-[#F29F67]/50 transition-all group"
+              class="bg-slate-50 dark:bg-[#161622] border border-slate-200 dark:border-white/[0.06] rounded-md p-4 flex flex-col justify-between hover:border-[#F29F67]/50 transition-all group"
             >
               <div>
                 <div class="flex items-start justify-between gap-3 mb-3">

@@ -52,7 +52,9 @@ class HandleInertiaRequests extends Middleware
             'settings' => [
                 'app_name' => config('app.name', 'Whistle-Works'),
                 'site_title' => function_exists('settings') ? (settings()->title ?? 'Whistle-Works') : 'Whistle-Works',
-                'logo' => function_exists('settings') ? (settings()->logo ?? null) : null,
+                'logo' => ($logo = function_exists('settings') ? (settings()->logo ?? null) : null)
+                    ? ((str_starts_with($logo, 'http') || str_starts_with($logo, 'data:')) ? $logo : asset($logo))
+                    : null,
             ],
         ]);
     }
