@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\PaymentMonitorController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Web\Backend\V2\CampController;
@@ -57,6 +58,16 @@ Route::prefix('monitor/payments')->name('monitor.payments.')->group(function () 
     Route::get('/', [PaymentMonitorController::class, 'index'])->name('index');
     Route::post('/refresh', [PaymentMonitorController::class, 'refresh'])->name('refresh');
 });
+
+// V2 Discount Coupons
+Route::prefix('coupons')->name('coupons.')->group(function () {
+    Route::get('/', [CouponController::class, 'index'])->name('index');
+    Route::post('/', [CouponController::class, 'store'])->name('store');
+    Route::post('/{id}', [CouponController::class, 'update'])->name('update');
+    Route::post('/{id}/status', [CouponController::class, 'toggleStatus'])->name('status');
+    Route::delete('/{id}', [CouponController::class, 'destroy'])->name('destroy');
+});
+
 
 
 
