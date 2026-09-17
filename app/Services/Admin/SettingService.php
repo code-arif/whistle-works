@@ -59,6 +59,9 @@ class SettingService
                 'google_client_secret' => env('GOOGLE_CLIENT_SECRET', ''),
                 'google_redirect_uri'  => env('GOOGLE_REDIRECT_URI', ''),
                 'google_maps_api_key'  => env('GOOGLE_MAPS_API_KEY', ''),
+                'twilio_sid'           => env('TWILIO_SID', ''),
+                'twilio_token'         => env('TWILIO_TOKEN', ''),
+                'twilio_from'          => env('TWILIO_FROM', ''),
             ],
             'system' => [
                 'app_name'         => env('APP_NAME', 'Whistle Works'),
@@ -165,6 +168,9 @@ class SettingService
             'GOOGLE_CLIENT_SECRET' => $data['google_client_secret'] ?? '',
             'GOOGLE_REDIRECT_URI'  => $data['google_redirect_uri'] ?? '',
             'GOOGLE_MAPS_API_KEY'  => $data['google_maps_api_key'] ?? '',
+            'TWILIO_SID'           => $data['twilio_sid'] ?? '',
+            'TWILIO_TOKEN'         => $data['twilio_token'] ?? '',
+            'TWILIO_FROM'          => $data['twilio_from'] ?? '',
         ];
 
         $this->updateEnv($keys);

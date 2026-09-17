@@ -132,6 +132,9 @@ class SettingController extends Controller
             'google_client_secret' => ['nullable', 'string'],
             'google_redirect_uri'  => ['nullable', 'string'],
             'google_maps_api_key'  => ['nullable', 'string'],
+            'twilio_sid'           => ['nullable', 'string'],
+            'twilio_token'         => ['nullable', 'string'],
+            'twilio_from'          => ['nullable', 'string'],
         ]);
 
         try {

@@ -8,7 +8,8 @@ import {
   Eye, 
   EyeOff, 
   ExternalLink,
-  Clock
+  Clock,
+  MessageSquare
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -23,9 +24,13 @@ const form = useForm({
   google_client_secret: props.settings.google_client_secret || '',
   google_redirect_uri: props.settings.google_redirect_uri || '',
   google_maps_api_key: props.settings.google_maps_api_key || '',
+  twilio_sid: props.settings.twilio_sid || '',
+  twilio_token: props.settings.twilio_token || '',
+  twilio_from: props.settings.twilio_from || '',
 });
 
 const showGoogleSecret = ref(false);
+const showTwilioToken = ref(false);
 
 const submit = () => {
   form.post('/admin/v2/settings/integrations', {
@@ -138,6 +143,80 @@ const submit = () => {
           class="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F29F67]/50 focus:border-[#F29F67] text-slate-900 dark:text-white transition-colors"
           placeholder="AIzaSy..."
         />
+      </div>
+    </div>
+
+    <!-- Section 3: Twilio SMS Gateway -->
+    <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-sm">
+      <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-100 dark:border-white/[0.06]">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-[#3B8FF3]/10 flex items-center justify-center text-[#3B8FF3]">
+            <MessageSquare class="w-4 h-4" />
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Twilio SMS Gateway</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Credentials for automated SMS alerts, emergency camp notifications, and updates.</p>
+          </div>
+        </div>
+
+        <a 
+          href="https://console.twilio.com" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          class="inline-flex items-center gap-1.5 text-xs text-[#F29F67] hover:underline"
+        >
+          <span>Twilio Console</span>
+          <ExternalLink class="w-3.5 h-3.5" />
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+        <div class="md:col-span-2">
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            Twilio Account SID (TWILIO_SID)
+          </label>
+          <input
+            v-model="form.twilio_sid"
+            type="text"
+            class="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F29F67]/50 focus:border-[#F29F67] text-slate-900 dark:text-white transition-colors"
+            placeholder="AC..."
+          />
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Twilio Auth Token (TWILIO_TOKEN)
+            </label>
+            <button 
+              type="button" 
+              @click="showTwilioToken = !showTwilioToken"
+              class="text-xs text-[#F29F67] hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <EyeOff v-if="showTwilioToken" class="w-3 h-3" />
+              <Eye v-else class="w-3 h-3" />
+              <span>{{ showTwilioToken ? 'Hide' : 'Reveal' }}</span>
+            </button>
+          </div>
+          <input
+            v-model="form.twilio_token"
+            :type="showTwilioToken ? 'text' : 'password'"
+            class="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F29F67]/50 focus:border-[#F29F67] text-slate-900 dark:text-white transition-colors"
+            placeholder="Your Auth Token"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            Twilio From / Sender Number (TWILIO_FROM)
+          </label>
+          <input
+            v-model="form.twilio_from"
+            type="text"
+            class="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F29F67]/50 focus:border-[#F29F67] text-slate-900 dark:text-white transition-colors"
+            placeholder="+12296027901"
+          />
+        </div>
       </div>
     </div>
 
