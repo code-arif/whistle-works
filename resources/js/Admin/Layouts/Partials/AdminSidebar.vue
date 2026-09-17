@@ -55,7 +55,7 @@ const navGroups = [
     name: 'Monetization & Users',
     items: [
       { name: 'User Directory', href: '/admin/v2/users', icon: Users, v2: true },
-      { name: 'Payment Monitor', href: '/admin/monitor', icon: CreditCard, v2: false },
+      { name: 'Payment Monitor', href: '/admin/v2/monitor/payments', icon: CreditCard, v2: true },
       { name: 'Discount Coupons', href: '/admin/coupon', icon: Ticket, v2: false },
     ]
   },

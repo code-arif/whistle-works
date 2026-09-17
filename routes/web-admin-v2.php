@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\PaymentMonitorController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Web\Backend\V2\CampController;
 use App\Http\Controllers\Web\Backend\V2\DashboardController;
@@ -50,5 +51,12 @@ Route::prefix('users')->name('users.')->group(function () {
     Route::post('/{id}/restore', [UserController::class, 'restore'])->name('restore');
     Route::delete('/{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
 });
+
+// V2 Payment Monitor
+Route::prefix('monitor/payments')->name('monitor.payments.')->group(function () {
+    Route::get('/', [PaymentMonitorController::class, 'index'])->name('index');
+    Route::post('/refresh', [PaymentMonitorController::class, 'refresh'])->name('refresh');
+});
+
 
 
