@@ -5,14 +5,7 @@ import Breadcrumb from '@/Admin/Components/Common/Breadcrumb.vue';
 import ProfileHeaderCard from '@/Admin/Components/Profile/ProfileHeaderCard.vue';
 import ProfileDetailsForm from '@/Admin/Components/Profile/ProfileDetailsForm.vue';
 import ChangePasswordForm from '@/Admin/Components/Profile/ChangePasswordForm.vue';
-import { 
-  ShieldCheck, 
-  KeyRound, 
-  UserCheck, 
-  Clock, 
-  ExternalLink,
-  Lock
-} from 'lucide-vue-next';
+import { ExternalLink } from 'lucide-vue-next';
 
 defineProps({
   profile: {
@@ -64,48 +57,9 @@ defineProps({
           <ProfileDetailsForm :profile="profile" />
         </div>
 
-        <!-- Right: Security & Credentials + Session Card (5 cols on lg) -->
-        <div class="lg:col-span-5 space-y-6">
+        <!-- Right: Security & Credentials (5 cols on lg) -->
+        <div class="lg:col-span-5">
           <ChangePasswordForm />
-
-          <!-- Security Diagnostics Overview Card -->
-          <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-sm">
-            <h4 class="text-xs uppercase font-mono font-bold tracking-wider text-slate-400 mb-4">
-              Security Health Check
-            </h4>
-
-            <div class="space-y-3.5">
-              <div class="flex items-center justify-between text-xs">
-                <span class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <UserCheck class="w-4 h-4 text-[#34B1AA]" />
-                  <span>Role Authorization</span>
-                </span>
-                <span class="font-mono font-semibold text-[#34B1AA]">
-                  {{ profile.role }}
-                </span>
-              </div>
-
-              <div class="flex items-center justify-between text-xs">
-                <span class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <Lock class="w-4 h-4 text-emerald-500" />
-                  <span>Password Hash</span>
-                </span>
-                <span class="font-mono text-emerald-500 font-semibold">
-                  Bcrypt Active
-                </span>
-              </div>
-
-              <div class="flex items-center justify-between text-xs">
-                <span class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <Clock class="w-4 h-4 text-[#F29F67]" />
-                  <span>Activity Status</span>
-                </span>
-                <span class="font-mono text-slate-500 dark:text-slate-400">
-                  {{ profile.last_active }}
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
 
       </div>

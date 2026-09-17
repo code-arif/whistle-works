@@ -39,10 +39,10 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user() ? [
                     'id'    => $request->user()->id,
-                    'name'  => $request->user()->name ?? $request->user()->first_name . ' ' . $request->user()->last_name,
+                    'name'  => trim(($request->user()->first_name ?? '') . ' ' . ($request->user()->last_name ?? '')) ?: ($request->user()->name ?? 'Administrator'),
                     'email' => $request->user()->email,
                     'role'  => $request->user()->roles->pluck('name')->first() ?? 'Admin',
-                    'avatar'=> $request->user()->avatar ?? null,
+                    'avatar'=> $request->user()->avatar ? (str_starts_with($request->user()->avatar, 'http') ? $request->user()->avatar : asset($request->user()->avatar)) : null,
                 ] : null,
             ],
             'flash' => [

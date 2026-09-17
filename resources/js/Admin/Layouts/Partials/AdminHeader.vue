@@ -141,8 +141,14 @@ onMounted(() => {
           @click="showUserDropdown = !showUserDropdown"
           class="flex items-center gap-2 p-1 pr-2 sm:pr-2.5 rounded-md bg-slate-100 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.15] transition-all duration-150 cursor-pointer"
         >
-          <div class="w-6 h-6 rounded bg-gradient-to-tr from-[#F29F67] to-[#E0B50F] flex items-center justify-center font-bold text-[11px] text-white shadow-2xs flex-shrink-0">
-            {{ user.name ? user.name.charAt(0).toUpperCase() : 'A' }}
+          <div class="w-6 h-6 rounded bg-gradient-to-tr from-[#F29F67] to-[#E08A50] flex items-center justify-center font-bold text-[11px] text-white shadow-2xs flex-shrink-0 overflow-hidden">
+            <img 
+              v-if="user.avatar" 
+              :src="user.avatar" 
+              :alt="user.name" 
+              class="w-full h-full object-cover" 
+            />
+            <span v-else>{{ user.name ? user.name.charAt(0).toUpperCase() : 'A' }}</span>
           </div>
           <div class="text-left hidden lg:block">
             <p class="text-[11px] font-semibold text-slate-900 dark:text-slate-200 truncate max-w-[100px] leading-tight">{{ user.name }}</p>
@@ -156,9 +162,20 @@ onMounted(() => {
           @click.outside="showUserDropdown = false"
           class="absolute right-0 mt-1.5 w-48 rounded-lg bg-white dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] shadow-xl p-1 z-50 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150"
         >
-          <div class="px-2.5 py-1.5 border-b border-slate-100 dark:border-white/[0.08] mb-1">
-            <p class="text-xs font-semibold text-slate-900 dark:text-white truncate">{{ user.name }}</p>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">{{ user.email }}</p>
+          <div class="px-2.5 py-1.5 border-b border-slate-100 dark:border-white/[0.08] mb-1 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#F29F67] to-[#E08A50] flex items-center justify-center font-bold text-xs text-white shadow-2xs flex-shrink-0 overflow-hidden">
+              <img 
+                v-if="user.avatar" 
+                :src="user.avatar" 
+                :alt="user.name" 
+                class="w-full h-full object-cover" 
+              />
+              <span v-else>{{ user.name ? user.name.charAt(0).toUpperCase() : 'A' }}</span>
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs font-semibold text-slate-900 dark:text-white truncate">{{ user.name }}</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">{{ user.email }}</p>
+            </div>
           </div>
           <Link 
             href="/admin/v2/profile" 
