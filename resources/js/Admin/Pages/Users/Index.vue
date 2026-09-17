@@ -96,6 +96,8 @@ const statusOptions = [
 const isDeleteModalOpen = ref(false);
 const isRestoreModalOpen = ref(false);
 const isForceDeleteModalOpen = ref(false);
+const isStatusModalOpen = ref(false);
+const isStatusLoading = ref(false);
 const itemToActOn = ref(null);
 
 const confirmDelete = (user) => {
@@ -146,9 +148,23 @@ const handleForceDelete = () => {
   });
 };
 
-const handleStatusToggle = (user) => {
-  router.post(`/admin/v2/users/${user.id}/status`, {}, {
+const confirmStatusToggle = (user) => {
+  itemToActOn.value = user;
+  isStatusModalOpen.value = true;
+};
+
+const handleStatusToggle = () => {
+  if (!itemToActOn.value) return;
+  isStatusLoading.value = true;
+  router.post(`/admin/v2/users/${itemToActOn.value.id}/status`, {}, {
     preserveScroll: true,
+    onSuccess: () => {
+      isStatusModalOpen.value = false;
+      itemToActOn.value = null;
+    },
+    onFinish: () => {
+      isStatusLoading.value = false;
+    },
   });
 };
 
@@ -432,18 +448,18 @@ const getRoleBadgeColor = (roleName) => {
           </div>
           <div v-else class="flex justify-center">
             <button
-              @click="handleStatusToggle(row)"
+              @click="confirmStatusToggle(row)"
               :class="[
                 row.status === 'active'
-                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                  : 'bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/20',
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25'
+                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20',
                 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border font-mono transition-all hover:scale-105 cursor-pointer shadow-2xs'
               ]"
               :title="`Click to switch to ${row.status === 'active' ? 'inactive' : 'active'}`"
             >
               <span
                 :class="[
-                  row.status === 'active' ? 'bg-emerald-500' : 'bg-slate-400',
+                  row.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500',
                   'w-1.5 h-1.5 rounded-full'
                 ]"
               ></span>
@@ -459,17 +475,17 @@ const getRoleBadgeColor = (roleName) => {
             <template v-if="!row.is_trashed">
               <Link
                 :href="`/admin/v2/users/${row.id}`"
-                class="p-1.5 rounded text-slate-400 hover:text-[#E08A50] dark:hover:text-[#F29F67] hover:bg-[#F29F67]/10 transition-colors"
+                class="p-1.5 rounded-md text-[#2B9B95] dark:text-[#34B1AA] bg-[#34B1AA]/10 hover:bg-[#34B1AA]/20 border border-[#34B1AA]/30 dark:border-[#34B1AA]/30 transition-all duration-150 cursor-pointer shadow-2xs inline-flex items-center justify-center"
                 title="View Executive Profile"
               >
-                <Eye class="w-4 h-4" />
+                <Eye class="w-3.5 h-3.5" />
               </Link>
               <button
                 @click="confirmDelete(row)"
-                class="p-1.5 rounded text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                class="p-1.5 rounded-md text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 dark:border-rose-500/30 transition-all duration-150 cursor-pointer shadow-2xs inline-flex items-center justify-center"
                 title="Move to Trash"
               >
-                <Trash2 class="w-4 h-4" />
+                <Trash2 class="w-3.5 h-3.5" />
               </button>
             </template>
 
@@ -477,22 +493,36 @@ const getRoleBadgeColor = (roleName) => {
             <template v-else>
               <button
                 @click="confirmRestore(row)"
-                class="p-1.5 rounded text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                class="p-1.5 rounded-md text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 dark:border-emerald-500/30 transition-all duration-150 cursor-pointer shadow-2xs inline-flex items-center justify-center"
                 title="Restore User"
               >
-                <RefreshCw class="w-4 h-4" />
+                <RefreshCw class="w-3.5 h-3.5" />
               </button>
               <button
                 @click="confirmForceDelete(row)"
-                class="p-1.5 rounded text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                class="p-1.5 rounded-md text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 dark:border-rose-500/30 transition-all duration-150 cursor-pointer shadow-2xs inline-flex items-center justify-center"
                 title="Permanently Delete"
               >
-                <Trash2 class="w-4 h-4" />
+                <Trash2 class="w-3.5 h-3.5" />
               </button>
             </template>
           </div>
         </template>
       </DataTable>
+
+      <!-- Status Toggle Confirmation Modal -->
+      <ConfirmationModal
+        :show="isStatusModalOpen"
+        :title="itemToActOn?.status === 'active' ? 'Deactivate User Account' : 'Activate User Account'"
+        :message="itemToActOn?.status === 'active'
+          ? `Are you sure you want to deactivate '${itemToActOn?.full_name}'? The user will be unable to log in or access the system until reactivated.`
+          : `Are you sure you want to activate '${itemToActOn?.full_name}'? The user will immediately regain full access to their account.`"
+        :confirm-text="itemToActOn?.status === 'active' ? 'Deactivate Account' : 'Activate Account'"
+        :type="itemToActOn?.status === 'active' ? 'warning' : 'info'"
+        :is-loading="isStatusLoading"
+        @confirm="handleStatusToggle"
+        @close="() => { if (!isStatusLoading) isStatusModalOpen = false; }"
+      />
 
       <!-- Soft Delete Confirmation Modal -->
       <ConfirmationModal

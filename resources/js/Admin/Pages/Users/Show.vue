@@ -58,10 +58,19 @@ const activeTab = ref(
 // Confirmation modal states
 const isDeleteModalOpen = ref(false);
 const isRestoreModalOpen = ref(false);
+const isStatusModalOpen = ref(false);
+const isStatusLoading = ref(false);
 
 const handleStatusToggle = () => {
+  isStatusLoading.value = true;
   router.post(`/admin/v2/users/${props.user.id}/status`, {}, {
     preserveScroll: true,
+    onSuccess: () => {
+      isStatusModalOpen.value = false;
+    },
+    onFinish: () => {
+      isStatusLoading.value = false;
+    },
   });
 };
 
@@ -117,7 +126,7 @@ const getRoleBadgeColor = (roleName) => {
           <!-- Toggle Status -->
           <button
             v-if="!user.is_trashed"
-            @click="handleStatusToggle"
+            @click="isStatusModalOpen = true"
             :class="[
               user.status === 'active'
                 ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30'
@@ -132,15 +141,15 @@ const getRoleBadgeColor = (roleName) => {
           <button
             v-if="!user.is_trashed"
             @click="isDeleteModalOpen = true"
-            class="p-1.5 rounded-md bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 transition-colors cursor-pointer"
+            class="p-1.5 rounded-md text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 dark:border-rose-500/30 transition-all duration-150 cursor-pointer shadow-2xs inline-flex items-center justify-center"
             title="Move to Trash"
           >
-            <Trash2 class="w-4 h-4" />
+            <Trash2 class="w-3.5 h-3.5" />
           </button>
           <button
             v-else
             @click="isRestoreModalOpen = true"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-semibold transition-colors cursor-pointer"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
           >
             <RefreshCw class="w-3.5 h-3.5" />
             <span>Restore User</span>
@@ -649,6 +658,19 @@ const getRoleBadgeColor = (roleName) => {
       </div>
 
       <!-- Modals -->
+      <ConfirmationModal
+        :show="isStatusModalOpen"
+        :title="user.status === 'active' ? 'Deactivate User Account' : 'Activate User Account'"
+        :message="user.status === 'active'
+          ? `Are you sure you want to deactivate '${user.full_name}'? The user will be unable to sign in or perform actions until reactivated.`
+          : `Are you sure you want to activate '${user.full_name}'? The user will immediately regain full access to the platform.`"
+        :confirm-text="user.status === 'active' ? 'Deactivate Account' : 'Activate Account'"
+        :type="user.status === 'active' ? 'warning' : 'info'"
+        :is-loading="isStatusLoading"
+        @confirm="handleStatusToggle"
+        @close="() => { if (!isStatusLoading) isStatusModalOpen = false; }"
+      />
+
       <ConfirmationModal
         :show="isDeleteModalOpen"
         title="Move User to Trash"
