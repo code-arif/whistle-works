@@ -195,11 +195,11 @@ const submit = () => {
     <!-- Modal Dialog -->
     <div class="flex min-h-full items-center justify-center p-4">
       <div 
-        class="relative w-full max-w-2xl overflow-hidden rounded-xl bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] shadow-2xl transition-all"
+        class="relative w-full max-w-2xl rounded-xl bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] shadow-2xl transition-all"
         @keydown.ctrl.enter.prevent="submit"
       >
         <!-- Modal Header -->
-        <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-white/[0.08]">
+        <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-white/[0.08] rounded-t-xl">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg bg-[#F29F67]/15 border border-[#F29F67]/30 text-[#F29F67] flex items-center justify-center">
               <Ticket class="w-5 h-5" />
@@ -359,6 +359,8 @@ const submit = () => {
                     v-model="form.expires_at"
                     placeholder="No expiry (∞)"
                     size="md"
+                    position="top"
+                    align="center"
                   />
                   <span class="text-[10px] text-slate-400 block mt-1">Empty for no expiry</span>
                   <p v-if="form.errors.expires_at" class="text-xs text-rose-500 mt-1 font-mono">
@@ -499,7 +501,7 @@ const submit = () => {
           </div>
 
           <!-- Modal Footer -->
-          <div class="p-5 border-t border-slate-200 dark:border-white/[0.08] flex items-center justify-between bg-slate-50/50 dark:bg-[#262638]/20">
+          <div class="p-5 border-t border-slate-200 dark:border-white/[0.08] flex items-center justify-between bg-slate-50/50 dark:bg-[#262638]/20 rounded-b-xl">
             <span class="text-[11px] text-slate-400 font-mono hidden sm:inline">
               Ctrl + Enter to submit
             </span>

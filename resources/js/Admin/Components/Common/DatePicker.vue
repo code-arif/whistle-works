@@ -34,8 +34,13 @@ const props = defineProps({
   },
   align: {
     type: String,
-    default: 'left',
-    validator: (val) => ['left', 'right'].includes(val),
+    default: 'auto',
+    validator: (val) => ['auto', 'left', 'right', 'center'].includes(val),
+  },
+  position: {
+    type: String,
+    default: 'auto',
+    validator: (val) => ['auto', 'top', 'bottom'].includes(val),
   },
   minDate: {
     type: String,
@@ -99,11 +104,47 @@ watch(() => props.modelValue, () => {
   syncView();
 }, { immediate: true });
 
+const actualPosition = ref('bottom');
+const actualAlign = ref('left');
+
+const updatePlacement = () => {
+  if (props.position === 'top' || props.position === 'bottom') {
+    actualPosition.value = props.position;
+  } else if (datepickerRef.value) {
+    const rect = datepickerRef.value.getBoundingClientRect();
+    const windowHeight = window.innerHeight;
+    const spaceBelow = windowHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    
+    // Calendar is ~330px high. If space below is constrained, open upwards
+    if (spaceBelow < 340 && spaceAbove > 280) {
+      actualPosition.value = 'top';
+    } else {
+      actualPosition.value = 'bottom';
+    }
+  }
+
+  if (props.align && props.align !== 'auto') {
+    actualAlign.value = props.align;
+  } else if (datepickerRef.value) {
+    const rect = datepickerRef.value.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+    if (rect.left + 290 > windowWidth - 16) {
+      actualAlign.value = 'right';
+    } else if (rect.left < 144) {
+      actualAlign.value = 'left';
+    } else {
+      actualAlign.value = 'center';
+    }
+  }
+};
+
 const toggle = () => {
   if (props.disabled) return;
   if (!isOpen.value) {
     syncView();
     viewMode.value = 'days';
+    updatePlacement();
   }
   isOpen.value = !isOpen.value;
 };
@@ -333,8 +374,9 @@ onUnmounted(() => {
       <div
         v-if="isOpen"
         :class="[
-          align === 'right' ? 'right-0' : 'left-0',
-          'absolute z-50 mt-1.5 w-72 rounded-xl bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] shadow-2xl p-3 backdrop-blur-xl focus:outline-none'
+          actualPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2',
+          actualAlign === 'right' ? 'right-0' : actualAlign === 'center' ? 'left-1/2 -translate-x-1/2' : 'left-0',
+          'absolute z-[60] w-72 max-w-[calc(100vw-2rem)] rounded-xl bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] shadow-2xl p-3 backdrop-blur-xl focus:outline-none'
         ]"
       >
         <!-- Calendar Header (Month / Year Navigation) -->
