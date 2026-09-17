@@ -2,7 +2,6 @@
 import { ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { 
-  CreditCard, 
   KeyRound, 
   Webhook, 
   Save, 
@@ -11,8 +10,7 @@ import {
   Copy, 
   Check, 
   ExternalLink,
-  ShieldCheck,
-  AlertTriangle
+  ShieldCheck
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -26,10 +24,6 @@ const form = useForm({
   stripe_key: props.settings.stripe_key || '',
   stripe_secret: props.settings.stripe_secret || '',
   stripe_webhook_secret: props.settings.stripe_webhook_secret || '',
-  stripe_checkout_webhook_secret: props.settings.stripe_checkout_webhook_secret || '',
-  stripe_rented_webhook_secret: props.settings.stripe_rented_webhook_secret || '',
-  stripe_client_id: props.settings.stripe_client_id || '',
-  stripe_redirect_url: props.settings.stripe_redirect_url || '',
 });
 
 const showSecret = ref(false);
@@ -140,93 +134,28 @@ const submit = () => {
       </div>
     </div>
 
-    <!-- Section 2: Webhook Signing Secrets -->
+    <!-- Section 2: Webhook Signing Secret -->
     <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-sm">
       <div class="flex items-center gap-3 pb-4 mb-5 border-b border-slate-100 dark:border-white/[0.06]">
         <div class="w-8 h-8 rounded-lg bg-[#F29F67]/10 flex items-center justify-center text-[#F29F67]">
           <ShieldCheck class="w-4 h-4" />
         </div>
         <div>
-          <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Webhook Signing Secrets</h3>
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Webhook Signing Secret</h3>
           <p class="text-xs text-slate-500 dark:text-slate-400">Used by Laravel to cryptographically verify incoming event payloads from Stripe.</p>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-        <div class="md:col-span-2">
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-            Primary Webhook Secret (whsec_...)
-          </label>
-          <input
-            v-model="form.stripe_webhook_secret"
-            type="text"
-            class="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F29F67]/50 focus:border-[#F29F67] text-slate-900 dark:text-white transition-colors"
-            placeholder="whsec_..."
-          />
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-            Checkout Webhook Secret (Optional)
-          </label>
-          <input
-            v-model="form.stripe_checkout_webhook_secret"
-            type="text"
-            class="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F29F67]/50 focus:border-[#F29F67] text-slate-900 dark:text-white transition-colors"
-            placeholder="whsec_..."
-          />
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-            Rented Webhook Secret (Optional)
-          </label>
-          <input
-            v-model="form.stripe_rented_webhook_secret"
-            type="text"
-            class="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F29F67]/50 focus:border-[#F29F67] text-slate-900 dark:text-white transition-colors"
-            placeholder="whsec_..."
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 3: Stripe Connect Onboarding -->
-    <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-sm">
-      <div class="flex items-center gap-3 pb-4 mb-5 border-b border-slate-100 dark:border-white/[0.06]">
-        <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
-          <CreditCard class="w-4 h-4" />
-        </div>
-        <div>
-          <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Stripe Connect & Onboarding</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Settings for onboarding camp directors and evaluators for direct payout settlements.</p>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-            Stripe Client ID (ca_...)
-          </label>
-          <input
-            v-model="form.stripe_client_id"
-            type="text"
-            class="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F29F67]/50 focus:border-[#F29F67] text-slate-900 dark:text-white transition-colors"
-            placeholder="ca_..."
-          />
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-            Stripe Redirect URL
-          </label>
-          <input
-            v-model="form.stripe_redirect_url"
-            type="text"
-            class="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F29F67]/50 focus:border-[#F29F67] text-slate-900 dark:text-white transition-colors"
-            placeholder="https://yourdomain.com/admin/stripe/connect"
-          />
-        </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+          Webhook Signing Secret (whsec_...)
+        </label>
+        <input
+          v-model="form.stripe_webhook_secret"
+          type="text"
+          class="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F29F67]/50 focus:border-[#F29F67] text-slate-900 dark:text-white transition-colors"
+          placeholder="whsec_..."
+        />
       </div>
     </div>
 

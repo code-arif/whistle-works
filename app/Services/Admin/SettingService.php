@@ -39,14 +39,10 @@ class SettingService
                 'thumbnail'   => $setting->thumbnail ? (str_starts_with($setting->thumbnail, 'http') ? $setting->thumbnail : asset($setting->thumbnail)) : null,
             ],
             'stripe' => [
-                'stripe_key'                     => env('STRIPE_KEY', ''),
-                'stripe_secret'                  => env('STRIPE_SECRET', ''),
-                'stripe_webhook_secret'          => env('STRIPE_WEBHOOK_SECRET', ''),
-                'stripe_checkout_webhook_secret' => env('STRIPE_CHECKOUT_WEBHOOK_SECRET', ''),
-                'stripe_rented_webhook_secret'   => env('STRIPE_RENTED_WEBHOOK_SECRET', ''),
-                'stripe_client_id'               => env('STRIPE_CLIENT_ID', ''),
-                'stripe_redirect_url'            => env('STRIPE_REDIRECT_URI', ''),
-                'webhook_url'                    => url('/api/stripe/webhook'),
+                'stripe_key'            => env('STRIPE_KEY', ''),
+                'stripe_secret'         => env('STRIPE_SECRET', ''),
+                'stripe_webhook_secret' => env('STRIPE_WEBHOOK_SECRET', ''),
+                'webhook_url'           => url('/api/stripe/webhook'),
             ],
             'mail' => [
                 'mail_mailer'       => env('MAIL_MAILER', 'smtp'),
@@ -62,10 +58,7 @@ class SettingService
                 'google_client_id'     => env('GOOGLE_CLIENT_ID', ''),
                 'google_client_secret' => env('GOOGLE_CLIENT_SECRET', ''),
                 'google_redirect_uri'  => env('GOOGLE_REDIRECT_URI', ''),
-                'firebase_credentials' => env('FIREBASE_CREDENTIALS', ''),
                 'google_maps_api_key'  => env('GOOGLE_MAPS_API_KEY', ''),
-                'recaptcha_site_key'   => env('RECAPTCHA_SITE_KEY', ''),
-                'recaptcha_secret_key' => env('RECAPTCHA_SECRET_KEY', ''),
             ],
             'system' => [
                 'app_name'         => env('APP_NAME', 'Whistle Works'),
@@ -129,13 +122,9 @@ class SettingService
     public function updateStripe(array $data): void
     {
         $keys = [
-            'STRIPE_KEY'                     => $data['stripe_key'] ?? '',
-            'STRIPE_SECRET'                  => $data['stripe_secret'] ?? '',
-            'STRIPE_WEBHOOK_SECRET'          => $data['stripe_webhook_secret'] ?? '',
-            'STRIPE_CHECKOUT_WEBHOOK_SECRET' => $data['stripe_checkout_webhook_secret'] ?? '',
-            'STRIPE_RENTED_WEBHOOK_SECRET'   => $data['stripe_rented_webhook_secret'] ?? '',
-            'STRIPE_CLIENT_ID'               => $data['stripe_client_id'] ?? '',
-            'STRIPE_REDIRECT_URI'            => $data['stripe_redirect_url'] ?? '',
+            'STRIPE_KEY'            => $data['stripe_key'] ?? '',
+            'STRIPE_SECRET'         => $data['stripe_secret'] ?? '',
+            'STRIPE_WEBHOOK_SECRET' => $data['stripe_webhook_secret'] ?? '',
         ];
 
         $this->updateEnv($keys);
@@ -177,10 +166,7 @@ class SettingService
             'GOOGLE_CLIENT_ID'     => $data['google_client_id'] ?? '',
             'GOOGLE_CLIENT_SECRET' => $data['google_client_secret'] ?? '',
             'GOOGLE_REDIRECT_URI'  => $data['google_redirect_uri'] ?? '',
-            'FIREBASE_CREDENTIALS' => $data['firebase_credentials'] ?? '',
             'GOOGLE_MAPS_API_KEY'  => $data['google_maps_api_key'] ?? '',
-            'RECAPTCHA_SITE_KEY'   => $data['recaptcha_site_key'] ?? '',
-            'RECAPTCHA_SECRET_KEY' => $data['recaptcha_secret_key'] ?? '',
         ];
 
         $this->updateEnv($keys);

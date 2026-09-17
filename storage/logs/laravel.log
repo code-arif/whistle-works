@@ -773,3 +773,36 @@
 #74 C:/Program Files/Herd/resources/app.asar.unpacked/resources/valet/server.php(140): require('E://remote-work//...')
 #75 {main}
 "} 
+[2026-09-17 14:58:49] local.ERROR: Uncaught ReflectionException: Class "App\Http\Middleware\WebDeveloperMiddleware" does not exist in Command line code:1
+Stack trace:
+#0 Command line code(1): ReflectionMethod->__construct('App\\Http\\Middle...', 'handle')
+#1 {main}
+  thrown {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Uncaught ReflectionException: Class \"App\\Http\\Middleware\\WebDeveloperMiddleware\" does not exist in Command line code:1
+Stack trace:
+#0 Command line code(1): ReflectionMethod->__construct('App\\\\Http\\\\Middle...', 'handle')
+#1 {main}
+  thrown at Command line code:1)
+[stacktrace]
+#0 {main}
+"} 
+[2026-09-17 14:58:49] local.ERROR: Uncaught ReflectionException: Class "App\Http\Middleware\WebDeveloperMiddleware" does not exist in Command line code:1
+Stack trace:
+#0 Command line code(1): ReflectionMethod->__construct('App\\Http\\Middle...', 'handle')
+#1 {main}
+  thrown {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Uncaught ReflectionException: Class \"App\\Http\\Middleware\\WebDeveloperMiddleware\" does not exist in Command line code:1
+Stack trace:
+#0 Command line code(1): ReflectionMethod->__construct('App\\\\Http\\\\Middle...', 'handle')
+#1 {main}
+  thrown at Command line code:1)
+[stacktrace]
+#0 {main}
+"} 
+[2026-09-17 14:58:49] local.ERROR: Class "App\Http\Middleware\WebDeveloperMiddleware" does not exist {"exception":"[object] (ReflectionException(code: -1): Class \"App\\Http\\Middleware\\WebDeveloperMiddleware\" does not exist at E:/remote-work/whistle-works-backend/storage/framework/lsp-4aa2d12a8185efd1.php:101)
+[stacktrace]
+#0 E:/remote-work/whistle-works-backend/storage/framework/lsp-4aa2d12a8185efd1.php(101): ReflectionClass->__construct('App//Http//Middle...')
+#1 [internal function]: {closure:E:/remote-work/whistle-works-backend/storage/framework/lsp-4aa2d12a8185efd1.php:69}('App//Http//Middle...', 'web-developer')
+#2 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Collections/Arr.php(609): array_map(Object(Closure), Array, Array)
+#3 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Collections/Collection.php(799): Illuminate/Support/Arr::map(Array, Object(Closure))
+#4 E:/remote-work/whistle-works-backend/storage/framework/lsp-4aa2d12a8185efd1.php(69): Illuminate/Support/Collection->map(Object(Closure))
+#5 {main}
+"} 

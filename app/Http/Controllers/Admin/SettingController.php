@@ -66,13 +66,9 @@ class SettingController extends Controller
     public function updateStripe(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'stripe_key'                     => ['nullable', 'string'],
-            'stripe_secret'                  => ['nullable', 'string'],
-            'stripe_webhook_secret'          => ['nullable', 'string'],
-            'stripe_checkout_webhook_secret' => ['nullable', 'string'],
-            'stripe_rented_webhook_secret'   => ['nullable', 'string'],
-            'stripe_client_id'               => ['nullable', 'string'],
-            'stripe_redirect_url'            => ['nullable', 'string'],
+            'stripe_key'            => ['nullable', 'string'],
+            'stripe_secret'         => ['nullable', 'string'],
+            'stripe_webhook_secret' => ['nullable', 'string'],
         ]);
 
         try {
@@ -135,10 +131,7 @@ class SettingController extends Controller
             'google_client_id'     => ['nullable', 'string'],
             'google_client_secret' => ['nullable', 'string'],
             'google_redirect_uri'  => ['nullable', 'string'],
-            'firebase_credentials' => ['nullable', 'string'],
             'google_maps_api_key'  => ['nullable', 'string'],
-            'recaptcha_site_key'   => ['nullable', 'string'],
-            'recaptcha_secret_key' => ['nullable', 'string'],
         ]);
 
         try {

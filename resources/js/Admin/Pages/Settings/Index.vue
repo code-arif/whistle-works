@@ -36,9 +36,9 @@ const currentTab = ref(props.activeTab);
 
 const tabs = [
   { id: 'general', name: 'General & Branding', icon: Building2, desc: 'Site metadata, logo & address' },
-  { id: 'stripe', name: 'Payment & Stripe', icon: CreditCard, desc: 'API keys, webhooks & connect' },
+  { id: 'stripe', name: 'Payment & Stripe', icon: CreditCard, desc: 'API keys & webhooks' },
   { id: 'mail', name: 'Mail & SMTP', icon: Mail, desc: 'Email transport & test dispatch' },
-  { id: 'integrations', name: 'Integrations', icon: Globe, desc: 'Google OAuth, Firebase & Maps' },
+  { id: 'integrations', name: 'Integrations', icon: Globe, desc: 'Google OAuth & Google Maps' },
   { id: 'system', name: 'System & Environment', icon: Sliders, desc: 'Diagnostics, cache & switches' },
   { id: 'signature', name: 'Digital Signature', icon: PenTool, desc: 'Canvas signature pad' },
 ];
