@@ -22,7 +22,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['edit', 'delete']);
+const emit = defineEmits(['edit', 'delete', 'toggle-status']);
 
 const copiedId = ref(null);
 
@@ -34,14 +34,8 @@ const copyCode = (code, id) => {
   }, 2000);
 };
 
-const toggleStatus = (id) => {
-  router.post(
-    `/admin/v2/coupons/${id}/status`,
-    {},
-    {
-      preserveScroll: true,
-    }
-  );
+const toggleStatus = (item) => {
+  emit('toggle-status', item);
 };
 
 const formatCurrency = (val) => {
@@ -178,17 +172,17 @@ const formatDate = (dateStr) => {
           <td class="py-3.5 px-4 text-center">
             <button
               type="button"
-              @click="toggleStatus(item.id)"
+              @click="toggleStatus(item)"
               :class="[
-                'relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
-                item.status === 'active' ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+                'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none shadow-2xs',
+                item.status === 'active' ? 'bg-[#34B1AA]' : 'bg-slate-300 dark:bg-[#36364E]'
               ]"
-              title="Toggle status"
+              :title="`Click to switch status to ${item.status === 'active' ? 'inactive' : 'active'}`"
             >
               <span
                 :class="[
                   'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                  item.status === 'active' ? 'translate-x-5' : 'translate-x-0'
+                  item.status === 'active' ? 'translate-x-4' : 'translate-x-0'
                 ]"
               />
             </button>
@@ -196,22 +190,22 @@ const formatDate = (dateStr) => {
 
           <!-- Actions -->
           <td class="py-3.5 px-4 text-right whitespace-nowrap">
-            <div class="inline-flex items-center gap-1">
+            <div class="inline-flex items-center gap-1.5">
               <button
                 type="button"
                 @click="emit('edit', item)"
-                class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-[#262638] transition-colors cursor-pointer"
+                class="p-1.5 rounded-md text-[#3B8FF3] bg-[#3B8FF3]/10 hover:bg-[#3B8FF3]/20 border border-[#3B8FF3]/30 dark:border-[#3B8FF3]/30 transition-all duration-150 cursor-pointer shadow-2xs"
                 title="Edit Coupon"
               >
-                <Edit class="w-4 h-4" />
+                <Edit class="w-3.5 h-3.5" />
               </button>
               <button
                 type="button"
                 @click="emit('delete', item)"
-                class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-[#262638] transition-colors cursor-pointer"
+                class="p-1.5 rounded-md text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 dark:border-rose-500/30 transition-all duration-150 cursor-pointer shadow-2xs"
                 title="Delete Coupon"
               >
-                <Trash2 class="w-4 h-4" />
+                <Trash2 class="w-3.5 h-3.5" />
               </button>
             </div>
           </td>

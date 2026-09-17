@@ -116,6 +116,37 @@ const confirmDelete = (coupon) => {
   isDeleteModalOpen.value = true;
 };
 
+// Open Status Confirmation Modal
+const isStatusModalOpen = ref(false);
+const statusCoupon = ref(null);
+const isStatusUpdating = ref(false);
+
+const confirmStatusToggle = (coupon) => {
+  statusCoupon.value = coupon;
+  isStatusModalOpen.value = true;
+};
+
+// Execute Status Toggle
+const handleStatusToggle = () => {
+  if (!statusCoupon.value) return;
+
+  isStatusUpdating.value = true;
+  router.post(
+    `/admin/v2/coupons/${statusCoupon.value.id}/status`,
+    {},
+    {
+      preserveScroll: true,
+      onSuccess: () => {
+        isStatusModalOpen.value = false;
+        statusCoupon.value = null;
+      },
+      onFinish: () => {
+        isStatusUpdating.value = false;
+      },
+    }
+  );
+};
+
 // Execute Delete
 const handleDelete = () => {
   if (!deletingCoupon.value) return;
@@ -224,6 +255,7 @@ const goToPage = (pageUrl) => {
           :coupons="coupons"
           @edit="openEditModal"
           @delete="confirmDelete"
+          @toggle-status="confirmStatusToggle"
         />
 
         <!-- Pagination Controls Footer -->
@@ -247,7 +279,7 @@ const goToPage = (pageUrl) => {
               :class="[
                 'px-2.5 py-1.5 rounded text-xs font-mono font-medium transition-colors cursor-pointer',
                 link.active
-                  ? 'bg-amber-500 text-white font-bold'
+                  ? 'bg-[#F29F67] text-slate-950 font-bold'
                   : link.url
                     ? 'hover:bg-slate-100 dark:hover:bg-[#262638] text-slate-700 dark:text-slate-300'
                     : 'text-slate-300 dark:text-slate-600 opacity-50 cursor-not-allowed'
@@ -279,6 +311,18 @@ const goToPage = (pageUrl) => {
       :isLoading="isDeleting"
       @close="isDeleteModalOpen = false"
       @confirm="handleDelete"
+    />
+
+    <!-- Status Change Confirmation Modal -->
+    <ConfirmationModal
+      :show="isStatusModalOpen"
+      :title="statusCoupon?.status === 'active' ? 'Deactivate Coupon' : 'Activate Coupon'"
+      :message="`Are you sure you want to ${statusCoupon?.status === 'active' ? 'deactivate' : 'activate'} coupon '${statusCoupon?.code}'? ${statusCoupon?.status === 'active' ? 'Users will not be able to redeem this coupon at checkout while inactive.' : 'Users will be able to apply this discount coupon at checkout.'}`"
+      :confirmText="statusCoupon?.status === 'active' ? 'Yes, Deactivate' : 'Yes, Activate'"
+      :type="statusCoupon?.status === 'active' ? 'warning' : 'info'"
+      :isLoading="isStatusUpdating"
+      @close="isStatusModalOpen = false"
+      @confirm="handleStatusToggle"
     />
 
   </AdminLayout>
