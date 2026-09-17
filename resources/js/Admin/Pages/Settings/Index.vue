@@ -61,13 +61,6 @@ const switchTab = (tabId) => {
         <div>
           <Breadcrumb :items="[{ label: 'Settings' }]" />
 
-          <div class="flex items-center gap-2 mb-1">
-            <span class="text-xs uppercase font-mono font-bold tracking-widest text-[#F29F67]">System Governance</span>
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Live Architecture
-            </span>
-          </div>
           <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             System & Global Settings
           </h1>
