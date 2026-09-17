@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\PaymentMonitorController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Web\Backend\V2\CampController;
 use App\Http\Controllers\Web\Backend\V2\DashboardController;
@@ -67,6 +68,19 @@ Route::prefix('coupons')->name('coupons.')->group(function () {
     Route::post('/{id}/status', [CouponController::class, 'toggleStatus'])->name('status');
     Route::delete('/{id}', [CouponController::class, 'destroy'])->name('destroy');
 });
+
+// V2 Executive Settings Hub
+Route::prefix('settings')->name('settings.')->group(function () {
+    Route::get('/', [SettingController::class, 'index'])->name('index');
+    Route::post('/general', [SettingController::class, 'updateGeneral'])->name('general');
+    Route::post('/stripe', [SettingController::class, 'updateStripe'])->name('stripe');
+    Route::post('/mail', [SettingController::class, 'updateMail'])->name('mail');
+    Route::post('/mail/test', [SettingController::class, 'sendTestMail'])->name('mail.test');
+    Route::post('/integrations', [SettingController::class, 'updateIntegrations'])->name('integrations');
+    Route::post('/system', [SettingController::class, 'updateSystem'])->name('system');
+    Route::post('/signature', [SettingController::class, 'updateSignature'])->name('signature');
+});
+
 
 
 

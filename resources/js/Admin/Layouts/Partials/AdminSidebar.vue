@@ -61,7 +61,7 @@ const navGroups = [
     name: 'System Governance',
     items: [
       { name: 'Roles & Permissions', href: '/admin/roles', icon: Shield },
-      { name: 'Global Settings', href: '/admin/setting/general', icon: Settings },
+      { name: 'Global Settings', href: '/admin/v2/settings', icon: Settings },
     ]
   }
 ];
