@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CmsAboutController;
 use App\Http\Controllers\Admin\CmsHomeController;
 use App\Http\Controllers\Admin\CouponController;
+use App\Http\Controllers\Admin\LogViewerController;
 use App\Http\Controllers\Admin\PaymentMonitorController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\SettingController;
@@ -96,6 +97,14 @@ Route::prefix('profile')->name('profile.')->group(function () {
 Route::prefix('terms-privacy')->name('terms-privacy.')->group(function () {
     Route::get('/', [TermsPrivacyController::class, 'index'])->name('index');
     Route::post('/', [TermsPrivacyController::class, 'update'])->name('update');
+});
+
+// V2 System & Reverb Logs Monitor
+Route::prefix('logs')->name('logs.')->group(function () {
+    Route::get('/', [LogViewerController::class, 'index'])->name('index');
+    Route::get('/data', [LogViewerController::class, 'data'])->name('data');
+    Route::get('/download', [LogViewerController::class, 'download'])->name('download');
+    Route::post('/clear', [LogViewerController::class, 'clear'])->name('clear');
 });
 
 // V2 Content Management System (CMS)

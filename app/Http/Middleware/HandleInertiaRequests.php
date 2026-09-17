@@ -46,8 +46,8 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'flash' => [
-                'success' => fn () => $request->session()->get('t-success') ?? $request->session()->get('success'),
-                'error'   => fn () => $request->session()->get('t-error') ?? $request->session()->get('error'),
+                'success' => fn () => $request->session()->pull('t-success') ?? $request->session()->pull('success'),
+                'error'   => fn () => $request->session()->pull('t-error') ?? $request->session()->pull('error'),
             ],
             'settings' => [
                 'app_name' => config('app.name', 'Whistle-Works'),

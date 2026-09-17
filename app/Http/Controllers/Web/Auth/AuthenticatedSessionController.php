@@ -65,7 +65,7 @@ class AuthenticatedSessionController extends Controller
             RateLimiter::clear($request->throttleKey());
 
             $request->session()->regenerate();
-            session()->put('t-success', 'Signed in successfully');
+            session()->flash('t-success', 'Signed in successfully');
             return redirect()->intended(route('admin.v2.dashboard', absolute: false));
 
         } else {

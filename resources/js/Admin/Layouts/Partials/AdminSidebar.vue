@@ -14,6 +14,7 @@ import {
   LayoutTemplate,
   BookOpen,
   Sparkles,
+  Terminal,
   X
 } from 'lucide-vue-next';
 
@@ -84,6 +85,7 @@ const navGroups = [
       { name: 'Roles & Permissions', href: '/admin/roles', icon: Shield },
       { name: 'Terms & Privacy', href: '/admin/v2/terms-privacy', icon: FileText },
       { name: 'Global Settings', href: '/admin/v2/settings', icon: Settings },
+      { name: 'System Logs', href: '/admin/v2/logs', icon: Terminal },
     ]
   }
 ];
