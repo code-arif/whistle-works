@@ -78,7 +78,6 @@ Route::prefix('settings')->name('settings.')->group(function () {
     Route::post('/mail/test', [SettingController::class, 'sendTestMail'])->name('mail.test');
     Route::post('/integrations', [SettingController::class, 'updateIntegrations'])->name('integrations');
     Route::post('/system', [SettingController::class, 'updateSystem'])->name('system');
-    Route::post('/signature', [SettingController::class, 'updateSignature'])->name('signature');
 });
 
 

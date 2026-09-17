@@ -7,14 +7,12 @@ import StripeSettingsTab from '@/Admin/Components/Settings/StripeSettingsTab.vue
 import MailSettingsTab from '@/Admin/Components/Settings/MailSettingsTab.vue';
 import IntegrationsTab from '@/Admin/Components/Settings/IntegrationsTab.vue';
 import SystemSettingsTab from '@/Admin/Components/Settings/SystemSettingsTab.vue';
-import SignatureSettingsTab from '@/Admin/Components/Settings/SignatureSettingsTab.vue';
 import { 
   Building2, 
   CreditCard, 
   Mail, 
   Globe, 
   Sliders, 
-  PenTool, 
   Settings as SettingsIcon,
   ShieldCheck,
   CheckCircle2,
@@ -40,7 +38,6 @@ const tabs = [
   { id: 'mail', name: 'Mail & SMTP', icon: Mail, desc: 'Email transport & test dispatch' },
   { id: 'integrations', name: 'Integrations', icon: Globe, desc: 'OAuth, Maps & Twilio SMS' },
   { id: 'system', name: 'System & Environment', icon: Sliders, desc: 'Diagnostics, cache & switches' },
-  { id: 'signature', name: 'Digital Signature', icon: PenTool, desc: 'Canvas signature pad' },
 ];
 
 const switchTab = (tabId) => {
@@ -128,11 +125,6 @@ const switchTab = (tabId) => {
         <SystemSettingsTab 
           v-else-if="currentTab === 'system'" 
           :settings="settings.system" 
-        />
-
-        <SignatureSettingsTab 
-          v-else-if="currentTab === 'signature'" 
-          :settings="settings.signature" 
         />
       </div>
     </div>

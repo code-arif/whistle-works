@@ -167,21 +167,4 @@ class SettingController extends Controller
             return redirect()->back()->with('t-error', 'Failed to update system settings: ' . $e->getMessage());
         }
     }
-
-    /**
-     * Update Digital Signature.
-     */
-    public function updateSignature(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'signature' => ['required', 'string'],
-        ]);
-
-        try {
-            $this->service->updateSignature($validated['signature']);
-            return redirect()->back()->with('t-success', 'Digital signature saved successfully.');
-        } catch (Exception $e) {
-            return redirect()->back()->with('t-error', 'Failed to save digital signature: ' . $e->getMessage());
-        }
-    }
 }

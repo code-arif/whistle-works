@@ -73,9 +73,6 @@ class SettingService
                 'mail_enabled'     => env('MAIL', 'on') === 'on',
                 'sms_enabled'      => env('SMS', 'off') === 'on',
             ],
-            'signature' => [
-                'signature' => $setting->signature ? (str_starts_with($setting->signature, 'data:image') ? $setting->signature : 'data:image/png;base64,' . $setting->signature) : null,
-            ]
         ];
     }
 
@@ -206,16 +203,6 @@ class SettingService
         }
 
         $this->updateEnv($keys);
-    }
-
-    /**
-     * Update Digital Signature.
-     */
-    public function updateSignature(string $signatureBase64): void
-    {
-        $cleanBase64 = preg_replace('/^data:image\/\w+;base64,/', '', $signatureBase64);
-        $setting = Setting::firstOrCreate(['id' => 1]);
-        $setting->update(['signature' => $cleanBase64]);
     }
 
     /**
