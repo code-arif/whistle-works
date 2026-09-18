@@ -55,11 +55,7 @@
         },
         "files": [
             "app/Helpers/Helper.php",
-            "app/Helpers/Notify.php",
-            "app/Helpers/Fn.php",
-            "app/Helpers/S3.php",
-            "app/Helpers/Text.php",
-            "app/Helpers/Encryption.php"
+            "app/Helpers/Fn.php"
         ]
     },
     "autoload-dev": {
