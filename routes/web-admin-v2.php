@@ -1,19 +1,21 @@
 <?php
 
+use App\Http\Controllers\Admin\CampController;
 use App\Http\Controllers\Admin\CmsAboutController;
 use App\Http\Controllers\Admin\CmsHomeController;
 use App\Http\Controllers\Admin\CouponController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LogViewerController;
 use App\Http\Controllers\Admin\PaymentMonitorController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\SportsTypeController;
 use App\Http\Controllers\Admin\TermsPrivacyController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Web\Backend\V2\CampController;
-use App\Http\Controllers\Web\Backend\V2\DashboardController;
-use App\Http\Controllers\Web\Backend\V2\SportsTypeController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
 
 /*
 |--------------------------------------------------------------------------
