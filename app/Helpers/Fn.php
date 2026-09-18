@@ -1,7 +1,4 @@
 <?php
-use App\Models\CMS;
-use App\Enums\PageEnum;
-use App\Enums\SectionEnum;
 use App\Models\Setting;
 use App\Models\User;
 
@@ -13,14 +10,6 @@ function getEmailName($email): string
 {
     $parts = explode('@', $email);
     return $parts[0];
-}
-function getCommonData()
-{
-    $common = CMS::where('page', PageEnum::COMMON)->where('status', 'active');
-    foreach (SectionEnum::getCommon() as $key => $section) {
-        $cms[$key] = (clone $common)->where('section', $key)->latest()->take($section['item'])->{$section['type']}();
-    } 
-    return $cms;
 }
 
 function formatNumber($number, $precision = 2): array
