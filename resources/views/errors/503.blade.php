@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>404 Page Not Found — Whistle-Works</title>
+    <title>503 Service Under Maintenance — Whistle-Works</title>
     <style>
         body {
             margin: 0;
@@ -24,7 +24,7 @@
         .code {
             font-size: 5rem;
             font-weight: 800;
-            color: #F29F67;
+            color: #FB923C;
             margin: 0;
             line-height: 1;
         }
@@ -58,10 +58,10 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="code">404</h1>
-        <div class="title">Page Not Found</div>
-        <p class="desc">The requested resource could not be found or has been moved.</p>
-        <a href="/admin/v2/dashboard" class="btn">Return to Dashboard</a>
+        <h1 class="code">503</h1>
+        <div class="title">Scheduled Maintenance</div>
+        <p class="desc">Whistle-Works infrastructure is temporarily undergoing performance upgrades. We'll be back shortly.</p>
+        <button onclick="window.location.reload()" class="btn" style="cursor:pointer; border:none;">Refresh Page</button>
     </div>
 </body>
 </html>

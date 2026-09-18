@@ -44,5 +44,17 @@ Route::get('/verify-email', [V2RegisterController::class, 'verifyEmail'])
         'auth:admin',
     ]);
 
-
-// Route::post('/rental/webhook', [RentedPaymentController::class, 'handleWebhook']);
+/*
+|--------------------------------------------------------------------------
+| Modern Error Page Preview & Testing Route
+|--------------------------------------------------------------------------
+| Allows developers and testing previewing all HTTP error pages
+| e.g. /error/404, /error/403, /error/401, /error/419, /error/429, /error/500, /error/503
+*/
+Route::get('/error/{code?}', function ($code = 404) {
+    \Inertia\Inertia::setRootView('admin-v2');
+    return \Inertia\Inertia::render('Errors/Index', [
+        'status' => (int) $code,
+        'message' => request('message', null),
+    ]);
+})->middleware(['web', \App\Http\Middleware\HandleInertiaRequests::class])->name('error.preview');

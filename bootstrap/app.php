@@ -19,8 +19,8 @@ use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
-
-
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -100,5 +100,27 @@ return Application::configure(basePath: dirname(__DIR__))
             } else {
                 return null;
             }
+        });
+
+        $exceptions->respond(function (Response $response, Throwable $e, Request $request) {
+            if (!$request->is('api/*')) {
+                $status = $response->getStatusCode();
+
+                // In local dev with debug mode on, allow standard Laravel error trace for 500
+                if ($status === 500 && config('app.debug')) {
+                    return $response;
+                }
+
+                if (in_array($status, [400, 401, 403, 404, 405, 419, 429, 500, 502, 503, 504])) {
+                    Inertia::setRootView('admin-v2');
+                    return Inertia::render('Errors/Index', [
+                        'status'  => $status,
+                        'message' => $e->getMessage() ?: null,
+                    ])
+                    ->toResponse($request)
+                    ->setStatusCode($status);
+                }
+            }
+            return $response;
         });
     })->create();

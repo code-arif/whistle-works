@@ -174,6 +174,20 @@ Route::prefix('cms')->name('cms.')->group(function () {
     });
 });
 
+/*
+|--------------------------------------------------------------------------
+| Dynamic Error Page Preview Route
+|--------------------------------------------------------------------------
+| Allows administrators and developers to preview all Whistle-Works
+| brand error pages (e.g. 400, 401, 403, 404, 405, 419, 429, 500, 503).
+*/
+Route::get('/error-preview/{status?}', function ($status = 404) {
+    return Inertia::render('Errors/Index', [
+        'status' => (int) $status,
+        'message' => request('message', null),
+    ]);
+})->name('error.preview');
+
 
 
 
