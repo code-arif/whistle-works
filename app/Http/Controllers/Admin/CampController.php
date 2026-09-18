@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\HandlesTimezones;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Models\SportsType;
@@ -93,6 +94,8 @@ class CampController extends Controller
                     'camp_name'        => $item->camp_name,
                     'location'         => $item->location,
                     'address'          => $item->address,
+                    'latitude'         => $item->latitude ? (float) $item->latitude : null,
+                    'longitude'        => $item->longitude ? (float) $item->longitude : null,
                     'camp_details'     => $item->camp_details,
                     'start_date'       => $startDate ? $startDate->format('Y-m-d') : null,
                     'end_date'         => $endDate ? $endDate->format('Y-m-d') : null,
@@ -166,8 +169,8 @@ class CampController extends Controller
             });
 
         return Inertia::render('Camps/Index', [
-            'camps'       => $camps,
-            'filters'     => [
+            'camps'            => $camps,
+            'filters'          => [
                 'search'         => $search,
                 'status'         => $status,
                 'sports_type_id' => $sportsTypeId,
@@ -176,9 +179,10 @@ class CampController extends Controller
                 'sort_order'     => $sortOrder,
                 'per_page'       => $perPage,
             ],
-            'metrics'     => $metrics,
-            'directors'   => $directors,
-            'sportsTypes' => $sportsTypes,
+            'metrics'          => $metrics,
+            'directors'        => $directors,
+            'sportsTypes'      => $sportsTypes,
+            'googleMapsApiKey' => config('services.google_maps.api_key') ?: env('GOOGLE_MAPS_API_KEY', ''),
         ]);
     }
 
@@ -193,6 +197,8 @@ class CampController extends Controller
             'camp_name'      => 'required|string|max:255',
             'location'       => 'required|string|max:255',
             'address'        => 'nullable|string|max:255',
+            'latitude'       => 'nullable|numeric|between:-90,90',
+            'longitude'      => 'nullable|numeric|between:-180,180',
             'start_date'     => 'required|date',
             'end_date'       => 'required|date|after_or_equal:start_date',
             'camp_details'   => 'nullable|string',
@@ -218,6 +224,8 @@ class CampController extends Controller
                 'camp_name'        => $validated['camp_name'],
                 'location'         => $validated['location'],
                 'address'          => $validated['address'] ?? null,
+                'latitude'         => $validated['latitude'] ?? null,
+                'longitude'        => $validated['longitude'] ?? null,
                 'start_date'       => $validated['start_date'],
                 'end_date'         => $validated['end_date'],
                 'camp_details'     => $validated['camp_details'] ?? null,
@@ -245,6 +253,8 @@ class CampController extends Controller
             'camp_name'      => 'required|string|max:255',
             'location'       => 'required|string|max:255',
             'address'        => 'nullable|string|max:255',
+            'latitude'       => 'nullable|numeric|between:-90,90',
+            'longitude'      => 'nullable|numeric|between:-180,180',
             'start_date'     => 'required|date',
             'end_date'       => 'required|date|after_or_equal:start_date',
             'camp_details'   => 'nullable|string',
@@ -269,6 +279,17 @@ class CampController extends Controller
             $camp->camp_name        = $validated['camp_name'];
             $camp->location         = $validated['location'];
             $camp->address          = $validated['address'] ?? $camp->address;
+            if (array_key_exists('latitude', $validated)) {
+                $camp->latitude = $validated['latitude'];
+            }
+            if (array_key_exists('longitude', $validated)) {
+                $camp->longitude = $validated['longitude'];
+            }
+
+            if ($camp->latitude && $camp->longitude) {
+                $camp->timezone = HandlesTimezones::detectFromCoordinates($camp->latitude, $camp->longitude);
+            }
+
             $camp->start_date       = $validated['start_date'];
             $camp->end_date         = $validated['end_date'];
             $camp->camp_details     = $validated['camp_details'] ?? $camp->camp_details;

@@ -1,11 +1,14 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useForm, router, Head } from '@inertiajs/vue3';
 import AdminLayout from '../../Layouts/AdminLayout.vue';
 import DataTable from '../../Components/Common/DataTable.vue';
 import Breadcrumb from '../../Components/Common/Breadcrumb.vue';
 import Modal from '../../Components/Common/Modal.vue';
 import ConfirmationModal from '../../Components/Common/ConfirmationModal.vue';
+import Dropdown from '../../Components/Common/Dropdown.vue';
+import DatePicker from '../../Components/Common/DatePicker.vue';
+import CampLocationPicker from '../../Components/Camps/CampLocationPicker.vue';
 import {
   Tent,
   Plus,
@@ -51,6 +54,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  googleMapsApiKey: {
+    type: String,
+    default: '',
+  },
 });
 
 // DataTable Columns Definition
@@ -70,6 +77,20 @@ const statusOptions = [
   { label: 'Inactive', value: 'inactive' },
 ];
 
+const directorOptions = computed(() => {
+  return props.directors.map((dir) => ({
+    label: `${dir.name} (${dir.email})`,
+    value: dir.id,
+  }));
+});
+
+const sportsTypeOptions = computed(() => {
+  return props.sportsTypes.map((st) => ({
+    label: `${st.name} (+$${st.sports_fee} fee)`,
+    value: st.id,
+  }));
+});
+
 // Modal States
 const isCreateModalOpen = ref(false);
 const isEditModalOpen = ref(false);
@@ -79,6 +100,9 @@ const isDeleteModalOpen = ref(false);
 const viewingCamp = ref(null);
 const editingCamp = ref(null);
 const itemToDelete = ref(null);
+
+const createPickerRef = ref(null);
+const editPickerRef = ref(null);
 
 // Image Preview State
 const imagePreview = ref(null);
@@ -90,6 +114,8 @@ const createForm = useForm({
   camp_name: '',
   location: '',
   address: '',
+  latitude: null,
+  longitude: null,
   start_date: '',
   end_date: '',
   camp_details: '',
@@ -105,6 +131,8 @@ const editForm = useForm({
   camp_name: '',
   location: '',
   address: '',
+  latitude: null,
+  longitude: null,
   start_date: '',
   end_date: '',
   camp_details: '',
@@ -149,10 +177,15 @@ const clearImage = (formType = 'create') => {
 const openCreateModal = () => {
   createForm.reset();
   createForm.clearErrors();
+  createForm.latitude = null;
+  createForm.longitude = null;
   if (props.directors.length > 0) createForm.director_id = props.directors[0].id;
   if (props.sportsTypes.length > 0) createForm.sports_type_id = props.sportsTypes[0].id;
   imagePreview.value = null;
   isCreateModalOpen.value = true;
+  nextTick(() => {
+    createPickerRef.value?.refreshMap();
+  });
 };
 
 const submitCreate = () => {
@@ -175,6 +208,8 @@ const openEditModal = (camp) => {
   editForm.camp_name = camp.camp_name;
   editForm.location = camp.location;
   editForm.address = camp.address || '';
+  editForm.latitude = camp.latitude || null;
+  editForm.longitude = camp.longitude || null;
   editForm.start_date = camp.start_date;
   editForm.end_date = camp.end_date;
   editForm.camp_details = camp.camp_details || '';
@@ -183,6 +218,9 @@ const openEditModal = (camp) => {
   editForm.camp_logo = null;
   imagePreview.value = camp.camp_logo || null;
   isEditModalOpen.value = true;
+  nextTick(() => {
+    editPickerRef.value?.refreshMap();
+  });
 };
 
 const submitEdit = () => {
@@ -325,6 +363,17 @@ const toggleStatus = (camp) => {
             <div class="flex items-center gap-1 text-[11px] text-slate-400 truncate">
               <MapPin class="w-3 h-3 text-slate-400 flex-shrink-0" />
               <span class="truncate">{{ row.location || 'Location not set' }}</span>
+              <a
+                v-if="row.latitude && row.longitude"
+                :href="`https://www.google.com/maps?q=${row.latitude},${row.longitude}`"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-slate-400 hover:text-[#3B8FF3] ml-0.5 inline-flex items-center transition-colors"
+                title="View on Google Maps"
+                @click.stop
+              >
+                <ExternalLink class="w-2.5 h-2.5" />
+              </a>
             </div>
           </div>
         </div>
@@ -430,8 +479,8 @@ const toggleStatus = (camp) => {
     <!-- CREATE CAMP MODAL -->
     <Modal
       :show="isCreateModalOpen"
-      title="Create New Camp / Clinic"
-      max-width="xl"
+      title="Create New Camp"
+      max-width="2xl"
       @close="isCreateModalOpen = false"
     >
       <form @submit.prevent="submitCreate" class="space-y-4">
@@ -459,16 +508,16 @@ const toggleStatus = (camp) => {
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Assign Director <span class="text-rose-500">*</span>
             </label>
-            <select
+            <Dropdown
               v-model="createForm.director_id"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all cursor-pointer"
-              required
-            >
-              <option value="" disabled>Select a director</option>
-              <option v-for="dir in directors" :key="dir.id" :value="dir.id">
-                {{ dir.name }} ({{ dir.email }})
-              </option>
-            </select>
+              :options="directorOptions"
+              placeholder="Select a director"
+              size="sm"
+              align="left"
+              class="w-full block"
+              button-class="w-full !px-3 !py-2 !text-xs !font-sans"
+              menu-class="w-full min-w-full"
+            />
             <p v-if="createForm.errors.director_id" class="mt-1 text-[11px] text-rose-500 font-medium">
               {{ createForm.errors.director_id }}
             </p>
@@ -479,16 +528,16 @@ const toggleStatus = (camp) => {
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Sport Type <span class="text-rose-500">*</span>
             </label>
-            <select
+            <Dropdown
               v-model="createForm.sports_type_id"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all cursor-pointer"
-              required
-            >
-              <option value="" disabled>Select a sport</option>
-              <option v-for="st in sportsTypes" :key="st.id" :value="st.id">
-                {{ st.name }} (+${{ st.sports_fee }} fee)
-              </option>
-            </select>
+              :options="sportsTypeOptions"
+              placeholder="Select sport"
+              size="sm"
+              align="left"
+              class="w-full block"
+              button-class="w-full !px-3 !py-2 !text-xs !font-sans"
+              menu-class="w-full min-w-full"
+            />
             <p v-if="createForm.errors.sports_type_id" class="mt-1 text-[11px] text-rose-500 font-medium">
               {{ createForm.errors.sports_type_id }}
             </p>
@@ -499,11 +548,13 @@ const toggleStatus = (camp) => {
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Start Date <span class="text-rose-500">*</span>
             </label>
-            <input
+            <DatePicker
               v-model="createForm.start_date"
-              type="date"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all"
-              required
+              placeholder="Select start date"
+              size="sm"
+              position="auto"
+              align="left"
+              :clearable="false"
             />
             <p v-if="createForm.errors.start_date" class="mt-1 text-[11px] text-rose-500 font-medium">
               {{ createForm.errors.start_date }}
@@ -515,39 +566,24 @@ const toggleStatus = (camp) => {
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               End Date <span class="text-rose-500">*</span>
             </label>
-            <input
+            <DatePicker
               v-model="createForm.end_date"
-              type="date"
-              :min="createForm.start_date"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all"
-              required
+              placeholder="Select end date"
+              size="sm"
+              position="auto"
+              align="left"
+              :min-date="createForm.start_date"
+              :clearable="false"
             />
             <p v-if="createForm.errors.end_date" class="mt-1 text-[11px] text-rose-500 font-medium">
               {{ createForm.errors.end_date }}
             </p>
           </div>
 
-          <!-- Location (City, State) -->
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Location City/State <span class="text-rose-500">*</span>
-            </label>
-            <input
-              v-model="createForm.location"
-              type="text"
-              placeholder="e.g. Austin, TX"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all"
-              required
-            />
-            <p v-if="createForm.errors.location" class="mt-1 text-[11px] text-rose-500 font-medium">
-              {{ createForm.errors.location }}
-            </p>
-          </div>
-
           <!-- Price -->
-          <div>
+          <div class="sm:col-span-2">
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Base Price ($) <span class="text-rose-500">*</span>
+              Base Registration Price ($) <span class="text-rose-500">*</span>
             </label>
             <div class="relative">
               <DollarSign class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -566,16 +602,17 @@ const toggleStatus = (camp) => {
             </p>
           </div>
 
-          <!-- Address -->
+          <!-- Google Map Location & Address Picker -->
           <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Venue Full Address
-            </label>
-            <input
-              v-model="createForm.address"
-              type="text"
-              placeholder="e.g. 100 Main St, Sports Complex Court #2"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all"
+            <CampLocationPicker
+              ref="createPickerRef"
+              v-model:location="createForm.location"
+              v-model:address="createForm.address"
+              v-model:latitude="createForm.latitude"
+              v-model:longitude="createForm.longitude"
+              :api-key="googleMapsApiKey"
+              :error-location="createForm.errors.location"
+              :error-address="createForm.errors.address"
             />
           </div>
 
@@ -641,8 +678,8 @@ const toggleStatus = (camp) => {
     <!-- EDIT CAMP MODAL -->
     <Modal
       :show="isEditModalOpen"
-      title="Edit Camp / Clinic"
-      max-width="xl"
+      title="Edit Camp"
+      max-width="2xl"
       @close="isEditModalOpen = false"
     >
       <form @submit.prevent="submitEdit" class="space-y-4">
@@ -669,15 +706,19 @@ const toggleStatus = (camp) => {
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Assign Director <span class="text-rose-500">*</span>
             </label>
-            <select
+            <Dropdown
               v-model="editForm.director_id"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all cursor-pointer"
-              required
-            >
-              <option v-for="dir in directors" :key="dir.id" :value="dir.id">
-                {{ dir.name }} ({{ dir.email }})
-              </option>
-            </select>
+              :options="directorOptions"
+              placeholder="Select a director"
+              size="sm"
+              align="left"
+              class="w-full block"
+              button-class="w-full !px-3 !py-2 !text-xs !font-sans"
+              menu-class="w-full min-w-full"
+            />
+            <p v-if="editForm.errors.director_id" class="mt-1 text-[11px] text-rose-500 font-medium">
+              {{ editForm.errors.director_id }}
+            </p>
           </div>
 
           <!-- Sports Type Selector -->
@@ -685,15 +726,19 @@ const toggleStatus = (camp) => {
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Sport Type <span class="text-rose-500">*</span>
             </label>
-            <select
+            <Dropdown
               v-model="editForm.sports_type_id"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all cursor-pointer"
-              required
-            >
-              <option v-for="st in sportsTypes" :key="st.id" :value="st.id">
-                {{ st.name }} (+${{ st.sports_fee }} fee)
-              </option>
-            </select>
+              :options="sportsTypeOptions"
+              placeholder="Select sport"
+              size="sm"
+              align="left"
+              class="w-full block"
+              button-class="w-full !px-3 !py-2 !text-xs !font-sans"
+              menu-class="w-full min-w-full"
+            />
+            <p v-if="editForm.errors.sports_type_id" class="mt-1 text-[11px] text-rose-500 font-medium">
+              {{ editForm.errors.sports_type_id }}
+            </p>
           </div>
 
           <!-- Start Date -->
@@ -701,12 +746,17 @@ const toggleStatus = (camp) => {
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Start Date <span class="text-rose-500">*</span>
             </label>
-            <input
+            <DatePicker
               v-model="editForm.start_date"
-              type="date"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all"
-              required
+              placeholder="Select start date"
+              size="sm"
+              position="auto"
+              align="left"
+              :clearable="false"
             />
+            <p v-if="editForm.errors.start_date" class="mt-1 text-[11px] text-rose-500 font-medium">
+              {{ editForm.errors.start_date }}
+            </p>
           </div>
 
           <!-- End Date -->
@@ -714,32 +764,24 @@ const toggleStatus = (camp) => {
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               End Date <span class="text-rose-500">*</span>
             </label>
-            <input
+            <DatePicker
               v-model="editForm.end_date"
-              type="date"
-              :min="editForm.start_date"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all"
-              required
+              placeholder="Select end date"
+              size="sm"
+              position="auto"
+              align="left"
+              :min-date="editForm.start_date"
+              :clearable="false"
             />
-          </div>
-
-          <!-- Location -->
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Location City/State <span class="text-rose-500">*</span>
-            </label>
-            <input
-              v-model="editForm.location"
-              type="text"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all"
-              required
-            />
+            <p v-if="editForm.errors.end_date" class="mt-1 text-[11px] text-rose-500 font-medium">
+              {{ editForm.errors.end_date }}
+            </p>
           </div>
 
           <!-- Price -->
-          <div>
+          <div class="sm:col-span-2">
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Price ($) <span class="text-rose-500">*</span>
+              Base Price ($) <span class="text-rose-500">*</span>
             </label>
             <div class="relative">
               <DollarSign class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -754,15 +796,17 @@ const toggleStatus = (camp) => {
             </div>
           </div>
 
-          <!-- Address -->
+          <!-- Google Map Location & Address Picker -->
           <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Venue Full Address
-            </label>
-            <input
-              v-model="editForm.address"
-              type="text"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all"
+            <CampLocationPicker
+              ref="editPickerRef"
+              v-model:location="editForm.location"
+              v-model:address="editForm.address"
+              v-model:latitude="editForm.latitude"
+              v-model:longitude="editForm.longitude"
+              :api-key="googleMapsApiKey"
+              :error-location="editForm.errors.location"
+              :error-address="editForm.errors.address"
             />
           </div>
 
@@ -877,6 +921,23 @@ const toggleStatus = (camp) => {
             <Calendar class="w-4 h-4 text-[#3B8FF3]" />
             <span>Dates: <strong class="font-mono">{{ viewingCamp.formatted_start }}</strong> to <strong class="font-mono">{{ viewingCamp.formatted_end }}</strong></span>
           </div>
+        </div>
+
+        <!-- Venue & GPS Coordinates -->
+        <div v-if="viewingCamp.latitude && viewingCamp.longitude" class="p-3 rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+            <MapPin class="w-4 h-4 text-[#F29F67]" />
+            <span>Coordinates: <strong class="font-mono text-slate-900 dark:text-white">{{ viewingCamp.latitude }}, {{ viewingCamp.longitude }}</strong></span>
+          </div>
+          <a
+            :href="`https://www.google.com/maps?q=${viewingCamp.latitude},${viewingCamp.longitude}`"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 text-[11px] font-medium text-[#3B8FF3] hover:underline"
+          >
+            <span>View on Google Maps</span>
+            <ExternalLink class="w-3 h-3" />
+          </a>
         </div>
 
         <!-- Assigned Director -->
