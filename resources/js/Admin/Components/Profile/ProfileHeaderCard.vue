@@ -52,10 +52,19 @@ const handleFileChange = (e) => {
 
 <template>
   <div class="bg-white dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] rounded-xl p-6 shadow-sm relative overflow-hidden">
-    <!-- Top subtle ambient gradient background accent -->
-    <div class="absolute top-0 left-0 right-0 h-28 bg-gradient-to-r from-[#F29F67]/20 via-[#34B1AA]/15 to-transparent pointer-events-none"></div>
+    <!-- Profile Cover Banner Background with Atmospheric Overlay -->
+    <div class="absolute top-0 left-0 right-0 h-32 sm:h-36 overflow-hidden pointer-events-none">
+      <img 
+        src="/default/profile-background.jpg" 
+        alt="Profile Banner Background" 
+        class="w-full h-full object-cover object-center transform scale-105"
+      />
+      <!-- Dark & Brand Tint Overlays for Smooth Integration -->
+      <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-slate-900/60 to-white dark:from-black/40 dark:via-[#1E1E2C]/70 dark:to-[#1E1E2C]"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-[#F29F67]/25 via-transparent to-[#34B1AA]/20 mix-blend-overlay"></div>
+    </div>
 
-    <div class="relative flex flex-col sm:flex-row items-center sm:items-end justify-between gap-6 pt-6">
+    <div class="relative flex flex-col sm:flex-row items-center sm:items-end justify-between gap-6 pt-6 sm:pt-8">
       
       <!-- Avatar & Core Identity -->
       <div class="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left">
