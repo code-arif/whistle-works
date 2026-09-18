@@ -40,13 +40,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'web-admin'             => WebAdminMiddleware::class,
-            'api-otp'               => ApiOtpVerifiedMiddleware::class,
-            'web-otp'               => WebOtpVerifiedMiddleware::class,
-            'check'                 => WebAuthCheckMiddleware::class,
-            'role'                  => RoleMiddleware::class,
-            'permission'            => PermissionMiddleware::class,
-            'role_or_permission'    => RoleOrPermissionMiddleware::class
+            'web-admin' => WebAdminMiddleware::class,
+            'api-otp' => ApiOtpVerifiedMiddleware::class,
+            'web-otp' => WebOtpVerifiedMiddleware::class,
+            'check' => WebAuthCheckMiddleware::class,
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
+            'role_or_permission' => RoleOrPermissionMiddleware::class
         ]);
         $middleware->validateCsrfTokens(except: [
             'webhook/stripe',
@@ -65,12 +65,6 @@ return Application::configure(basePath: dirname(__DIR__))
             StartSession::class,
         ]);
     })
-
-    // ->withSchedule(function (Schedule $schedule) {
-    //     // $schedule->command('app:send-emails')->everySecond();
-    //     $schedule->command('notifications:send-special-date')->daily();
-    //     $schedule->command('app:partnertrashdelete')->daily();
-    // })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (Throwable $e, Request $request) {
             if ($request->is('api/*')) {
