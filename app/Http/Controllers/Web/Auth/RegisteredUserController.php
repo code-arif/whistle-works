@@ -11,7 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 use App\Mail\OtpMail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -23,9 +24,17 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      */
-    public function create(): View
+    public function create(): Response
     {
-        return view('auth.register');
+        $roles = DB::table('roles')
+            ->whereNotIn('name', ['admin'])
+            ->where('guard_name', 'web')
+            ->select('id', 'name')
+            ->get();
+
+        return Inertia::render('Auth/Register', [
+            'roles' => $roles,
+        ]);
     }
 
     /**
@@ -80,8 +89,11 @@ class RegisteredUserController extends Controller
         return redirect()->intended(route('verify.otp.page'))->with('email', $request->email);
     }
 
-    public function otpPage(){
-        return view('auth.verify-otp');
+    public function otpPage(Request $request): Response
+    {
+        return Inertia::render('Auth/VerifyOtp', [
+            'email' => session('email') ?? $request->input('email', ''),
+        ]);
     }
 
     public function otpVerify(Request $request)
@@ -119,8 +131,9 @@ class RegisteredUserController extends Controller
         }
     }
 
-    public function otpResendPage(){
-        return view('auth.resend-otp');
+    public function otpResendPage(Request $request): RedirectResponse
+    {
+        return redirect()->route('verify.otp.page', ['email' => $request->input('email')]);
     }
 
     public function otpResend(Request $request)

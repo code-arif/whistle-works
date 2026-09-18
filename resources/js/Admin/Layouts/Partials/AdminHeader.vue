@@ -185,13 +185,16 @@ onMounted(() => {
             <User class="w-3.5 h-3.5 text-[#F29F67]" />
             <span>Account Profile</span>
           </Link>
-          <a 
+          <Link 
             href="/logout" 
-            class="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+            method="post"
+            as="button"
+            @click="showUserDropdown = false"
+            class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer text-left"
           >
             <LogOut class="w-3.5 h-3.5 text-rose-500" />
             <span>Sign Out</span>
-          </a>
+          </Link>
         </div>
       </div>
 

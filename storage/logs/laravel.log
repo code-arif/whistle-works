@@ -1283,3 +1283,12 @@ Stack trace:
 #19 E:/remote-work/whistle-works-backend/artisan(13): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
 #20 {main}
 "} 
+[2026-09-18 04:05:16] local.ERROR: Class "RoleOrPermissionMiddleware" does not exist {"exception":"[object] (ReflectionException(code: -1): Class \"RoleOrPermissionMiddleware\" does not exist at E:/remote-work/whistle-works-backend/storage/framework/lsp-3a4d0b4c0745fe89.php:101)
+[stacktrace]
+#0 E:/remote-work/whistle-works-backend/storage/framework/lsp-3a4d0b4c0745fe89.php(101): ReflectionClass->__construct('RoleOrPermissio...')
+#1 [internal function]: {closure:E:/remote-work/whistle-works-backend/storage/framework/lsp-3a4d0b4c0745fe89.php:69}('RoleOrPermissio...', 'role_or_permiss...')
+#2 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Collections/Arr.php(609): array_map(Object(Closure), Array, Array)
+#3 E:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Collections/Collection.php(799): Illuminate/Support/Arr::map(Array, Object(Closure))
+#4 E:/remote-work/whistle-works-backend/storage/framework/lsp-3a4d0b4c0745fe89.php(69): Illuminate/Support/Collection->map(Object(Closure))
+#5 {main}
+"} 

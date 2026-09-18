@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
+use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -28,7 +30,6 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__ . '/../routes/channels.php',
         health: '/up',
         then: function () {
-            Route::middleware(['web'])->prefix('ajax')->name('ajax.')->group(base_path('routes/ajax.php'));
             Route::middleware(['web', 'web-admin'])->prefix('admin')->name('admin.')->group(base_path('routes/web-admin.php'));
             Route::middleware(['web', 'web-admin', HandleInertiaRequests::class])->prefix('admin/v2')->name('admin.v2.')->group(base_path('routes/web-admin-v2.php'));
         }
