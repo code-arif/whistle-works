@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Coupon\StoreCouponRequest;
+use App\Http\Requests\Admin\Coupon\UpdateCouponRequest;
 use App\Models\Coupon;
 use App\Services\Admin\CouponService;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,8 +23,8 @@ class CouponController extends Controller
      */
     public function index(Request $request): Response
     {
-        $stats = $this->service->getStats();
-        $coupons = $this->service->getCoupons($request);
+        $stats    = $this->service->getStats();
+        $coupons  = $this->service->getCoupons($request);
         $formData = $this->service->getFormData();
 
         return Inertia::render('Coupons/Index', [
@@ -37,21 +39,9 @@ class CouponController extends Controller
     /**
      * Store a newly created coupon in storage.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreCouponRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'code'           => ['required', 'string', 'max:50', 'unique:coupons,code'],
-            'type'           => ['required', 'in:fixed,percentage'],
-            'discount_value' => ['required', 'numeric', 'min:0'],
-            'max_uses'       => ['nullable', 'integer', 'min:1'],
-            'camp_id'        => ['nullable', 'exists:camps,id'],
-            'referee_ids'    => ['nullable', 'array'],
-            'referee_ids.*'  => ['exists:users,id'],
-            'expires_at'     => ['nullable', 'date'],
-            'status'         => ['required', 'in:active,inactive'],
-        ]);
-
-        $this->service->createCoupon($validated);
+        $this->service->createCoupon($request->validated());
 
         return redirect()->back()->with('t-success', 'Promotional coupon created successfully.');
     }
@@ -59,23 +49,10 @@ class CouponController extends Controller
     /**
      * Update the specified coupon in storage.
      */
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(UpdateCouponRequest $request, int $id): RedirectResponse
     {
         $coupon = Coupon::findOrFail($id);
-
-        $validated = $request->validate([
-            'code'           => ['required', 'string', 'max:50', 'unique:coupons,code,' . $id],
-            'type'           => ['required', 'in:fixed,percentage'],
-            'discount_value' => ['required', 'numeric', 'min:0'],
-            'max_uses'       => ['nullable', 'integer', 'min:1'],
-            'camp_id'        => ['nullable', 'exists:camps,id'],
-            'referee_ids'    => ['nullable', 'array'],
-            'referee_ids.*'  => ['exists:users,id'],
-            'expires_at'     => ['nullable', 'date'],
-            'status'         => ['required', 'in:active,inactive'],
-        ]);
-
-        $this->service->updateCoupon($coupon, $validated);
+        $this->service->updateCoupon($coupon, $request->validated());
 
         return redirect()->back()->with('t-success', 'Coupon details updated successfully.');
     }
