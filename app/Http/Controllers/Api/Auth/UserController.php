@@ -2,39 +2,32 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
-use Stripe\Stripe;
-use Stripe\Account;
-use App\Models\User;
-use App\Models\Artist;
 use App\Helpers\Helper;
-use App\Models\Festival;
-use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use App\Http\Resources\MyalbumResource;
-use App\Http\Resources\AllAlbumResource;
-use Illuminate\Support\Facades\Validator;
-use App\Http\Resources\AlbumForUserResource;
+use App\Http\Requests\Api\Auth\ChangePasswordRequest;
+use App\Http\Requests\Api\Auth\UpdateAvatarRequest;
+use App\Http\Requests\Api\Auth\UpdateProfileRequest;
+use App\Models\User;
+use App\Services\Api\Auth\UserProfileService;
+use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
 
 class UserController extends Controller
 {
     use ApiResponse;
 
-    public $select;
+    protected UserProfileService $userProfileService;
 
-    public function __construct()
+    public function __construct(UserProfileService $userProfileService)
     {
         parent::__construct();
-        $this->select = ['id', 'first_name', 'last_name', 'username', 'address', 'slug',  'email', 'avatar'];
+        $this->userProfileService = $userProfileService;
     }
 
     /**
      * Get User Details
      */
-    public function me()
+    public function me(): JsonResponse
     {
         $user = auth('api')->user();
 
@@ -42,47 +35,7 @@ class UserController extends Controller
             return $this->error('User not found', 404);
         }
 
-        // Base response
-        $response = [
-            'id'         => $user->id,
-            'first_name' => $user->first_name,
-            'last_name'  => $user->last_name,
-            'username'   => $user->username,
-            'email'      => $user->email,
-            'phone'      => $user->phone,
-            'address'    => $user->address,
-            'biography'  => $user->biography,
-            'avatar'     => $user->avatar
-                ? asset($user->avatar)
-                : asset('default/profile.jpg'),
-            'slug'            => $user->slug,
-            'role'            => $user->role,
-            'is_phone_show'   => (bool) $user->is_phone_show,
-            'is_address_show' => (bool) $user->is_address_show,
-            'created_at'      => $user->created_at,
-            'updated_at'      => $user->updated_at,
-        ];
-
-        // Extra data only for referee
-        if ($user->role === 'referee') {
-
-            $avgScore10 = $user->evaluations()
-                ->where('status', 'submitted')
-                ->whereNotNull('average_score')
-                ->avg('average_score'); // 1–10 scale
-
-            $rating5 = $avgScore10
-                ? round($avgScore10 / 2, 1) // convert to 5 scale
-                : 0;
-
-            $response['referee'] = [
-                'checkin_camp' => $user->refereeCheckins()->count(),
-                'total_game'   => $user->evaluations()
-                    ->where('status', 'submitted')
-                    ->count(),
-                'rating'       => $rating5,
-            ];
-        }
+        $response = $this->userProfileService->getUserDetails($user);
 
         return $this->success(
             'User details fetched successfully',
@@ -91,110 +44,34 @@ class UserController extends Controller
         );
     }
 
-
     /**
      * Update User Profile
      */
-    public function updateProfile(Request $request)
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
-        $validatedData = $request->validate([
-            'first_name'      => 'nullable|string|max:100',
-            'last_name'       => 'nullable|string|max:100',
-            'biography'       => 'nullable|string|max:2500',
-            'phone'           => 'nullable|string|max:150',
-            'address'         => 'nullable|string',
-            'is_phone_show'   => 'nullable',
-            'is_address_show' => 'nullable',
-        ]);
-
         $user = auth('api')->user();
 
         if (!$user) {
             return Helper::jsonResponse(false, 'User not found', 404);
         }
 
-        if ($request->exists('is_phone_show') && !is_null($request->input('is_phone_show'))) {
-            $input = $request->input('is_phone_show');
-            $validatedData['is_phone_show'] = is_bool($input)
-                ? $input
-                : in_array(strtolower(trim((string) $input)), ['true', '1', 'on', 'yes'], true);
-        }
-
-        if ($request->exists('is_address_show') && !is_null($request->input('is_address_show'))) {
-            $input = $request->input('is_address_show');
-            $validatedData['is_address_show'] = is_bool($input)
-                ? $input
-                : in_array(strtolower(trim((string) $input)), ['true', '1', 'on', 'yes'], true);
-        }
-
-        /**
-         * Username generator:
-         * username will be generated only if username is empty
-         */
-        if (!$user->username) {
-            $generated = strtolower(($validatedData['first_name'] ?? 'user')) . '_' . $this->randomAlphaNum(4);
-            $validatedData['username'] = $generated;
-        }
-
-        $user->fill($validatedData);
-        $user->save();
-        $user->refresh();
-
-        $response = [
-            'id'              => $user->id,
-            'first_name'      => $user->first_name,
-            'last_name'       => $user->last_name,
-            'username'        => $user->username,
-            'email'           => $user->email,
-            'phone'           => $user->phone,
-            'address'         => $user->address,
-            'biography'       => $user->biography,
-            'avatar'          => $user->avatar
-                ? asset($user->avatar)
-                : asset('default/profile.jpg'),
-            'slug'            => $user->slug,
-            'role'            => $user->role,
-            'is_phone_show'   => (bool) $user->is_phone_show,
-            'is_address_show' => (bool) $user->is_address_show,
-            'created_at'      => $user->created_at,
-            'updated_at'      => $user->updated_at,
-        ];
+        $response = $this->userProfileService->updateProfile($user, $request->validated());
 
         return Helper::jsonResponse(true, 'Profile updated successfully', 200, $response);
     }
 
     /**
-     * Generate random alphanumeric string
-     */
-    private function randomAlphaNum($length = 4)
-    {
-        return substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, $length);
-    }
-
-    /**
      * Update User Avatar
      */
-    public function updateAvatar(Request $request)
+    public function updateAvatar(UpdateAvatarRequest $request): JsonResponse
     {
-        $validatedData = $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
-        ]);
         $user = auth('api')->user();
-        if (!empty($user->avatar)) {
-            Helper::fileDelete(public_path($user->getRawOriginal('avatar')));
+
+        if (!$user) {
+            return Helper::jsonResponse(false, 'User not found', 404);
         }
-        $validatedData['avatar'] = Helper::fileUpload($request->file('avatar'), 'user/avatar', getFileName($request->file('avatar')));
 
-        $user->update($validatedData);
-
-        $response = [
-            'id' => $user->id,
-            'avatar' => $user->avatar
-                ? asset($user->avatar)
-                : asset('default/profile.jpg'),
-            'created_at' => $user->created_at,
-            'updated_at' => $user->updated_at,
-        ];
+        $response = $this->userProfileService->updateAvatar($user, $request->file('avatar'));
 
         return Helper::jsonResponse(true, 'Avatar updated successfully', 200, $response);
     }
@@ -202,22 +79,19 @@ class UserController extends Controller
     /**
      * Delete User Profile
      */
-    public function destroy()
+    public function destroy(): JsonResponse
     {
         $user = User::findOrFail(auth('api')->id());
-        if (!empty($user->avatar) && file_exists(public_path($user->avatar))) {
-            Helper::fileDelete(public_path($user->avatar));
-        }
-        Auth::logout('api');
-        $user->forceDelete();
+
+        $this->userProfileService->deleteProfile($user);
+
         return $this->success('User profile deleted successfully', [], 200);
     }
-
 
     /**
      * Change User Password
      */
-    public function changePassword(Request $request)
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
         $user = auth()->guard('api')->user();
 
@@ -225,25 +99,15 @@ class UserController extends Controller
             return $this->error([], 'User not found', 404);
         }
 
-        // Validate input
-        $validator = Validator::make($request->all(), [
-            'old_password'      => 'required',
-            'new_password'      => 'required|min:6',
-            'confirm_password'  => 'required|same:new_password',
-        ]);
+        $success = $this->userProfileService->changePassword(
+            $user,
+            $request->old_password,
+            $request->new_password
+        );
 
-        if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation failed', 422);
-        }
-
-        // Check if old password is correct
-        if (!Hash::check($request->old_password, $user->password)) {
+        if (!$success) {
             return $this->error([], 'Old password does not match', 400);
         }
-
-        // Update with new password
-        $user->password = Hash::make($request->new_password);
-        $user->save();
 
         return $this->success('Password changed successfully', [], 200);
     }

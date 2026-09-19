@@ -4,256 +4,100 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
-use App\Mail\AdminRegistrationMail;
-use App\Mail\OtpMail;
-use App\Mail\WelcomeMail;
-use App\Models\User;
+use App\Http\Requests\Api\Auth\RegisterRequest;
+use App\Http\Requests\Api\Auth\ResendOtpRequest;
+use App\Http\Requests\Api\Auth\VerifyEmailRequest;
+use App\Services\Api\Auth\RegisterService;
 use App\Traits\ApiResponse;
-use App\Traits\SMS;
-use Carbon\Carbon;
 use Exception;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\JsonResponse;
 
 class RegisterController extends Controller
 {
+    use ApiResponse;
 
-    use SMS, ApiResponse;
+    protected RegisterService $registerService;
 
-    public $select;
-    public function __construct()
+    public function __construct(RegisterService $registerService)
     {
         parent::__construct();
-        $this->select = ['id', 'first_name', 'last_name', 'username', 'email', 'otp', 'avatar', 'otp_verified_at', 'last_activity_at'];
+        $this->registerService = $registerService;
     }
 
     /**
      * User Registration
      */
-    public function register(Request $request)
+    public function register(RegisterRequest $request): JsonResponse
     {
-        $request->validate([
-            'first_name'  => 'required|string|max:100',
-            'last_name'  => 'required|string|max:100',
-            'email'  => 'required|string|email|max:150|unique:users',
-            'phone'  => 'required|string|max:150',
-            'address'  => 'required|string',
-            'password' => 'required|string|min:6|confirmed',
-            'agree' => 'required|in:true',
-            'role'  => 'required',
-            'biography' => 'nullable|string|max:2500',
-            'receive_sms_notifications' => 'nullable|boolean',
-        ]);
         try {
-            DB::beginTransaction();
-            do {
-                $slug = "$request->first_name" . rand(1000000000, 9999999999);
-            } while (User::where('slug', $slug)->exists());
-            function randomAlphaNum($length = 4)
-            {
-                return substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, $length);
-            }
+            $result = $this->registerService->register($request->validated());
 
-            $username = '@' . strtolower($request->input('first_name')) . '_' . randomAlphaNum(4);
-
-
-            $user = User::create([
-                'first_name' => $request->input('first_name'),
-                'last_name' => $request->input('last_name'),
-                'address' => $request->input('address'),
-                'username' => $username,
-                'slug' => $slug,
-                'email' => strtolower($request->input('email')),
-                'password' => Hash::make($request->input('password')),
-                'otp' => rand(1000, 9999),
-                'otp_expires_at' => Carbon::now()->addMinutes(60),
-                'status' => 'active',
-                'last_activity_at' => Carbon::now(),
-                'biography' => $request->input('biography'),
-                'phone' => $request->input('phone'),
-                'receive_sms_notifications' => $request->boolean('receive_sms_notifications'),
-            ]);
-
-            DB::table('model_has_roles')->insert([
-                'role_id' => $request->role,
-                'model_type' => 'App\Models\User',
-                'model_id' => $user->id
-            ]);
-
-            //notify to admin start
-            $notiData = [
-                'user_id' => $user->id,
-                'title' => 'User register in successfully.',
-                'body' => 'User register in successfully.',
-                'name' => $user->first_name . ' ' . $user->last_name ?? null,
-                'username' => $user->username,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'role' => $user->role,
-                'status' => $user->status,
-            ];
-
-            Mail::to('drewbontrager@gmail.com')->queue(new AdminRegistrationMail($notiData));
-
-            $data = User::select('otp')->find($user->id);
-
-            Mail::to($user->email)->queue(new OtpMail($user->otp, $user, 'Verify Your Email Address'));
-
-            DB::commit();
-
-            $token = auth('api')->login($user);
-
-            $response = [
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'username' => $user->username,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'address' => $user->address,
-                'avatar' => $user->avatar,
-                'role' => $user->role,
-                'biography' => $user->biography,
-                'receive_sms_notifications' => $user->receive_sms_notifications,
-                // 'otp' => auth('api')->user()->otp,
-            ];
+            auth('api')->login($result['user']);
 
             return $this->success(
                 'User registered successfully. Please verify your email using the OTP sent to your email address.',
-                $response,
+                $result['data'],
                 201
             );
         } catch (Exception $e) {
-            DB::rollBack();
             return Helper::jsonErrorResponse('User registration failed', 500, [$e->getMessage()]);
         }
     }
 
     /**
-     * Verify Email
+     * Verify Email with OTP
      */
-    public function VerifyEmail(Request $request)
+    public function VerifyEmail(VerifyEmailRequest $request): JsonResponse
     {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'otp'   => 'required|digits:4',
-        ]);
-
         try {
-            $user = User::where('email', $request->input('email'))->first();
+            $result = $this->registerService->verifyEmail(
+                (string) $request->input('email'),
+                (string) $request->input('otp')
+            );
 
-            // Already verified
-            if (!empty($user->otp_verified_at)) {
+            if (!$result['success']) {
                 return response()->json([
-                    "success" => false,
-                    "message" => "Email already verified.",
-                    "code"    => 409
-                ], 409);
+                    'success' => false,
+                    'message' => $result['message'],
+                    'code'    => $result['code'],
+                ], $result['code']);
             }
-
-            // Invalid OTP
-            if ((string)$user->otp !== (string)$request->input('otp')) {
-                return response()->json([
-                    "success" => false,
-                    "message" => "Invalid OTP code",
-                    "code"    => 422
-                ], 422);
-            }
-
-            // OTP expired
-            if (Carbon::parse($user->otp_expires_at)->isPast()) {
-                return response()->json([
-                    "success" => false,
-                    "message" => "OTP has expired. Please request a new OTP.",
-                    "code"    => 422
-                ], 422);
-            }
-
-            // Update verification
-            $user->otp_verified_at = now();
-            $user->otp = null;
-            $user->otp_expires_at = null;
-            $user->save();
-
-            // Send Welcome Email
-            try {
-                Mail::to($user->email)->send(new WelcomeMail($user));
-            } catch (Exception $mailException) {
-                // Log the mail error but don't fail the verification
-                Log::error('Welcome email failed to send: ' . $mailException->getMessage());
-            }
-
-            // Generate token
-            $token = auth('api')->login($user);
-            $expires_in = auth('api')->factory()->getTTL() * 60; // usually minutes * 60
 
             return response()->json([
-                "success" => true,
-                "message" => "Email verified successfully.",
-                "data" => [
-                    "id"         => $user->id,
-                    "email"      => $user->email,
-                    "username"   => $user->username,
-                    "first_name" => $user->first_name,
-                    "last_name"  => $user->last_name,
-                    "avatar"     => $user->avatar,
-                    "address"    => $user->address,
-                    "status"     => $user->status,
-                    "role"       => $user->role,
-                    "biography"  => $user->biography,
-                ],
-                'token'      => $token,
-                'token_type' => 'bearer',
-                'expires_in' => $expires_in,
-                "code" => 200
+                'success'    => true,
+                'message'    => $result['message'],
+                'data'       => $result['data'],
+                'token'      => $result['token'],
+                'token_type' => $result['token_type'],
+                'expires_in' => $result['expires_in'],
+                'code'       => 200,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
-                "success" => false,
-                "message" => $e->getMessage(),
-                "code"    => $e->getCode() ?: 500
+                'success' => false,
+                'message' => $e->getMessage(),
+                'code'    => $e->getCode() ?: 500,
             ], 500);
         }
     }
 
-
     /**
-     * Resend OTP
+     * Resend verification OTP
      */
-    public function ResendOtp(Request $request)
+    public function ResendOtp(ResendOtpRequest $request): JsonResponse
     {
-
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-        ]);
-
         try {
-            $user = User::where('email', $request->input('email'))->first();
+            $result = $this->registerService->resendOtp((string) $request->input('email'));
 
-            if (!$user) {
-                return Helper::jsonErrorResponse('User not found.', 404);
+            if (!$result['success']) {
+                return Helper::jsonErrorResponse($result['message'], $result['code']);
             }
-
-            if ($user->otp_verified_at) {
-                return Helper::jsonErrorResponse('Email already verified.', 409);
-            }
-
-            $newOtp = rand(1000, 9999);
-            $otpExpiresAt = Carbon::now()->addMinutes(60);
-            $user->otp = $newOtp;
-            $user->otp_expires_at = $otpExpiresAt;
-            $user->save();
-
-            //* Send the new OTP to the user's email
-            Mail::to($user->email)->queue(new OtpMail($newOtp, $user, 'Verify Your Email Address'));
 
             return response()->json([
                 'status'  => true,
-                'message' => 'A new OTP has been sent to your email address.',
-                'code' => 200,
-                'otp' => $newOtp // Remove this line in production
+                'message' => $result['message'],
+                'code'    => 200,
+                'otp'     => $result['otp'],
             ], 200);
         } catch (Exception $e) {
             return Helper::jsonErrorResponse($e->getMessage(), 200);

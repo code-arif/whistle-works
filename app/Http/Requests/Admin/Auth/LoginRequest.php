@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Auth;
+namespace App\Http\Requests\Admin\Auth;
 
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
@@ -27,13 +27,14 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         $data = [
-            'email' => ['required', 'string', 'email'],
+            'email'    => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ];
-        if (env('RECAPTCHA_ENABLE') === 'yes')
-        {
+
+        if (env('RECAPTCHA_ENABLE') === 'yes') {
             $data['g-recaptcha-response'] = ['required', 'recaptcha'];
         }
+
         return $data;
     }
 
@@ -85,6 +86,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('email')) . '|' . $this->ip());
     }
 }

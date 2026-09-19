@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\Frontend;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\RefereeEvaluationRequest;
+use App\Http\Requests\Api\Frontend\RefereeEvaluationRequest;
 use App\Http\Resources\RefereeEvaluationListResource;
 use App\Http\Resources\RefereeEvaluationResource;
 use App\Models\AssistantDirectorPermission;

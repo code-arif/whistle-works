@@ -2,7 +2,6 @@
 
 use \App\Http\Middleware\HandleInertiaRequests;
 use \Inertia\Inertia;
-use App\Http\Controllers\Api\Auth\SocialLoginController;
 use App\Http\Controllers\Api\Auth\V2\V2RegisterController;
 use App\Http\Controllers\Api\StripeWebhookController as ApiStripeWebhookController;
 use App\Http\Controllers\Admin\NotificationController;
@@ -10,10 +9,6 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::get('/', fn() => redirect()->route('login'))->name('home');
-
-// Social login routes
-Route::get('social-login/{provider}', [SocialLoginController::class, 'RedirectToProvider'])->name('social.login');
-Route::get('social-login/{provider}/callback', [SocialLoginController::class, 'HandleProviderCallback']);
 
 
 Route::controller(NotificationController::class)->prefix('notification')->name('notification.')->group(function () {

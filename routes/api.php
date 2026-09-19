@@ -8,7 +8,6 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\FirebaseTokenController;
-use App\Http\Controllers\Api\Auth\SocialLoginController;
 use App\Http\Controllers\Api\Frontend\ContactController;
 use App\Http\Controllers\Api\Frontend\SettingsController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
@@ -83,7 +82,6 @@ Route::group(['middleware' => 'guest:api'], function ($router) {
 
     // Login
     Route::post('/login', [LoginController::class, 'login'])->name('api.login');
-    Route::post('/social-login', [SocialLoginController::class, 'SocialLogin']);
 
     // Forgot & Reset Password
     Route::post('/forgot-password', [ResetPasswordController::class, 'forgotPassword']);
