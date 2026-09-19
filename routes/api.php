@@ -35,13 +35,6 @@ use App\Http\Controllers\Api\StripeWebhookController;
 
 /*
 |--------------------------------------------------------------------------
-| Stripe Webhook Route
-|--------------------------------------------------------------------------
-*/
-Route::post('/webhook/stripe', [StripeWebhookController::class, 'HandlePaymentWebhook']);
-
-/*
-|--------------------------------------------------------------------------
 | System & Health Routes
 |--------------------------------------------------------------------------
 */
@@ -49,6 +42,13 @@ Route::post('/webhook/stripe', [StripeWebhookController::class, 'HandlePaymentWe
 Route::get('/health-check', function () {
     return "All Right... 👍";
 });
+
+/*
+|--------------------------------------------------------------------------
+| Stripe Webhook Route
+|--------------------------------------------------------------------------
+*/
+Route::post('/webhook/stripe', [StripeWebhookController::class, 'HandlePaymentWebhook']);
 
 /*
 |--------------------------------------------------------------------------
