@@ -3,7 +3,7 @@
 use \App\Http\Middleware\HandleInertiaRequests;
 use \Inertia\Inertia;
 use App\Http\Controllers\Api\Auth\V2\V2RegisterController;
-use App\Http\Controllers\Api\StripeWebhookController as ApiStripeWebhookController;
+use App\Http\Controllers\Api\Payment\StripeWebhookController as ApiStripeWebhookController;
 use App\Http\Controllers\Admin\NotificationController;
 use Illuminate\Support\Facades\Route;
 

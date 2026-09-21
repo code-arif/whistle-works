@@ -30,7 +30,7 @@ use Modules\Director\Http\Controllers\Api\Crew\CrewManageController;
 use App\Http\Controllers\Api\Evaluator\CampEvaluatorRegistrationController;
 use App\Http\Controllers\Api\Evaluator\CampEvaluatorRegisterManageForDirectorController;
 use App\Http\Controllers\Api\DirectorCampManage\AssistantDirectorPermissionController;
-use App\Http\Controllers\Api\StripeWebhookController;
+use App\Http\Controllers\Api\Payment\StripeWebhookController;
 
 /*
 |--------------------------------------------------------------------------
