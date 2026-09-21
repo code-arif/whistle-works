@@ -20,7 +20,7 @@ use App\Http\Controllers\Api\Legal\PrivacyPolicyController;
 use App\Http\Controllers\Api\Roster\RosterController;
 use App\Http\Controllers\Api\Subscribe\SubscribeController;
 use App\Http\Controllers\Api\Auth\V2\V2ResetPasswordController;
-use App\Http\Controllers\Api\Frontend\RefereeEvaluationController;
+use App\Http\Controllers\Api\RefereeEvaluation\RefereeEvaluationController;
 use App\Http\Controllers\Api\Evaluator\EvaluatorController;
 use App\Http\Controllers\Api\Evaluator\GameOverviewController;
 use App\Http\Controllers\Api\Referee\EvaluatedRefereeController;
