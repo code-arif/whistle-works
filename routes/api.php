@@ -8,15 +8,15 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\FirebaseTokenController;
-use App\Http\Controllers\Api\Frontend\ContactController;
-use App\Http\Controllers\Api\Frontend\SettingsController;
+use App\Http\Controllers\Api\Contact\ContactController;
+use App\Http\Controllers\Api\Settings\SettingsController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\Auth\V2\V2RegisterController;
-use App\Http\Controllers\Api\Frontend\AnnouncementController;
+use App\Http\Controllers\Api\Announcement\AnnouncementController;
 use App\Http\Controllers\Api\CMS\HomePageController;
-use App\Http\Controllers\Api\Frontend\NotificationController;
+use App\Http\Controllers\Api\Notification\NotificationController;
 use App\Http\Controllers\Api\CMS\AboutPageController;
-use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
+use App\Http\Controllers\Api\Legal\PrivacyPolicyController;
 use App\Http\Controllers\Api\Roster\RosterController;
 use App\Http\Controllers\Api\Subscribe\SubscribeController;
 use App\Http\Controllers\Api\Auth\V2\V2ResetPasswordController;
@@ -61,8 +61,8 @@ Route::get('/cms/home', [HomePageController::class, 'home']);
 Route::get('/cms/about', [AboutPageController::class, 'about']);
 
 // get privacy policy data
-Route::get('/privacy-policy', [PrivecyPolicyController::class, 'privecyPolicy']);
-Route::get('/terms-and-conditions', [PrivecyPolicyController::class, 'termsAndConditions']);
+Route::get('/privacy-policy', [PrivacyPolicyController::class, 'privecyPolicy']);
+Route::get('/terms-and-conditions', [PrivacyPolicyController::class, 'termsAndConditions']);
 
 // get setting data
 Route::get('/settings', [SettingsController::class, 'index']);
