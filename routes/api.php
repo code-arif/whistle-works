@@ -25,7 +25,7 @@ use App\Http\Controllers\Api\Frontend\Evaluator\GameOverviewController;
 use App\Http\Controllers\Api\Frontend\Referee\EvaluatedRefereeController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentCrewController;
-use App\Http\Controllers\Api\Frontend\CampRanking\CampRankingSettingsController;
+use App\Http\Controllers\Api\CampRanking\CampRankingSettingsController;
 use App\Http\Controllers\Api\Frontend\Referee\RefereeDetailsController;
 use Modules\Director\Http\Controllers\Api\Crew\CrewManageController;
 use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegistrationController;
