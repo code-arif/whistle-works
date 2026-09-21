@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Frontend\NotificationController;
 use App\Http\Controllers\Api\CMS\AboutPageController;
 use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
 use App\Http\Controllers\Api\Roster\RosterController;
+use App\Http\Controllers\Api\Subscribe\SubscribeController;
 use App\Http\Controllers\Api\Auth\V2\V2ResetPasswordController;
 use App\Http\Controllers\Api\Frontend\RefereeEvaluationController;
 use App\Http\Controllers\Api\Evaluator\EvaluatorController;
@@ -68,6 +69,9 @@ Route::get('/settings', [SettingsController::class, 'index']);
 
 // contact from submit
 Route::post('/contact-form', [ContactController::class, 'submitContact']);
+
+// newsletter subscribe
+Route::post('/subscribe', [SubscribeController::class, 'store']);
 
 /*
 |--------------------------------------------------------------------------
