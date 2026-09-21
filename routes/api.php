@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\TwilioTestController;
-use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\Auth\UserController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
@@ -292,23 +291,6 @@ Route::middleware(['auth:api', 'role:referee|evaluator|director,api'])->prefix('
     Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
     Route::delete('/delete/{notificationId}', [NotificationController::class, 'destroy']);
     Route::delete('/clear-read', [NotificationController::class, 'clearRead']);
-});
-
-/*
-|--------------------------------------------------------------------------
-| Chatting Routes
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth:api'])->prefix('auth/chat')->group(function () {
-    Route::get('/list', [ChatController::class, 'list']);
-    Route::post('/send/{receiver_id}', [ChatController::class, 'send']);
-    Route::get('/conversation/{receiver_id}', [ChatController::class, 'conversation']);
-    Route::get('room/{receiver_id}', [ChatController::class, 'room']);
-    Route::get('/search', [ChatController::class, 'search']);
-    Route::get('/seen/all/{receiver_id}', [ChatController::class, 'seenAll']);
-    Route::get('/seen/single/{chat_id}', [ChatController::class, 'seenSingle']);
-    Route::delete('/delete/{receiver_id}', [ChatController::class, 'deleteChat']);
-    Route::delete('/delete/chat/messages', [ChatController::class, 'deleteMessages']);
 });
 
 /*
