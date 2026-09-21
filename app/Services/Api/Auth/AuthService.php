@@ -2,7 +2,6 @@
 
 namespace App\Services\Api\Auth;
 
-use App\Models\FirebaseTokens;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -120,11 +119,6 @@ class AuthService
     {
         if (!$userId) {
             return false;
-        }
-
-        $firebaseTokens = FirebaseTokens::where('user_id', $userId)->get();
-        if ($firebaseTokens->isNotEmpty()) {
-            $firebaseTokens->each->delete();
         }
 
         Auth::logout('api');

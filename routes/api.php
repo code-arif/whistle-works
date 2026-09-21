@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\Auth\UserController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\RegisterController;
-use App\Http\Controllers\Api\FirebaseTokenController;
 use App\Http\Controllers\Api\Contact\ContactController;
 use App\Http\Controllers\Api\Settings\SettingsController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
@@ -291,18 +290,6 @@ Route::middleware(['auth:api', 'role:referee|evaluator|director,api'])->prefix('
     Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
     Route::delete('/delete/{notificationId}', [NotificationController::class, 'destroy']);
     Route::delete('/clear-read', [NotificationController::class, 'clearRead']);
-});
-
-/*
-|--------------------------------------------------------------------------
-| Firebase Notification Routes
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth:api'])->prefix('firebase')->group(function () {
-    Route::get("test", [FirebaseTokenController::class, 'test']);
-    Route::post("token/add", [FirebaseTokenController::class, 'store']);
-    Route::post("token/get", [FirebaseTokenController::class, 'getToken']);
-    Route::post("token/delete", [FirebaseTokenController::class, 'deleteToken']);
 });
 
 /*
