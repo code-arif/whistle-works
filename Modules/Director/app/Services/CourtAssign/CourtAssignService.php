@@ -7,7 +7,6 @@ use App\Models\CampRefereeJearsyNumber;
 use App\Models\User;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -29,12 +28,15 @@ class CourtAssignService
      * Max referees per slot based on schedule settings.
      * Supports assignments array and referee_ids/position_ids formats.
      *
-     * @param  mixed   $user
-     * @param  int     $slotId
-     * @param  Request $request
+     * @param  mixed  $user
+     * @param  int    $slotId
+     * @param  mixed  $assignments          Pre-parsed assignments array (from controller)
+     * @param  mixed  $refereeIds           Pre-parsed referee_ids (from controller)
+     * @param  mixed  $positionIds          Pre-parsed position_ids (from controller)
+     * @param  mixed  $overrideRestrictions
      * @return array
      */
-    public function assignIndividualReferees($user, int $slotId, Request $request): array
+    public function assignIndividualReferees($user, int $slotId, $assignments, $refereeIds, $positionIds, $overrideRestrictions): array
     {
         $slot = GameSlot::with('schedule.camp', 'location')->find($slotId);
 
@@ -72,10 +74,9 @@ class CourtAssignService
             return ['success' => false, 'code' => 400, 'message' => 'This slot is already assigned to a crew. Remove crew first.', 'data' => null];
         }
 
-        // Prepare assignments array from request payload formats
+        // Build itemsToAssign from pre-parsed controller data
         $itemsToAssign = [];
 
-        $assignments = $request->input('assignments', $request->json('assignments'));
         if (!empty($assignments) && is_array($assignments)) {
             foreach ($assignments as $item) {
                 if (is_array($item)) {
@@ -88,15 +89,11 @@ class CourtAssignService
             }
         }
 
-        if (empty($itemsToAssign)) {
-            $refereeIds = $request->input('referee_ids', $request->json('referee_ids'));
-            if (!empty($refereeIds)) {
-                $refereeIds  = is_array($refereeIds) ? $refereeIds : [$refereeIds];
-                $positionIds = $request->input('position_ids', $request->json('position_ids', []));
-                $positionIds = is_array($positionIds) ? $positionIds : [$positionIds];
-                foreach ($refereeIds as $index => $refId) {
-                    $itemsToAssign[] = ['referee_id' => $refId, 'position_id' => $positionIds[$index] ?? null];
-                }
+        if (empty($itemsToAssign) && !empty($refereeIds)) {
+            $refereeIds  = is_array($refereeIds) ? $refereeIds : [$refereeIds];
+            $positionIds = is_array($positionIds) ? $positionIds : ($positionIds ? [$positionIds] : []);
+            foreach ($refereeIds as $index => $refId) {
+                $itemsToAssign[] = ['referee_id' => $refId, 'position_id' => $positionIds[$index] ?? null];
             }
         }
 
@@ -104,8 +101,7 @@ class CourtAssignService
             return ['success' => false, 'code' => 400, 'message' => 'Please provide referee_ids or assignments array.', 'data' => null];
         }
 
-        $maxReferees          = $slot->schedule->max_referees_per_slot;
-        $overrideRestrictions = $request->override_restrictions ?? false;
+        $maxReferees = $slot->schedule->max_referees_per_slot;
 
         $successfulAssignments = [];
         $failedAssignments     = [];

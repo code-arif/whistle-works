@@ -35,8 +35,21 @@ class CourtAssignController extends Controller
             'override_restrictions'  => 'sometimes',
         ]);
 
+        // Parse both payload formats here so the service stays HTTP-agnostic
+        $assignments   = $request->input('assignments', $request->json('assignments'));
+        $refereeIds    = $request->input('referee_ids', $request->json('referee_ids'));
+        $positionIds   = $request->input('position_ids', $request->json('position_ids', []));
+        $overrideRestrictions = $request->override_restrictions ?? false;
+
         $user   = auth('api')->user();
-        $result = $this->courtAssignService->assignIndividualReferees($user, (int) $slotId, $request);
+        $result = $this->courtAssignService->assignIndividualReferees(
+            $user,
+            (int) $slotId,
+            $assignments,
+            $refereeIds,
+            $positionIds,
+            $overrideRestrictions
+        );
 
         // assignIndividualReferees returns a custom response format (raw json for partial success 207)
         return response()->json([
@@ -61,7 +74,7 @@ class CourtAssignController extends Controller
         ]);
 
         $user   = auth('api')->user();
-        $result = $this->courtAssignService->assignCrew($user, (int) $slotId, (int) $request->crew_id);
+        $result = $this->courtAssignService->assignCrew($user, (int) $slotId, (int) $request->input('crew_id'));
 
         if (!$result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
