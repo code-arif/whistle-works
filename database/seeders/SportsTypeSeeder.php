@@ -16,6 +16,7 @@ class SportsTypeSeeder extends Seeder
         SportsType::insert([
             [
                 'sports_name' => 'Football',
+                'sports_fee'  => 25.00,
                 'icon'        => 'icons/football.png',
                 'status'      => 'active',
                 'created_at'  => now(),
@@ -23,6 +24,7 @@ class SportsTypeSeeder extends Seeder
             ],
             [
                 'sports_name' => 'Basketball',
+                'sports_fee'  => 20.00,
                 'icon'        => 'icons/basketball.png',
                 'status'      => 'active',
                 'created_at'  => now(),
@@ -30,6 +32,7 @@ class SportsTypeSeeder extends Seeder
             ],
             [
                 'sports_name' => 'Cricket',
+                'sports_fee'  => 25.00,
                 'icon'        => 'icons/cricket.png',
                 'status'      => 'active',
                 'created_at'  => now(),
@@ -37,6 +40,7 @@ class SportsTypeSeeder extends Seeder
             ],
             [
                 'sports_name' => 'Tennis',
+                'sports_fee'  => 30.00,
                 'icon'        => 'icons/tennis.png',
                 'status'      => 'active',
                 'created_at'  => now(),
@@ -44,6 +48,7 @@ class SportsTypeSeeder extends Seeder
             ],
             [
                 'sports_name' => 'Volleyball',
+                'sports_fee'  => 20.00,
                 'icon'        => 'icons/volleyball.png',
                 'status'      => 'active',
                 'created_at'  => now(),

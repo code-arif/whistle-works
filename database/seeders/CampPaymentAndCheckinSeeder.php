@@ -23,6 +23,12 @@ class CampPaymentAndCheckinSeeder extends Seeder
             return;
         }
 
+        $camps = DB::table('camps')
+            ->leftJoin('sports_types', 'sports_types.id', '=', 'camps.sports_type_id')
+            ->select('camps.id', 'camps.price', 'sports_types.sports_fee')
+            ->get()
+            ->keyBy('id');
+
         foreach ($campIds as $campId) {
 
             // per camp 10–15 referees
@@ -30,9 +36,20 @@ class CampPaymentAndCheckinSeeder extends Seeder
                 ->shuffle()
                 ->take(rand(30, 60));
 
+            $campData = $camps->get($campId);
+            $campPrice = $campData && (float) $campData->price > 0 ? (float) $campData->price : null;
+            $sportsFee = $campData && (float) $campData->sports_fee > 0 ? (float) $campData->sports_fee : 25.00;
+
             foreach ($selectedReferees as $refereeId) {
 
-                $amount = rand(100, 500);
+                $baseAmount = $campPrice ?? rand(100, 500);
+                $stripeFee = round($baseAmount * 0.03, 2);
+                $adminFee = round($sportsFee + $stripeFee, 2);
+                if ($adminFee >= $baseAmount) {
+                    $adminFee = round($baseAmount * 0.20, 2);
+                }
+                $directorAmount = round(max(0, $baseAmount - $adminFee), 2);
+                $amount = $baseAmount;
                 $now = now();
 
                 /* ==========================
@@ -43,6 +60,9 @@ class CampPaymentAndCheckinSeeder extends Seeder
                     'referee_id' => $refereeId,
                     'stripe_session_id' => 'cs_test_' . Str::uuid(),
                     'amount' => $amount,
+                    'admin_fee' => $adminFee,
+                    'director_amount' => $directorAmount,
+                    'discount_amount' => 0,
                     'status' => 'completed',
                     'expires_at' => $now->copy()->addMinutes(30),
                     'completed_at' => $now,
@@ -60,6 +80,9 @@ class CampPaymentAndCheckinSeeder extends Seeder
                     'stripe_payment_intent_id' => 'pi_' . Str::uuid(),
                     'stripe_session_id' => 'cs_test_' . Str::uuid(),
                     'amount' => $amount,
+                    'admin_fee' => $adminFee,
+                    'director_amount' => $directorAmount,
+                    'discount_amount' => 0,
                     'currency' => 'usd',
                     'status' => 'succeeded',
                     'paid_at' => $now,

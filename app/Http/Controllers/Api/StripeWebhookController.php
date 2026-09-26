@@ -317,6 +317,10 @@ class StripeWebhookController extends Controller
                 'currency'                 => strtolower($session->currency ?? 'usd'),
                 'status'                   => 'succeeded',
                 'paid_at'                  => now(),
+                'coupon_id'                => $attempt->coupon_id ?? null,
+                'discount_amount'          => $attempt->discount_amount ?? 0,
+                'admin_fee'                => $attempt->admin_fee ?? 0,
+                'director_amount'          => $attempt->director_amount ?? 0,
                 'metadata'                 => [
                     'payment_method' => $session->payment_method_types[0] ?? null,
                     'customer_email' => $session->customer_email
