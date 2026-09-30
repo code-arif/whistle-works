@@ -2,198 +2,127 @@
 
 namespace Modules\Director\Http\Controllers\Api\Payment;
 
-use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
-use Modules\Director\Models\Camp;
 use App\Http\Controllers\Controller;
-use App\Services\StripePaymentService;
+use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Modules\Director\Services\Payment\CampPaymentService;
 
 class CampPaymentController extends Controller
 {
     use ApiResponse;
 
-    protected $stripeService;
+    protected CampPaymentService $campPaymentService;
 
-    public function __construct(StripePaymentService $stripeService)
+    public function __construct(CampPaymentService $campPaymentService)
     {
-        $this->stripeService = $stripeService;
+        $this->campPaymentService = $campPaymentService;
     }
 
     /**
-     * Initiate payment for camp check-in
+     * Initiate payment for camp check-in.
+     *
+     * @param  Request      $request
+     * @param  mixed        $campId
+     * @return JsonResponse
      */
-    public function initiatePayment(Request $request, $campId)
+    public function initiatePayment(Request $request, $campId): JsonResponse
     {
-        $referee = auth('api')->user();
-
-        // Verify camp exists and is active
-        $camp = Camp::where('id', $campId)
-            ->where('status', 'active')
-            ->first();
-
-        if (!$camp) {
-            return $this->error('Camp not found or inactive.', null, 404);
-        }
-
-        // Check if can initiate payment
-        $result = $this->stripeService->createCheckoutSession($camp, $referee);
+        $user   = auth('api')->user();
+        $result = $this->campPaymentService->initiatePayment($user, $campId);
 
         if (!$result['success']) {
-            return $this->error(
-                $result['error'],
-                isset($result['data']) ? $result['data'] : ['message' => $result['message'] ?? null],
-                400
-            );
+            return $this->error($result['data'], $result['message'], $result['code']);
         }
 
-        return $this->success(
-            'Payment session created successfully.',
-            [
-                'session_id' => $result['session_id'],
-                'checkout_url' => $result['checkout_url'],
-                'expires_at' => $result['expires_at'],
-                'camp' => [
-                    'id' => $camp->id,
-                    'name' => $camp->camp_name,
-                    'price' => $camp->price
-                ]
-            ],
-            201
-        );
+        return $this->success($result['message'], $result['data'], $result['code']);
     }
 
     /**
-     * Handle successful payment callback
+     * Handle successful payment callback.
+     *
+     * @param  Request      $request
+     * @return JsonResponse
      */
-    public function success(Request $request)
+    public function success(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'session_id' => 'required|string'
+            'session_id' => 'required|string',
         ]);
 
         if ($validator->fails()) {
-            return $this->error('Invalid request.', $validator->errors(), 422);
+            return $this->error($validator->errors(), 'Invalid request.', 422);
         }
 
-        $result = $this->stripeService->handleSuccess($request->session_id);
+        $result = $this->campPaymentService->handleSuccess($request->session_id);
 
         if (!$result['success']) {
-            return $this->error(
-                $result['error'],
-                ['message' => $result['message'] ?? null],
-                400
-            );
+            return $this->error($result['data'], $result['message'], $result['code']);
         }
 
-        $message = isset($result['already_processed'])
-            ? 'Payment already processed.'
-            : 'Payment completed successfully.';
-
-        return $this->success(
-            $message,
-            [
-                'payment_id' => $result['payment']->id,
-                'camp_id' => $result['camp_id'],
-                'amount' => $result['payment']->amount,
-                'paid_at' => $result['payment']->paid_at,
-                'next_step' => 'You can now check in to the camp.'
-            ],
-            200
-        );
+        return $this->success($result['message'], $result['data'], $result['code']);
     }
 
     /**
-     * Handle cancelled payment callback
+     * Handle cancelled payment callback.
+     *
+     * @param  Request      $request
+     * @return JsonResponse
      */
-    public function cancel(Request $request)
+    public function cancel(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'session_id' => 'required|string'
+            'session_id' => 'required|string',
         ]);
 
         if ($validator->fails()) {
-            return $this->error('Invalid request.', $validator->errors(), 422);
+            return $this->error($validator->errors(), 'Invalid request.', 422);
         }
 
-        $result = $this->stripeService->handleCancel($request->session_id);
+        $result = $this->campPaymentService->handleCancel($request->session_id);
 
         if (!$result['success']) {
-            return $this->error($result['error'], null, 400);
+            return $this->error($result['data'], $result['message'], $result['code']);
         }
 
-        return $this->success(
-            'Payment cancelled.',
-            [
-                'message' => 'You cancelled the payment. You can retry after ' . config('payment.retry_cooldown', 5) . ' minutes.',
-                'can_retry_at' => $result['can_retry_at'],
-                'camp_id' => $result['attempt']->camp_id
-            ],
-            200
-        );
+        return $this->success($result['message'], $result['data'], $result['code']);
     }
 
     /**
-     * Get payment status for a camp
+     * Get payment status for a camp.
+     *
+     * @param  Request      $request
+     * @param  mixed        $campId
+     * @return JsonResponse
      */
-    public function getPaymentStatus(Request $request, $campId)
+    public function getPaymentStatus(Request $request, $campId): JsonResponse
     {
-        $referee = auth('api')->user();
+        $user   = auth('api')->user();
+        $result = $this->campPaymentService->getPaymentStatus($user, $campId);
 
-        $camp = Camp::find($campId);
-        if (!$camp) {
-            return $this->error('Camp not found.', null, 404);
+        if (!$result['success']) {
+            return $this->error($result['data'], $result['message'], $result['code']);
         }
 
-        $canPay = $this->stripeService->canInitiatePayment($camp, $referee);
-
-        return $this->success(
-            'Payment status retrieved.',
-            [
-                'camp_id' => $campId,
-                'camp_name' => $camp->camp_name,
-                'price' => $camp->price,
-                'can_initiate_payment' => $canPay['can_pay'],
-                'reason' => $canPay['reason'] ?? null,
-                'details' => $canPay
-            ],
-            200
-        );
+        return $this->success($result['message'], $result['data'], $result['code']);
     }
 
     /**
-     * Get payment history
+     * Get payment history for authenticated referee.
+     *
+     * @param  Request      $request
+     * @return JsonResponse
      */
-    public function getPaymentHistory(Request $request)
+    public function getPaymentHistory(Request $request): JsonResponse
     {
-        $referee = auth('api')->user();
+        $user   = auth('api')->user();
+        $result = $this->campPaymentService->getPaymentHistory($user);
 
-        $payments = \App\Models\CampPayment::where('referee_id', $referee->id)
-            ->with('camp:id,camp_name,location,camp_logo,price')
-            ->latest('paid_at')
-            ->get();
+        if (!$result['success']) {
+            return $this->error($result['data'], $result['message'], $result['code']);
+        }
 
-        $formatted = $payments->map(function ($payment) {
-            return [
-                'payment_id' => $payment->id,
-                'amount' => $payment->amount,
-                'currency' => strtoupper($payment->currency),
-                'status' => $payment->status,
-                'paid_at' => $payment->paid_at->format('Y-m-d H:i:s'),
-                'camp' => [
-                    'id' => $payment->camp->id,
-                    'name' => $payment->camp->camp_name,
-                    'location' => $payment->camp->location,
-                    'logo' => $payment->camp->camp_logo ? asset($payment->camp->camp_logo) : asset('default/no_image.webp'),
-                    'price' => $payment->camp->price
-                ]
-            ];
-        });
-
-        return $this->success(
-            'Payment history retrieved.',
-            ['payments' => $formatted],
-            200
-        );
+        return $this->success($result['message'], $result['data'], $result['code']);
     }
 }
