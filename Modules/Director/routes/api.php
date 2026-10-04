@@ -1,17 +1,19 @@
 <?php
 
+use \Modules\Director\app\Http\Controllers\Api\Ai\AiChatController;
 use Illuminate\Support\Facades\Route;
 use Modules\Director\Http\Controllers\Api\Camp\CampManageController;
 use Modules\Director\Http\Controllers\Api\Camp\NoAuthCampController;
 use Modules\Director\Http\Controllers\Api\Court\CourtManageController;
 use Modules\Director\Http\Controllers\Api\CourtAssign\AutoCourtAssignController;
-use Modules\Director\Http\Controllers\Api\Crew\CrewManageController;
-use Modules\Director\Http\Controllers\Api\Schedule\ScheduleController;
 use Modules\Director\Http\Controllers\Api\CourtAssign\CourtAssignController;
+use Modules\Director\Http\Controllers\Api\Crew\CrewManageController;
+use Modules\Director\Http\Controllers\Api\Payment\StripeConnectController;
 use Modules\Director\Http\Controllers\Api\Referee\RefereeManageController;
 use Modules\Director\Http\Controllers\Api\Schedule\RefereeCheckinController;
 use Modules\Director\Http\Controllers\Api\Schedule\RefereeCheckinControllerV2;
-use Modules\Director\Http\Controllers\Api\Payment\StripeConnectController;
+use Modules\Director\Http\Controllers\Api\Schedule\ScheduleController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -164,6 +166,14 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
 
         // Get previous camps
         Route::get('/camp/previous-camps', [RefereeCheckinController::class, 'getDirectorPreviousCamps']);
+
+        // AI Coach & Analytics Engine
+        Route::group(['prefix' => 'ai', 'middleware' => ['ai.quota']], function () {
+            Route::post('/chat', [AiChatController::class, 'chat']);
+            Route::post('/session/reset', [AiChatController::class, 'resetSession']);
+            Route::get('/quota', [AiChatController::class, 'getQuota']);
+            Route::get('/session/{session_uuid}/history', [AiChatController::class, 'getSessionHistory']);
+        });
     });
 });
 

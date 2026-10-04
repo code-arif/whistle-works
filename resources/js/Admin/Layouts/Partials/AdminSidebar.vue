@@ -80,6 +80,12 @@ const navGroups = [
     ]
   },
   {
+    name: 'AI & Intelligence',
+    items: [
+      { name: 'AI Coach & Governance', href: '/admin/v2/ai-governance', icon: Sparkles },
+    ]
+  },
+  {
     name: 'System Governance',
     items: [
       // { name: 'Roles & Permissions', href: '/admin/v2/roles', icon: Shield },

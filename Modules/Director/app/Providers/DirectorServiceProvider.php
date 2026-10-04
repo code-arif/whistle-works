@@ -36,6 +36,16 @@ class DirectorServiceProvider extends ServiceProvider
     {
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
+
+        $this->app->singleton(\Modules\Director\app\Services\Ai\AiToolRegistry::class, function ($app) {
+            return new \Modules\Director\app\Services\Ai\AiToolRegistry();
+        });
+
+        $this->app->singleton(\Modules\Director\app\Services\Ai\AiEngineService::class, function ($app) {
+            return new \Modules\Director\app\Services\Ai\AiEngineService(
+                $app->make(\Modules\Director\app\Services\Ai\AiToolRegistry::class)
+            );
+        });
     }
 
     /**
