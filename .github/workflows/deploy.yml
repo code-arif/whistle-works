@@ -27,7 +27,23 @@ jobs:
           npm install
           npm run build
 
-      # 2. Upload compiled public/build assets to the main server
+      # 2. Pull latest code, install backend dependencies, and migrate Laravel
+      - name: Deploy Backend to Main Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.MAIN_SSH_USER }}
+          key: ${{ secrets.MAIN_SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            cd /home/whistleworks-admin/htdocs/admin.whistleworks.org
+            git checkout -- public/build/ 2>/dev/null || true
+            git checkout -- storage/logs/ 2>/dev/null || true
+            git pull https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git ${{ github.ref_name }}
+            composer install --no-dev --optimize-autoloader
+            php artisan migrate --force
+
+      # 3. Upload compiled public/build assets to the main server
       - name: Upload Build Assets to Main Server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -37,8 +53,8 @@ jobs:
           source: "public/build"
           target: "/home/whistleworks-admin/htdocs/admin.whistleworks.org"
 
-      # 3. Pull latest code, install backend dependencies, and optimize Laravel
-      - name: Deploy to Main Server
+      # 4. Clear and optimize Laravel caches
+      - name: Optimize Laravel
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -47,9 +63,5 @@ jobs:
           script_stop: true
           script: |
             cd /home/whistleworks-admin/htdocs/admin.whistleworks.org
-            git checkout -- storage/logs/ 2>/dev/null || true
-            git pull https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git ${{ github.ref_name }}
-            composer install --no-dev --optimize-autoloader
-            php artisan migrate --force
             php artisan optimize:clear
             php artisan optimize
