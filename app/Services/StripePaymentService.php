@@ -181,6 +181,11 @@ class StripePaymentService
                 $productData['images'] = [$imageUrl];
             }
 
+            $sportsFee = $camp->sportsType->sports_fee ?? 0;
+            $stripeFee = $amountCalculation['processing_fee'];
+            $adminFee = $stripeFee + $sportsFee;
+            $directorAmount = max(0, $camp->price - $sportsFee);
+
             // Create Stripe Checkout Session with total amount (including processing fee)
             $session = Session::create([
                 'payment_method_types' => ['card'],
@@ -203,7 +208,9 @@ class StripePaymentService
                     'base_price' => $amountCalculation['base_price'],
                     'processing_fee' => $amountCalculation['processing_fee'],
                     'processing_fee_percentage' => $amountCalculation['processing_fee_percentage'],
-                    'total_amount' => $amountCalculation['total_amount']
+                    'total_amount' => $amountCalculation['total_amount'],
+                    'admin_fee' => $adminFee,
+                    'director_amount' => $directorAmount,
                 ],
                 'customer_email' => $referee->email,
                 'expires_at' => now()->addMinutes($stripeSessionExpiry)->timestamp // 30 min minimum
@@ -215,6 +222,8 @@ class StripePaymentService
                 'referee_id' => $referee->id,
                 'stripe_session_id' => $session->id,
                 'amount' => $amountCalculation['total_amount'], // Store total amount
+                'admin_fee' => $adminFee,
+                'director_amount' => $directorAmount,
                 'status' => 'pending',
                 'expires_at' => now()->addMinutes($retryWindow) // Your custom: 2 minutes
             ]);

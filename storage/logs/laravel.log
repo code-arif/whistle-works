@@ -1520,3 +1520,19 @@ Stack trace:
 #6 E:/remote-work/whistle-works-backend/storage/framework/lsp-a72408c7ce662f5d.php(5): Illuminate/Foundation/Console/Kernel->bootstrap()
 #7 {main}
 "} 
+[2026-10-06 04:05:19] local.ERROR: The "-e" option does not exist. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\RuntimeException(code: 0): The \"-e\" option does not exist. at I:/remote-work/whistle-works-backend/vendor/symfony/console/Input/ArgvInput.php:128)
+[stacktrace]
+#0 I:/remote-work/whistle-works-backend/vendor/symfony/console/Input/ArgvInput.php(110): Symfony/Component/Console/Input/ArgvInput->parseShortOptionSet('encodedCommand')
+#1 I:/remote-work/whistle-works-backend/vendor/symfony/console/Input/ArgvInput.php(90): Symfony/Component/Console/Input/ArgvInput->parseShortOption('-encodedCommand')
+#2 I:/remote-work/whistle-works-backend/vendor/symfony/console/Input/ArgvInput.php(77): Symfony/Component/Console/Input/ArgvInput->parseToken('-encodedCommand', true)
+#3 I:/remote-work/whistle-works-backend/vendor/symfony/console/Input/Input.php(53): Symfony/Component/Console/Input/ArgvInput->parse()
+#4 I:/remote-work/whistle-works-backend/vendor/symfony/console/Command/Command.php(295): Symfony/Component/Console/Input/Input->bind(Object(Symfony/Component/Console/Input/InputDefinition))
+#5 I:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Console/Command.php(182): Symfony/Component/Console/Command/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#6 I:/remote-work/whistle-works-backend/vendor/symfony/console/Application.php(1117): Illuminate/Console/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#7 I:/remote-work/whistle-works-backend/vendor/symfony/console/Application.php(356): Symfony/Component/Console/Application->doRunCommand(Object(Laravel/Tinker/Console/TinkerCommand), Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#8 I:/remote-work/whistle-works-backend/vendor/symfony/console/Application.php(195): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#9 I:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#10 I:/remote-work/whistle-works-backend/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#11 I:/remote-work/whistle-works-backend/artisan(13): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#12 {main}
+"} 
