@@ -48,7 +48,7 @@ jobs:
           script: |
             cd /home/whistleworks-admin/htdocs/admin.whistleworks.org
             git checkout -- storage/logs/ 2>/dev/null || true
-            git pull https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git main
+            git pull https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git ${{ github.ref_name }}
             composer install --no-dev --optimize-autoloader
             php artisan migrate --force
             php artisan optimize:clear
