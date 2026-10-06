@@ -5,6 +5,9 @@ on:
     branches:
       - deploy-test
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -43,7 +46,7 @@ jobs:
           script_stop: true
           script: |
             cd /home/whistleworks-super-admin/htdocs/super-admin.whistleworks.org
-            git pull origin deploy-test
+            git pull https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git deploy-test
             composer install --no-dev --optimize-autoloader
             php artisan migrate --force
             php artisan optimize:clear
