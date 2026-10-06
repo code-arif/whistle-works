@@ -12,6 +12,7 @@ class Schedule extends Model
         'camp_id',
         'game_duration',
         'max_referees_per_slot',
+        'mode',
         'status'
     ];
 

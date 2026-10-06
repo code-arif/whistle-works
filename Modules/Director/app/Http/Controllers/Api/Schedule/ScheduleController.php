@@ -141,6 +141,7 @@ class ScheduleController extends Controller
                 'camp_id' => $camp->id,
                 'game_duration' => $request->game_duration,
                 'max_referees_per_slot' => $request->max_referees_per_slot,
+                'mode' => $request->input('mode', 'individual'),
                 'status' => 'draft'
             ]);
 
@@ -307,6 +308,7 @@ class ScheduleController extends Controller
                             'court_name' => "Court {$courtNum}",
                             'court_number' => $courtNum,
                             'status' => 'available',
+                            'mode' => $schedule->mode ?? 'individual',
                             'is_block' => false
                         ]);
 
@@ -451,10 +453,21 @@ class ScheduleController extends Controller
             ->orderBy('court_number')
             ->get();
 
+        // Determine active mode for schedule
+        $activeMode = $schedule->mode;
+        if (!$activeMode) {
+            $activeMode = $gameSlots->firstWhere('status', 'available')?->mode
+                ?? $gameSlots->first()?->mode
+                ?? $schedule->gameSlots()->latest('id')->value('mode')
+                ?? 'individual';
+        }
+
         $scheduleFormat = [
             'schedule_id' => $schedule->id,
             'max_referees_per_slot' => $schedule->max_referees_per_slot,
             'status' => $schedule->status,
+            'mode' => $activeMode,
+            'active_mode' => $activeMode,
         ];
 
         // Group by time and format
@@ -577,6 +590,8 @@ class ScheduleController extends Controller
             'Game slots fetched successfully.',
             [
                 'schedule' => $scheduleFormat,
+                'mode' => $activeMode,
+                'active_mode' => $activeMode,
                 'camp_timezone' => $campTimezone,
                 'camp_timezone_name' => $camp->timezone_display_name,
                 'selected_date' => $selectedDate,
@@ -840,6 +855,8 @@ class ScheduleController extends Controller
             'camp_id' => $schedule->camp_id,
             'game_duration' => $schedule->game_duration,
             'status' => $schedule->status,
+            'mode' => $schedule->mode ?? 'individual',
+            'active_mode' => $schedule->mode ?? 'individual',
             'max_referees_per_slot' => $schedule->max_referees_per_slot,
             'referee_positions' => $refereePositions,
             'camp_timezone' => $campTimezone,

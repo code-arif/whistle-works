@@ -1326,16 +1326,20 @@ class CourtAssignService
                 ->update(['mode' => $targetMode]);
         }
 
+        // Persist the active mode on the schedule record
+        $schedule->update(['mode' => $targetMode]);
+
         return [
             'success' => true,
             'code'    => 200,
             'message' => "Bulk slot mode updated to '{$targetMode}'. {$updatedCount} slot(s) updated, {$skippedCount} assigned slot(s) skipped.",
             'data'    => [
-                'schedule_id'                => $schedule->id,
-                'camp_id'                    => $camp->id,
-                'mode'                       => $targetMode,
-                'total_slots'                => $allSlots->count(),
-                'updated_slots_count'        => $updatedCount,
+                'schedule_id'                  => $schedule->id,
+                'camp_id'                      => $camp->id,
+                'mode'                         => $targetMode,
+                'active_mode'                  => $targetMode,
+                'total_slots'                  => $allSlots->count(),
+                'updated_slots_count'          => $updatedCount,
                 'skipped_assigned_slots_count' => $skippedCount,
             ],
         ];
