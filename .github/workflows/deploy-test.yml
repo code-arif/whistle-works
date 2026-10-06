@@ -46,6 +46,7 @@ jobs:
           script_stop: true
           script: |
             cd /home/whistleworks-super-admin/htdocs/super-admin.whistleworks.org
+            git checkout -- storage/logs/ 2>/dev/null || true
             git pull https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git deploy-test
             composer install --no-dev --optimize-autoloader
             php artisan migrate --force
