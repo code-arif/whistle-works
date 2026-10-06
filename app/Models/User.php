@@ -117,11 +117,6 @@ class User extends Authenticatable implements JWTSubject
         return  $this->getRoleNames()->first();
     }
 
-    public function firebaseTokens()
-    {
-        return $this->hasMany(FirebaseTokens::class);
-    }
-
     public function profile()
     {
         return $this->hasOne(Profile::class);

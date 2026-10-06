@@ -5,21 +5,50 @@ on:
     branches:
       - deploy-test
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 1. Build frontend assets using Vite & Vue
+      - name: Build Frontend (Vite & Vue)
+        run: |
+          npm install
+          npm run build
+
+      # 2. Upload compiled public/build assets to the server
+      - name: Upload Build Assets to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "public/build"
+          target: "/home/whistleworks-super-admin/htdocs/super-admin.whistleworks.org"
+
+      # 3. Pull latest code, install backend dependencies, and optimize Laravel
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
           script: |
             cd /home/whistleworks-super-admin/htdocs/super-admin.whistleworks.org
-            git pull origin deploy-test
+            git checkout -- storage/logs/ 2>/dev/null || true
+            git pull https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git deploy-test
             composer install --no-dev --optimize-autoloader
             php artisan migrate --force
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
+            php artisan optimize:clear
+            php artisan optimize

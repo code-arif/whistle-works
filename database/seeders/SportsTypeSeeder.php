@@ -32,7 +32,7 @@ class SportsTypeSeeder extends Seeder
             ],
             [
                 'sports_name' => 'Cricket',
-                'sports_fee'  => 25.00,
+                'sports_fee'  => 15.00,
                 'icon'        => 'icons/cricket.png',
                 'status'      => 'active',
                 'created_at'  => now(),
@@ -48,7 +48,7 @@ class SportsTypeSeeder extends Seeder
             ],
             [
                 'sports_name' => 'Volleyball',
-                'sports_fee'  => 20.00,
+                'sports_fee'  => 15.00,
                 'icon'        => 'icons/volleyball.png',
                 'status'      => 'active',
                 'created_at'  => now(),

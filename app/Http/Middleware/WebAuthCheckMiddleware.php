@@ -9,16 +9,16 @@ class WebAuthCheckMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::guard('web')->check() && Auth::guard('web')->user()->status == 'active') {
-            if(Auth::guard('web')->user()->hasRole('developer')) {
-                return redirect()->route('developer.dashboard');
-            }elseif(Auth::guard('web')->user()->hasRole('admin')) {
-                return redirect()->route('admin.dashboard');
-            }else{
-                Auth::logout();
-                return redirect()->route('login');
+        if (Auth::guard('web')->check()) {
+            $user = Auth::guard('web')->user();
+
+            if ($user->hasRole('admin') && $user->status === 'active') {
+                return redirect()->route('admin.v2.dashboard');
             }
+
+            Auth::guard('web')->logout();
         }
+
         return $next($request);
     }
 }

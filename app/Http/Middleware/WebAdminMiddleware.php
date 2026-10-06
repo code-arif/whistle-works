@@ -10,11 +10,18 @@ class WebAdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::guard('web')->check() && Auth::guard('web')->user()->hasRole('admin') && Auth::guard('web')->user()->status == 'active') {
+        if (!Auth::guard('web')->check()) {
+            return redirect()->guest(route('login'));
+        }
+
+        $user = Auth::guard('web')->user();
+
+        if ($user->hasRole('admin') && $user->status === 'active') {
             return $next($request);
         }
 
-        abort(403, 'Unauthorized action.');
+        Auth::guard('web')->logout();
+        abort(403, 'Access denied. Administrator privileges required.');
     }
 }
 

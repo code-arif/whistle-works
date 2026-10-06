@@ -13,19 +13,3 @@ window.Echo = new Echo({
     enabledTransports: ["ws", "wss"],
 });
 
-// window.Echo.private(`offer-notification.7`).listen("OfferSendEvent", (e) => {
-//     console.log('message', e);
-// });
-
-// window.Echo.private(`offer-notification.11`)
-//     .listen('OfferSendEvent', (e) => {
-//         console.log('got event', e);
-        
-//     });
-
-window.Echo.private(`offer-send-notification.5`)
-    .listen('OfferSendEvent', (e) => {
-        console.log('Got Offer Send Notification:', e);
-       
-    });
-

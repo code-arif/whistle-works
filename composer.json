@@ -13,6 +13,7 @@
         "anhskohbo/no-captcha": "^3.7",
         "barryvdh/laravel-dompdf": "^3.1",
         "biscolab/laravel-recaptcha": "^6.1",
+        "inertiajs/inertia-laravel": "^3.3",
         "intervention/image": "^3.11",
         "kreait/laravel-firebase": "^5.8",
         "laravel/breeze": "^2.3",
@@ -23,8 +24,6 @@
         "laravel/tinker": "^2.9",
         "league/flysystem-aws-s3-v3": "^3.0",
         "livewire/livewire": "^3.6",
-        "mll-lab/laravel-graphiql": "^4.0",
-        "nuwave/lighthouse": "^6.61",
         "nwidart/laravel-modules": "^12.0",
         "phpoffice/phpspreadsheet": "^5.3",
         "phpseclib/phpseclib": "^3.0",
@@ -56,11 +55,7 @@
         },
         "files": [
             "app/Helpers/Helper.php",
-            "app/Helpers/Notify.php",
-            "app/Helpers/Fn.php",
-            "app/Helpers/S3.php",
-            "app/Helpers/Text.php",
-            "app/Helpers/Encryption.php"
+            "app/Helpers/Fn.php"
         ]
     },
     "autoload-dev": {

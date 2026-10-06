@@ -2,44 +2,35 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\TwilioTestController;
-use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\Auth\UserController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\RegisterController;
-use App\Http\Controllers\Api\FirebaseTokenController;
-use App\Http\Controllers\Api\Auth\SocialLoginController;
-use App\Http\Controllers\Api\Frontend\ContactController;
-use App\Http\Controllers\Api\Frontend\SettingsController;
+use App\Http\Controllers\Api\Contact\ContactController;
+use App\Http\Controllers\Api\Settings\SettingsController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\Auth\V2\V2RegisterController;
-use App\Http\Controllers\Api\Frontend\AnnouncementController;
-use App\Http\Controllers\Api\Frontend\CMS\HomePageController;
-use App\Http\Controllers\Api\Frontend\NotificationController;
-use App\Http\Controllers\Api\Frontend\CMS\AboutPageController;
-use App\Http\Controllers\Api\Frontend\PrivecyPolicyController;
-use App\Http\Controllers\Api\Frontend\Roster\RosterController;
+use App\Http\Controllers\Api\Announcement\AnnouncementController;
+use App\Http\Controllers\Api\CMS\HomePageController;
+use App\Http\Controllers\Api\Notification\NotificationController;
+use App\Http\Controllers\Api\CMS\AboutPageController;
+use App\Http\Controllers\Api\Legal\PrivacyPolicyController;
+use App\Http\Controllers\Api\Roster\RosterController;
+use App\Http\Controllers\Api\Subscribe\SubscribeController;
 use App\Http\Controllers\Api\Auth\V2\V2ResetPasswordController;
-use App\Http\Controllers\Api\Frontend\RefereeEvaluationController;
-use App\Http\Controllers\Api\Frontend\Evaluator\EvaluatorController;
-use App\Http\Controllers\Api\Frontend\Evaluator\GameOverviewController;
-use App\Http\Controllers\Api\Frontend\Referee\EvaluatedRefereeController;
-use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentController;
-use App\Http\Controllers\Api\Frontend\Referee\RefereeAssignmentCrewController;
-use App\Http\Controllers\Api\Frontend\CampRanking\CampRankingSettingsController;
-use App\Http\Controllers\Api\Frontend\Referee\RefereeDetailsController;
+use App\Http\Controllers\Api\RefereeEvaluation\RefereeEvaluationController;
+use App\Http\Controllers\Api\Evaluator\EvaluatorController;
+use App\Http\Controllers\Api\Evaluator\GameOverviewController;
+use App\Http\Controllers\Api\Referee\EvaluatedRefereeController;
+use App\Http\Controllers\Api\Referee\RefereeAssignmentController;
+use App\Http\Controllers\Api\Referee\RefereeAssignmentCrewController;
+use App\Http\Controllers\Api\CampRanking\CampRankingSettingsController;
+use App\Http\Controllers\Api\Referee\RefereeDetailsController;
 use Modules\Director\Http\Controllers\Api\Crew\CrewManageController;
-use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegistrationController;
-use App\Http\Controllers\Api\Frontend\Evaluator\CampEvaluatorRegisterManageForDirectorController;
-use App\Http\Controllers\Api\Frontend\DirectorCampManage\AssistantDirectorPermissionController;
-use App\Http\Controllers\Api\StripeWebhookController;
-
-/*
-|--------------------------------------------------------------------------
-| Stripe Webhook Route
-|--------------------------------------------------------------------------
-*/
-Route::post('/webhook/stripe', [StripeWebhookController::class, 'HandlePaymentWebhook']);
+use App\Http\Controllers\Api\Evaluator\CampEvaluatorRegistrationController;
+use App\Http\Controllers\Api\Evaluator\CampEvaluatorRegisterManageForDirectorController;
+use App\Http\Controllers\Api\DirectorCampManage\AssistantDirectorPermissionController;
+use App\Http\Controllers\Api\Payment\StripeWebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,6 +44,13 @@ Route::get('/health-check', function () {
 
 /*
 |--------------------------------------------------------------------------
+| Stripe Webhook Route
+|--------------------------------------------------------------------------
+*/
+Route::post('/webhook/stripe', [StripeWebhookController::class, 'HandlePaymentWebhook']);
+
+/*
+|--------------------------------------------------------------------------
 | Public Frontend Data Routes (CMS, Settings, Policies, Contact)
 |--------------------------------------------------------------------------
 */
@@ -61,14 +59,17 @@ Route::get('/cms/home', [HomePageController::class, 'home']);
 Route::get('/cms/about', [AboutPageController::class, 'about']);
 
 // get privacy policy data
-Route::get('/privacy-policy', [PrivecyPolicyController::class, 'privecyPolicy']);
-Route::get('/terms-and-conditions', [PrivecyPolicyController::class, 'termsAndConditions']);
+Route::get('/privacy-policy', [PrivacyPolicyController::class, 'privecyPolicy']);
+Route::get('/terms-and-conditions', [PrivacyPolicyController::class, 'termsAndConditions']);
 
 // get setting data
 Route::get('/settings', [SettingsController::class, 'index']);
 
 // contact from submit
 Route::post('/contact-form', [ContactController::class, 'submitContact']);
+
+// newsletter subscribe
+Route::post('/subscribe', [SubscribeController::class, 'store']);
 
 /*
 |--------------------------------------------------------------------------
@@ -83,7 +84,6 @@ Route::group(['middleware' => 'guest:api'], function ($router) {
 
     // Login
     Route::post('/login', [LoginController::class, 'login'])->name('api.login');
-    Route::post('/social-login', [SocialLoginController::class, 'SocialLogin']);
 
     // Forgot & Reset Password
     Route::post('/forgot-password', [ResetPasswordController::class, 'forgotPassword']);
@@ -290,35 +290,6 @@ Route::middleware(['auth:api', 'role:referee|evaluator|director,api'])->prefix('
     Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
     Route::delete('/delete/{notificationId}', [NotificationController::class, 'destroy']);
     Route::delete('/clear-read', [NotificationController::class, 'clearRead']);
-});
-
-/*
-|--------------------------------------------------------------------------
-| Chatting Routes
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth:api'])->prefix('auth/chat')->group(function () {
-    Route::get('/list', [ChatController::class, 'list']);
-    Route::post('/send/{receiver_id}', [ChatController::class, 'send']);
-    Route::get('/conversation/{receiver_id}', [ChatController::class, 'conversation']);
-    Route::get('room/{receiver_id}', [ChatController::class, 'room']);
-    Route::get('/search', [ChatController::class, 'search']);
-    Route::get('/seen/all/{receiver_id}', [ChatController::class, 'seenAll']);
-    Route::get('/seen/single/{chat_id}', [ChatController::class, 'seenSingle']);
-    Route::delete('/delete/{receiver_id}', [ChatController::class, 'deleteChat']);
-    Route::delete('/delete/chat/messages', [ChatController::class, 'deleteMessages']);
-});
-
-/*
-|--------------------------------------------------------------------------
-| Firebase Notification Routes
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth:api'])->prefix('firebase')->group(function () {
-    Route::get("test", [FirebaseTokenController::class, 'test']);
-    Route::post("token/add", [FirebaseTokenController::class, 'store']);
-    Route::post("token/get", [FirebaseTokenController::class, 'getToken']);
-    Route::post("token/delete", [FirebaseTokenController::class, 'deleteToken']);
 });
 
 /*

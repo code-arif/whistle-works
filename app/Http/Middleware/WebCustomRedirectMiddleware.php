@@ -10,17 +10,19 @@ class WebCustomRedirectMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::guard('web')->check() && Auth::guard('web')->user()->status == 'active') {
-            if (Auth::guard('web')->user()->hasRole('developer')) {
-                return redirect()->intended(route('developer.dashboard', absolute: false));
-            }elseif (Auth::guard('web')->user()->hasRole('admin')) {
-                return redirect()->intended(route('admin.dashboard', absolute: false));
-            }else{
-                Auth::logout();
-                return redirect()->intended(route('login', absolute: false));
+        if (Auth::guard('web')->check()) {
+            $user = Auth::guard('web')->user();
+
+            if ($user->hasRole('admin') && $user->status === 'active') {
+                return redirect()->intended(route('admin.v2.dashboard', absolute: false));
             }
+
+            Auth::guard('web')->logout();
+            return redirect()->route('login')->withErrors([
+                'email' => 'Access denied. Only active administrators can access this portal.',
+            ]);
         }
 
-        return redirect()->intended(route('home', absolute: false));
+        return redirect()->route('login');
     }
 }

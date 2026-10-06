@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>503 Service Under Maintenance — Whistle-Works</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1E1E2C;
+            color: #f1f5f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        .container {
+            max-width: 500px;
+            padding: 2rem;
+        }
+        .code {
+            font-size: 5rem;
+            font-weight: 800;
+            color: #FB923C;
+            margin: 0;
+            line-height: 1;
+        }
+        .title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .desc {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #F29F67;
+            color: #14141F;
+            font-weight: 600;
+            font-size: 0.875rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="code">503</h1>
+        <div class="title">Scheduled Maintenance</div>
+        <p class="desc">Whistle-Works infrastructure is temporarily undergoing performance upgrades. We'll be back shortly.</p>
+        <button onclick="window.location.reload()" class="btn" style="cursor:pointer; border:none;">Refresh Page</button>
+    </div>
+</body>
+</html>

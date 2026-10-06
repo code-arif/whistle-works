@@ -1,24 +1,26 @@
 <?php
 
+use \Illuminate\Support\Facades\Log;
 use App\Helpers\Helper;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Foundation\Application;
-use App\Http\Middleware\WebAdminMiddleware;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Validation\ValidationException;
-use App\Http\Middleware\WebAuthCheckMiddleware;
-use App\Http\Middleware\WebDeveloperMiddleware;
-use Illuminate\Session\Middleware\StartSession;
-use Spatie\Permission\Middleware\RoleMiddleware;
 use App\Http\Middleware\ApiOtpVerifiedMiddleware;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\WebAdminMiddleware;
+use App\Http\Middleware\WebAuthCheckMiddleware;
 use App\Http\Middleware\WebOtpVerifiedMiddleware;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -28,8 +30,8 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__ . '/../routes/channels.php',
         health: '/up',
         then: function () {
-            Route::middleware(['web'])->prefix('ajax')->name('ajax.')->group(base_path('routes/ajax.php'));
             Route::middleware(['web', 'web-admin'])->prefix('admin')->name('admin.')->group(base_path('routes/web-admin.php'));
+            Route::middleware(['web', 'web-admin', HandleInertiaRequests::class])->prefix('admin/v2')->name('admin.v2.')->group(base_path('routes/web-admin-v2.php'));
         }
     )
     ->withBroadcasting(
@@ -38,14 +40,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'web-developer'         => WebDeveloperMiddleware::class,
-            'web-admin'             => WebAdminMiddleware::class,
-            'api-otp'               => ApiOtpVerifiedMiddleware::class,
-            'web-otp'               => WebOtpVerifiedMiddleware::class,
-            'check'                 => WebAuthCheckMiddleware::class,
-            'role'                  => RoleMiddleware::class,
-            'permission'            => PermissionMiddleware::class,
-            'role_or_permission'    => RoleOrPermissionMiddleware::class
+            'web-admin' => WebAdminMiddleware::class,
+            'api-otp' => ApiOtpVerifiedMiddleware::class,
+            'web-otp' => WebOtpVerifiedMiddleware::class,
+            'check' => WebAuthCheckMiddleware::class,
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
+            'role_or_permission' => RoleOrPermissionMiddleware::class
         ]);
         $middleware->validateCsrfTokens(except: [
             'webhook/stripe',
@@ -64,16 +65,10 @@ return Application::configure(basePath: dirname(__DIR__))
             StartSession::class,
         ]);
     })
-
-    // ->withSchedule(function (Schedule $schedule) {
-    //     // $schedule->command('app:send-emails')->everySecond();
-    //     $schedule->command('notifications:send-special-date')->daily();
-    //     $schedule->command('app:partnertrashdelete')->daily();
-    // })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (Throwable $e, Request $request) {
             if ($request->is('api/*')) {
-                \Illuminate\Support\Facades\Log::info('[API Error Debug Log]', [
+                Log::info('[API Error Debug Log]', [
                     'exception' => get_class($e),
                     'message'   => $e->getMessage(),
                     'url'       => $request->fullUrl(),
@@ -105,5 +100,27 @@ return Application::configure(basePath: dirname(__DIR__))
             } else {
                 return null;
             }
+        });
+
+        $exceptions->respond(function (Response $response, Throwable $e, Request $request) {
+            if (!$request->is('api/*')) {
+                $status = $response->getStatusCode();
+
+                // In local dev with debug mode on, allow standard Laravel error trace for 500
+                if ($status === 500 && config('app.debug')) {
+                    return $response;
+                }
+
+                if (in_array($status, [400, 401, 403, 404, 405, 419, 429, 500, 502, 503, 504])) {
+                    Inertia::setRootView('admin-v2');
+                    return Inertia::render('Errors/Index', [
+                        'status'  => $status,
+                        'message' => $e->getMessage() ?: null,
+                    ])
+                    ->toResponse($request)
+                    ->setStatusCode($status);
+                }
+            }
+            return $response;
         });
     })->create();
