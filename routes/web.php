@@ -47,3 +47,5 @@ Route::get('/error/{code?}', function ($code = 404) {
         'message' => request('message', null),
     ]);
 })->middleware(['web', HandleInertiaRequests::class])->name('error.preview');
+
+///
