@@ -23,7 +23,16 @@ class CampPaymentAndCheckinSeeder extends Seeder
             return;
         }
 
+        $camps = DB::table('camps')
+            ->leftJoin('sports_types', 'sports_types.id', '=', 'camps.sports_type_id')
+            ->select('camps.id', 'camps.price', 'sports_types.sports_fee')
+            ->get()
+            ->keyBy('id');
+
         foreach ($campIds as $campId) {
+            $campData = $camps->get($campId);
+            $campPrice = $campData && (float) $campData->price > 0 ? (float) $campData->price : null;
+            $sportsFee = $campData && (float) $campData->sports_fee > 0 ? (float) $campData->sports_fee : 20.00;
 
             // per camp 10–15 referees
             $selectedReferees = collect($refereeIds)
@@ -32,7 +41,14 @@ class CampPaymentAndCheckinSeeder extends Seeder
 
             foreach ($selectedReferees as $refereeId) {
 
-                $amount = rand(100, 500);
+                $baseAmount = $campPrice ?? rand(100, 500);
+                $stripeFee = round($baseAmount * 0.03, 2);
+                $adminFee = round($sportsFee + $stripeFee, 2);
+                if ($adminFee >= $baseAmount) {
+                    $adminFee = round($baseAmount * 0.20, 2);
+                }
+                $directorAmount = round(max(0, $baseAmount - $adminFee), 2);
+                $amount = $baseAmount;
                 $now = now();
 
                 /* ==========================
@@ -43,6 +59,9 @@ class CampPaymentAndCheckinSeeder extends Seeder
                     'referee_id' => $refereeId,
                     'stripe_session_id' => 'cs_test_' . Str::uuid(),
                     'amount' => $amount,
+                    'discount_amount' => 0,
+                    'admin_fee' => $adminFee,
+                    'director_amount' => $directorAmount,
                     'status' => 'completed',
                     'expires_at' => $now->copy()->addMinutes(30),
                     'completed_at' => $now,
@@ -61,6 +80,9 @@ class CampPaymentAndCheckinSeeder extends Seeder
                     'stripe_session_id' => 'cs_test_' . Str::uuid(),
                     'amount' => $amount,
                     'currency' => 'usd',
+                    'discount_amount' => 0,
+                    'admin_fee' => $adminFee,
+                    'director_amount' => $directorAmount,
                     'status' => 'succeeded',
                     'paid_at' => $now,
                     'metadata' => json_encode([

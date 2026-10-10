@@ -5,6 +5,9 @@ on:
     branches:
       - deploy-test
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -23,17 +26,7 @@ jobs:
           npm install
           npm run build
 
-      # 2. Upload compiled public/build assets to the server
-      - name: Upload Build Assets to Server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "public/build"
-          target: "/home/whistleworks-super-admin/htdocs/super-admin.whistleworks.org"
-
-      # 3. Pull latest code, install backend dependencies, and optimize Laravel
+      # 2. Pull latest code, install backend dependencies, and migrate Laravel
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -43,8 +36,31 @@ jobs:
           script_stop: true
           script: |
             cd /home/whistleworks-super-admin/htdocs/super-admin.whistleworks.org
-            git pull origin deploy-test
+            git checkout -- public/build/ 2>/dev/null || true
+            git checkout -- storage/logs/ 2>/dev/null || true
+            git pull https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git deploy-test
             composer install --no-dev --optimize-autoloader
             php artisan migrate --force
+
+      # 3. Upload compiled public/build assets to the server
+      - name: Upload Build Assets to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "public/build"
+          target: "/home/whistleworks-super-admin/htdocs/super-admin.whistleworks.org"
+
+      # 4. Clear and optimize Laravel caches
+      - name: Optimize Laravel
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            cd /home/whistleworks-super-admin/htdocs/super-admin.whistleworks.org
             php artisan optimize:clear
             php artisan optimize

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { useForm, router, Head } from '@inertiajs/vue3';
 import AdminLayout from '../../Layouts/AdminLayout.vue';
 import DataTable from '../../Components/Common/DataTable.vue';
@@ -25,7 +25,15 @@ import {
   Image as ImageIcon,
   Clock,
   ExternalLink,
-  ShieldAlert
+  ShieldAlert,
+  Globe,
+  Crosshair,
+  Copy,
+  Users,
+  Check,
+  X,
+  Shield,
+  Award
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -54,6 +62,14 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  timezones: {
+    type: Array,
+    default: () => [],
+  },
+  coordinateMappings: {
+    type: Array,
+    default: () => [],
+  },
   googleMapsApiKey: {
     type: String,
     default: '',
@@ -65,10 +81,11 @@ const columns = [
   { key: 'camp_info', label: 'Camp Details', sortable: true, align: 'left' },
   { key: 'director', label: 'Assigned Director', align: 'left' },
   { key: 'sports_type', label: 'Sport', align: 'left' },
-  { key: 'dates', label: 'Camp Schedule', sortable: true, align: 'left' },
-  { key: 'price', label: 'Price Fee', sortable: true, align: 'left' },
+  { key: 'dates', label: 'Schedule & Timezone', sortable: true, align: 'left' },
+  { key: 'price', label: 'Pricing Breakdown', sortable: true, align: 'left' },
+  { key: 'operations', label: 'Roster & Operations', align: 'center' },
   { key: 'status', label: 'Status', sortable: true, align: 'center', class: 'w-24' },
-  { key: 'actions', label: 'Actions', align: 'right', class: 'w-28' },
+  { key: 'actions', label: 'Actions', align: 'right', class: 'w-36' },
 ];
 
 const statusOptions = [
@@ -91,15 +108,37 @@ const sportsTypeOptions = computed(() => {
   }));
 });
 
+const timezoneOptions = computed(() => {
+  return (props.timezones || []).map((tz) => ({
+    label: tz.label || tz.name || tz.value,
+    value: tz.value,
+  }));
+});
+
+// Timezone Label Resolver
+const getTimezoneLabel = (tzValue) => {
+  if (!tzValue) return 'Not Set';
+  const found = props.timezones.find((t) => t.value === tzValue);
+  return found ? (found.name || found.label) : tzValue;
+};
+
+// Sports fee calculator for live price previews
+const getSelectedSportFee = (sportsTypeId) => {
+  const sport = props.sportsTypes.find((st) => String(st.id) === String(sportsTypeId));
+  return sport ? Number(sport.sports_fee || 0) : 0;
+};
+
 // Modal States
 const isCreateModalOpen = ref(false);
 const isEditModalOpen = ref(false);
 const isViewModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
+const isDuplicateModalOpen = ref(false);
 
 const viewingCamp = ref(null);
 const editingCamp = ref(null);
 const itemToDelete = ref(null);
+const itemToDuplicate = ref(null);
 
 const createPickerRef = ref(null);
 const editPickerRef = ref(null);
@@ -116,12 +155,17 @@ const createForm = useForm({
   address: '',
   latitude: null,
   longitude: null,
+  timezone: 'America/New_York',
   start_date: '',
   end_date: '',
   camp_details: '',
   price: '',
   camp_logo: null,
   status: 'active',
+  publish_ranking_for_evaluators: true,
+  hide_evaluator_name_from_referees: false,
+  hide_ranking_numbers_from_referees: false,
+  publish_ranking_for_referees: false,
 });
 
 const editForm = useForm({
@@ -133,13 +177,74 @@ const editForm = useForm({
   address: '',
   latitude: null,
   longitude: null,
+  timezone: 'America/New_York',
   start_date: '',
   end_date: '',
   camp_details: '',
   price: '',
   camp_logo: null,
   status: 'active',
+  publish_ranking_for_evaluators: true,
+  hide_evaluator_name_from_referees: false,
+  hide_ranking_numbers_from_referees: false,
+  publish_ranking_for_referees: false,
 });
+
+// Reactive total prices
+const createTotalPrice = computed(() => {
+  const base = parseFloat(createForm.price) || 0;
+  const fee = getSelectedSportFee(createForm.sports_type_id);
+  return base + fee;
+});
+
+const editTotalPrice = computed(() => {
+  const base = parseFloat(editForm.price) || 0;
+  const fee = getSelectedSportFee(editForm.sports_type_id);
+  return base + fee;
+});
+
+// Coordinate Timezone Auto-detector
+const detectTimezoneFromCoords = (lat, lng) => {
+  if (!lat || !lng) return null;
+  const numLat = parseFloat(lat);
+  const numLng = parseFloat(lng);
+  for (const region of props.coordinateMappings || []) {
+    if (
+      numLat >= region.lat_min &&
+      numLat <= region.lat_max &&
+      numLng >= region.lng_min &&
+      numLng <= region.lng_max
+    ) {
+      return region.timezone;
+    }
+  }
+  return null;
+};
+
+const autoDetectCreateTimezone = () => {
+  const detected = detectTimezoneFromCoords(createForm.latitude, createForm.longitude);
+  if (detected) {
+    createForm.timezone = detected;
+  }
+};
+
+const autoDetectEditTimezone = () => {
+  const detected = detectTimezoneFromCoords(editForm.latitude, editForm.longitude);
+  if (detected) {
+    editForm.timezone = detected;
+  }
+};
+
+// Auto-detect timezone when coordinates first set in create form
+watch(
+  () => [createForm.latitude, createForm.longitude],
+  ([lat, lng]) => {
+    if (lat && lng && (!createForm.timezone || createForm.timezone === 'America/New_York')) {
+      const detected = detectTimezoneFromCoords(lat, lng);
+      if (detected) createForm.timezone = detected;
+    }
+  }
+);
 
 // Helpers
 const formatCurrency = (val) => {
@@ -179,6 +284,11 @@ const openCreateModal = () => {
   createForm.clearErrors();
   createForm.latitude = null;
   createForm.longitude = null;
+  createForm.timezone = props.timezones?.[0]?.value || 'America/New_York';
+  createForm.publish_ranking_for_evaluators = true;
+  createForm.hide_evaluator_name_from_referees = false;
+  createForm.hide_ranking_numbers_from_referees = false;
+  createForm.publish_ranking_for_referees = false;
   if (props.directors.length > 0) createForm.director_id = props.directors[0].id;
   if (props.sportsTypes.length > 0) createForm.sports_type_id = props.sportsTypes[0].id;
   imagePreview.value = null;
@@ -210,11 +320,17 @@ const openEditModal = (camp) => {
   editForm.address = camp.address || '';
   editForm.latitude = camp.latitude || null;
   editForm.longitude = camp.longitude || null;
+  editForm.timezone = camp.timezone || 'America/New_York';
   editForm.start_date = camp.start_date;
   editForm.end_date = camp.end_date;
   editForm.camp_details = camp.camp_details || '';
-  editForm.price = camp.price;
+  // Populate with base price so the editor modifies base price consistently
+  editForm.price = camp.base_price !== undefined ? camp.base_price : camp.price;
   editForm.status = camp.status;
+  editForm.publish_ranking_for_evaluators = camp.publish_ranking_for_evaluators !== undefined ? camp.publish_ranking_for_evaluators : true;
+  editForm.hide_evaluator_name_from_referees = !!camp.hide_evaluator_name_from_referees;
+  editForm.hide_ranking_numbers_from_referees = !!camp.hide_ranking_numbers_from_referees;
+  editForm.publish_ranking_for_referees = !!camp.publish_ranking_for_referees;
   editForm.camp_logo = null;
   imagePreview.value = camp.camp_logo || null;
   isEditModalOpen.value = true;
@@ -241,6 +357,24 @@ const submitEdit = () => {
 const openViewModal = (camp) => {
   viewingCamp.value = camp;
   isViewModalOpen.value = true;
+};
+
+// Duplicate Modal
+const openDuplicateModal = (camp) => {
+  itemToDuplicate.value = camp;
+  isDuplicateModalOpen.value = true;
+};
+
+const confirmDuplicate = () => {
+  if (!itemToDuplicate.value) return;
+
+  router.post(`/admin/v2/camps/${itemToDuplicate.value.id}/duplicate`, {}, {
+    preserveScroll: true,
+    onSuccess: () => {
+      isDuplicateModalOpen.value = false;
+      itemToDuplicate.value = null;
+    },
+  });
 };
 
 // Delete Modal
@@ -407,24 +541,59 @@ const toggleStatus = (camp) => {
         </div>
       </template>
 
-      <!-- Custom Cell: Camp Schedule -->
+      <!-- Custom Cell: Camp Schedule & Timezone -->
       <template #cell(dates)="{ row }">
-        <div class="min-w-[140px] text-xs">
+        <div class="min-w-[145px] text-xs space-y-1">
           <p class="font-medium text-slate-800 dark:text-slate-200 font-mono text-[11px]">
             {{ row.formatted_start }} &rarr; {{ row.formatted_end }}
           </p>
-          <span class="inline-flex items-center gap-1 text-[10px] font-mono text-slate-400">
-            <Clock class="w-2.5 h-2.5" />
-            <span>{{ row.duration_days }} {{ row.duration_days === 1 ? 'day' : 'days' }}</span>
-          </span>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="inline-flex items-center gap-1 text-[10px] font-mono text-slate-400">
+              <Clock class="w-2.5 h-2.5" />
+              <span>{{ row.duration_days }} {{ row.duration_days === 1 ? 'day' : 'days' }}</span>
+            </span>
+            <span
+              v-if="row.timezone"
+              class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono bg-[#3B8FF3]/10 text-[#3B8FF3] border border-[#3B8FF3]/20"
+              :title="`${row.timezone_display_name} (${row.timezone})`"
+            >
+              <Globe class="w-2.5 h-2.5" />
+              <span>{{ row.timezone_offset }}</span>
+            </span>
+          </div>
         </div>
       </template>
 
       <!-- Custom Cell: Price Fee -->
       <template #cell(price)="{ row }">
-        <span class="font-mono font-bold text-[#2B9B95] dark:text-[#34B1AA]">
-          {{ formatCurrency(row.price) }}
-        </span>
+        <div class="min-w-[110px] text-xs">
+          <p class="font-mono font-bold text-[#2B9B95] dark:text-[#34B1AA]">
+            {{ formatCurrency(row.total_price || row.price) }}
+          </p>
+          <p class="text-[10px] font-mono text-slate-400">
+            Base: {{ formatCurrency(row.base_price) }} + Fee: {{ formatCurrency(row.sports_fee) }}
+          </p>
+        </div>
+      </template>
+
+      <!-- Custom Cell: Roster & Operations -->
+      <template #cell(operations)="{ row }">
+        <div class="flex items-center justify-center gap-1.5 flex-wrap text-xs">
+          <span
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 font-mono text-[10px]"
+            :title="`${row.checked_in_referees_count} Checked-in / Registered Referees`"
+          >
+            <Users class="w-2.5 h-2.5 text-[#3B8FF3]" />
+            <span>{{ row.checked_in_referees_count }} Refs</span>
+          </span>
+          <span
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 font-mono text-[10px]"
+            :title="`${row.evaluator_registrations_count} Assigned Evaluators`"
+          >
+            <Award class="w-2.5 h-2.5 text-[#F29F67]" />
+            <span>{{ row.evaluator_registrations_count }} Evals</span>
+          </span>
+        </div>
       </template>
 
       <!-- Custom Cell: Status Switcher -->
@@ -457,6 +626,13 @@ const toggleStatus = (camp) => {
             title="View Camp Details"
           >
             <Eye class="w-3.5 h-3.5" />
+          </button>
+          <button
+            @click="openDuplicateModal(row)"
+            class="p-1.5 rounded-md text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all duration-150 cursor-pointer shadow-2xs"
+            title="Duplicate Camp"
+          >
+            <Copy class="w-3.5 h-3.5" />
           </button>
           <button
             @click="openEditModal(row)"
@@ -580,11 +756,48 @@ const toggleStatus = (camp) => {
             </p>
           </div>
 
-          <!-- Price -->
-          <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Base Registration Price ($) <span class="text-rose-500">*</span>
-            </label>
+          <!-- Camp Timezone -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Timezone <span class="text-rose-500">*</span>
+              </label>
+              <button
+                v-if="createForm.latitude && createForm.longitude"
+                type="button"
+                @click="autoDetectCreateTimezone"
+                class="inline-flex items-center gap-1 text-[10px] text-[#3B8FF3] hover:underline cursor-pointer font-mono"
+                title="Auto-detect timezone from pin coordinates"
+              >
+                <Crosshair class="w-2.5 h-2.5" />
+                <span>Detect</span>
+              </button>
+            </div>
+            <Dropdown
+              v-model="createForm.timezone"
+              :options="timezoneOptions"
+              placeholder="Select timezone"
+              size="sm"
+              align="left"
+              class="w-full block"
+              button-class="w-full !px-3 !py-2 !text-xs !font-sans"
+              menu-class="w-full min-w-full"
+            />
+            <p v-if="createForm.errors.timezone" class="mt-1 text-[11px] text-rose-500 font-medium">
+              {{ createForm.errors.timezone }}
+            </p>
+          </div>
+
+          <!-- Base Registration Price -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Base Registration Price ($) <span class="text-rose-500">*</span>
+              </label>
+              <span v-if="createTotalPrice > 0" class="text-[10px] font-mono font-bold text-[#2B9B95] dark:text-[#34B1AA]">
+                Total: {{ formatCurrency(createTotalPrice) }}
+              </span>
+            </div>
             <div class="relative">
               <DollarSign class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -593,12 +806,15 @@ const toggleStatus = (camp) => {
                 step="0.01"
                 min="0"
                 placeholder="150.00"
-                class="w-full pl-8 pr-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white font-mono placeholder-slate-400 focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all"
+                class="w-full pl-8 pr-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white font-mono placeholder-slate-400 focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all shadow-2xs"
                 required
               />
             </div>
             <p v-if="createForm.errors.price" class="mt-1 text-[11px] text-rose-500 font-medium">
               {{ createForm.errors.price }}
+            </p>
+            <p class="mt-1 text-[10px] font-mono text-slate-400">
+              + Sport Fee: {{ formatCurrency(getSelectedSportFee(createForm.sports_type_id)) }}
             </p>
           </div>
 
@@ -625,8 +841,131 @@ const toggleStatus = (camp) => {
               v-model="createForm.camp_details"
               rows="3"
               placeholder="Provide information regarding camp requirements, referee attire, evaluation formats..."
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all"
+              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all shadow-2xs"
             ></textarea>
+          </div>
+
+          <!-- Camp Ranking & Visibility Controls -->
+          <div class="sm:col-span-2 pt-2 border-t border-slate-100 dark:border-white/[0.08]">
+            <div class="mb-2.5">
+              <h4 class="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <ShieldAlert class="w-3.5 h-3.5 text-[#F29F67]" />
+                <span>Evaluation & Ranking Permissions</span>
+              </h4>
+              <p class="text-[11px] text-slate-400">Configure participant visibility for scores, leaderboards, and evaluator anonymity</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              
+              <!-- 1. Publish rankings to evaluators -->
+              <div class="p-3 rounded-lg bg-slate-50/80 dark:bg-[#1E1E2C]/80 border border-slate-200 dark:border-white/[0.08] flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <label class="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                    Publish for Evaluators
+                  </label>
+                  <p class="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                    Permits camp evaluators to view referee score leaderboards and evaluations.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  @click="createForm.publish_ranking_for_evaluators = !createForm.publish_ranking_for_evaluators"
+                  :class="[
+                    createForm.publish_ranking_for_evaluators ? 'bg-[#34B1AA]' : 'bg-slate-300 dark:bg-[#36364E]',
+                    'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-0.5'
+                  ]"
+                >
+                  <span
+                    :class="[
+                      createForm.publish_ranking_for_evaluators ? 'translate-x-4 bg-white' : 'translate-x-0 bg-white dark:bg-slate-300',
+                      'pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out'
+                    ]"
+                  />
+                </button>
+              </div>
+
+              <!-- 2. Publish rankings to referees -->
+              <div class="p-3 rounded-lg bg-slate-50/80 dark:bg-[#1E1E2C]/80 border border-slate-200 dark:border-white/[0.08] flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <label class="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                    Publish for Referees
+                  </label>
+                  <p class="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                    Makes final rankings and placement accessible to registered referees.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  @click="createForm.publish_ranking_for_referees = !createForm.publish_ranking_for_referees"
+                  :class="[
+                    createForm.publish_ranking_for_referees ? 'bg-[#34B1AA]' : 'bg-slate-300 dark:bg-[#36364E]',
+                    'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-0.5'
+                  ]"
+                >
+                  <span
+                    :class="[
+                      createForm.publish_ranking_for_referees ? 'translate-x-4 bg-white' : 'translate-x-0 bg-white dark:bg-slate-300',
+                      'pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out'
+                    ]"
+                  />
+                </button>
+              </div>
+
+              <!-- 3. Hide evaluator name from referees -->
+              <div class="p-3 rounded-lg bg-slate-50/80 dark:bg-[#1E1E2C]/80 border border-slate-200 dark:border-white/[0.08] flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <label class="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                    Hide Evaluator Names
+                  </label>
+                  <p class="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                    Anonymizes evaluator identities on scorecards reviewed by referees.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  @click="createForm.hide_evaluator_name_from_referees = !createForm.hide_evaluator_name_from_referees"
+                  :class="[
+                    createForm.hide_evaluator_name_from_referees ? 'bg-[#F29F67]' : 'bg-slate-300 dark:bg-[#36364E]',
+                    'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-0.5'
+                  ]"
+                >
+                  <span
+                    :class="[
+                      createForm.hide_evaluator_name_from_referees ? 'translate-x-4 bg-white' : 'translate-x-0 bg-white dark:bg-slate-300',
+                      'pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out'
+                    ]"
+                  />
+                </button>
+              </div>
+
+              <!-- 4. Hide ranking numbers from referees -->
+              <div class="p-3 rounded-lg bg-slate-50/80 dark:bg-[#1E1E2C]/80 border border-slate-200 dark:border-white/[0.08] flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <label class="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                    Hide Ranking Numbers
+                  </label>
+                  <p class="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                    Conceals exact ranking numbers (e.g. #1, #2), showing evaluation notes only.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  @click="createForm.hide_ranking_numbers_from_referees = !createForm.hide_ranking_numbers_from_referees"
+                  :class="[
+                    createForm.hide_ranking_numbers_from_referees ? 'bg-[#F29F67]' : 'bg-slate-300 dark:bg-[#36364E]',
+                    'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-0.5'
+                  ]"
+                >
+                  <span
+                    :class="[
+                      createForm.hide_ranking_numbers_from_referees ? 'translate-x-4 bg-white' : 'translate-x-0 bg-white dark:bg-slate-300',
+                      'pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out'
+                    ]"
+                  />
+                </button>
+              </div>
+
+            </div>
           </div>
 
           <!-- Camp Logo Upload -->
@@ -778,11 +1117,48 @@ const toggleStatus = (camp) => {
             </p>
           </div>
 
-          <!-- Price -->
-          <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Base Price ($) <span class="text-rose-500">*</span>
-            </label>
+          <!-- Camp Timezone -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Timezone <span class="text-rose-500">*</span>
+              </label>
+              <button
+                v-if="editForm.latitude && editForm.longitude"
+                type="button"
+                @click="autoDetectEditTimezone"
+                class="inline-flex items-center gap-1 text-[10px] text-[#3B8FF3] hover:underline cursor-pointer font-mono"
+                title="Auto-detect timezone from pin coordinates"
+              >
+                <Crosshair class="w-2.5 h-2.5" />
+                <span>Detect</span>
+              </button>
+            </div>
+            <Dropdown
+              v-model="editForm.timezone"
+              :options="timezoneOptions"
+              placeholder="Select timezone"
+              size="sm"
+              align="left"
+              class="w-full block"
+              button-class="w-full !px-3 !py-2 !text-xs !font-sans"
+              menu-class="w-full min-w-full"
+            />
+            <p v-if="editForm.errors.timezone" class="mt-1 text-[11px] text-rose-500 font-medium">
+              {{ editForm.errors.timezone }}
+            </p>
+          </div>
+
+          <!-- Base Registration Price -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Base Registration Price ($) <span class="text-rose-500">*</span>
+              </label>
+              <span v-if="editTotalPrice > 0" class="text-[10px] font-mono font-bold text-[#2B9B95] dark:text-[#34B1AA]">
+                Total: {{ formatCurrency(editTotalPrice) }}
+              </span>
+            </div>
             <div class="relative">
               <DollarSign class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -790,10 +1166,17 @@ const toggleStatus = (camp) => {
                 type="number"
                 step="0.01"
                 min="0"
-                class="w-full pl-8 pr-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white font-mono placeholder-slate-400 focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all"
+                placeholder="150.00"
+                class="w-full pl-8 pr-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white font-mono placeholder-slate-400 focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all shadow-2xs"
                 required
               />
             </div>
+            <p v-if="editForm.errors.price" class="mt-1 text-[11px] text-rose-500 font-medium">
+              {{ editForm.errors.price }}
+            </p>
+            <p class="mt-1 text-[10px] font-mono text-slate-400">
+              + Sport Fee: {{ formatCurrency(getSelectedSportFee(editForm.sports_type_id)) }}
+            </p>
           </div>
 
           <!-- Google Map Location & Address Picker -->
@@ -818,8 +1201,131 @@ const toggleStatus = (camp) => {
             <textarea
               v-model="editForm.camp_details"
               rows="3"
-              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all"
+              class="w-full px-3 py-2 text-xs rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-[#F29F67] focus:border-[#F29F67] focus:outline-none transition-all shadow-2xs"
             ></textarea>
+          </div>
+
+          <!-- Camp Ranking & Visibility Controls -->
+          <div class="sm:col-span-2 pt-2 border-t border-slate-100 dark:border-white/[0.08]">
+            <div class="mb-2.5">
+              <h4 class="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <ShieldAlert class="w-3.5 h-3.5 text-[#F29F67]" />
+                <span>Evaluation & Ranking Permissions</span>
+              </h4>
+              <p class="text-[11px] text-slate-400">Configure participant visibility for scores, leaderboards, and evaluator anonymity</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              
+              <!-- 1. Publish rankings to evaluators -->
+              <div class="p-3 rounded-lg bg-slate-50/80 dark:bg-[#1E1E2C]/80 border border-slate-200 dark:border-white/[0.08] flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <label class="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                    Publish for Evaluators
+                  </label>
+                  <p class="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                    Permits camp evaluators to view referee score leaderboards and evaluations.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  @click="editForm.publish_ranking_for_evaluators = !editForm.publish_ranking_for_evaluators"
+                  :class="[
+                    editForm.publish_ranking_for_evaluators ? 'bg-[#34B1AA]' : 'bg-slate-300 dark:bg-[#36364E]',
+                    'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-0.5'
+                  ]"
+                >
+                  <span
+                    :class="[
+                      editForm.publish_ranking_for_evaluators ? 'translate-x-4 bg-white' : 'translate-x-0 bg-white dark:bg-slate-300',
+                      'pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out'
+                    ]"
+                  />
+                </button>
+              </div>
+
+              <!-- 2. Publish rankings to referees -->
+              <div class="p-3 rounded-lg bg-slate-50/80 dark:bg-[#1E1E2C]/80 border border-slate-200 dark:border-white/[0.08] flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <label class="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                    Publish for Referees
+                  </label>
+                  <p class="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                    Makes final rankings and placement accessible to registered referees.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  @click="editForm.publish_ranking_for_referees = !editForm.publish_ranking_for_referees"
+                  :class="[
+                    editForm.publish_ranking_for_referees ? 'bg-[#34B1AA]' : 'bg-slate-300 dark:bg-[#36364E]',
+                    'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-0.5'
+                  ]"
+                >
+                  <span
+                    :class="[
+                      editForm.publish_ranking_for_referees ? 'translate-x-4 bg-white' : 'translate-x-0 bg-white dark:bg-slate-300',
+                      'pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out'
+                    ]"
+                  />
+                </button>
+              </div>
+
+              <!-- 3. Hide evaluator name from referees -->
+              <div class="p-3 rounded-lg bg-slate-50/80 dark:bg-[#1E1E2C]/80 border border-slate-200 dark:border-white/[0.08] flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <label class="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                    Hide Evaluator Names
+                  </label>
+                  <p class="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                    Anonymizes evaluator identities on scorecards reviewed by referees.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  @click="editForm.hide_evaluator_name_from_referees = !editForm.hide_evaluator_name_from_referees"
+                  :class="[
+                    editForm.hide_evaluator_name_from_referees ? 'bg-[#F29F67]' : 'bg-slate-300 dark:bg-[#36364E]',
+                    'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-0.5'
+                  ]"
+                >
+                  <span
+                    :class="[
+                      editForm.hide_evaluator_name_from_referees ? 'translate-x-4 bg-white' : 'translate-x-0 bg-white dark:bg-slate-300',
+                      'pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out'
+                    ]"
+                  />
+                </button>
+              </div>
+
+              <!-- 4. Hide ranking numbers from referees -->
+              <div class="p-3 rounded-lg bg-slate-50/80 dark:bg-[#1E1E2C]/80 border border-slate-200 dark:border-white/[0.08] flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <label class="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                    Hide Ranking Numbers
+                  </label>
+                  <p class="text-[10px] text-slate-400 mt-0.5 leading-snug">
+                    Conceals exact ranking numbers (e.g. #1, #2), showing evaluation notes only.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  @click="editForm.hide_ranking_numbers_from_referees = !editForm.hide_ranking_numbers_from_referees"
+                  :class="[
+                    editForm.hide_ranking_numbers_from_referees ? 'bg-[#F29F67]' : 'bg-slate-300 dark:bg-[#36364E]',
+                    'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-0.5'
+                  ]"
+                >
+                  <span
+                    :class="[
+                      editForm.hide_ranking_numbers_from_referees ? 'translate-x-4 bg-white' : 'translate-x-0 bg-white dark:bg-slate-300',
+                      'pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out'
+                    ]"
+                  />
+                </button>
+              </div>
+
+            </div>
           </div>
 
           <!-- Camp Logo Upload -->
@@ -900,18 +1406,25 @@ const toggleStatus = (camp) => {
         </div>
 
         <!-- Grid of Key Specs -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
           <div class="p-2.5 rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08]">
             <p class="text-[10px] text-slate-400 uppercase font-mono">Sport</p>
-            <p class="font-semibold text-slate-900 dark:text-white mt-0.5">{{ viewingCamp.sports_type_name }}</p>
+            <p class="font-semibold text-slate-900 dark:text-white mt-0.5 truncate">{{ viewingCamp.sports_type_name }}</p>
           </div>
           <div class="p-2.5 rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08]">
             <p class="text-[10px] text-slate-400 uppercase font-mono">Duration</p>
             <p class="font-semibold text-slate-900 dark:text-white mt-0.5">{{ viewingCamp.duration_days }} Days</p>
           </div>
           <div class="p-2.5 rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08]">
-            <p class="text-[10px] text-slate-400 uppercase font-mono">Registration Fee</p>
-            <p class="font-bold font-mono text-[#2B9B95] dark:text-[#34B1AA] mt-0.5">{{ formatCurrency(viewingCamp.price) }}</p>
+            <p class="text-[10px] text-slate-400 uppercase font-mono">Timezone</p>
+            <div class="flex items-center gap-1 mt-0.5">
+              <span class="font-semibold text-slate-900 dark:text-white truncate text-[11px]">{{ viewingCamp.timezone_display_name || viewingCamp.timezone }}</span>
+              <span class="px-1 py-0.2 rounded text-[9px] font-mono bg-[#3B8FF3]/10 text-[#3B8FF3] border border-[#3B8FF3]/20 flex-shrink-0">{{ viewingCamp.timezone_offset }}</span>
+            </div>
+          </div>
+          <div class="p-2.5 rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08]">
+            <p class="text-[10px] text-slate-400 uppercase font-mono">Total Reg Fee</p>
+            <p class="font-bold font-mono text-[#2B9B95] dark:text-[#34B1AA] mt-0.5">{{ formatCurrency(viewingCamp.total_price || viewingCamp.price) }}</p>
           </div>
         </div>
 
@@ -919,7 +1432,93 @@ const toggleStatus = (camp) => {
         <div class="p-3 rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] flex items-center justify-between text-xs">
           <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
             <Calendar class="w-4 h-4 text-[#3B8FF3]" />
-            <span>Dates: <strong class="font-mono">{{ viewingCamp.formatted_start }}</strong> to <strong class="font-mono">{{ viewingCamp.formatted_end }}</strong></span>
+            <span>Dates: <strong class="font-mono text-slate-900 dark:text-white">{{ viewingCamp.formatted_start }}</strong> to <strong class="font-mono text-slate-900 dark:text-white">{{ viewingCamp.formatted_end }}</strong></span>
+          </div>
+          <span class="text-[11px] text-slate-400 font-mono">Camp Local Timezone</span>
+        </div>
+
+        <!-- Pricing Financial Breakdown -->
+        <div class="p-3 rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] space-y-2">
+          <div class="flex items-center justify-between">
+            <h5 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <DollarSign class="w-3.5 h-3.5 text-[#2B9B95]" />
+              <span>Financial Fee Breakdown</span>
+            </h5>
+            <span class="text-[11px] font-mono text-slate-400">Paid by Registrants</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="p-2 rounded bg-white dark:bg-[#262638] border border-slate-200/80 dark:border-white/[0.05]">
+              <p class="text-[10px] text-slate-400">Base Registration</p>
+              <p class="font-bold font-mono text-slate-900 dark:text-white mt-0.5">{{ formatCurrency(viewingCamp.base_price) }}</p>
+            </div>
+            <div class="p-2 rounded bg-white dark:bg-[#262638] border border-slate-200/80 dark:border-white/[0.05]">
+              <p class="text-[10px] text-slate-400">Sport Admin Fee</p>
+              <p class="font-bold font-mono text-[#3B8FF3] mt-0.5">{{ formatCurrency(viewingCamp.sports_fee) }}</p>
+            </div>
+            <div class="p-2 rounded bg-white dark:bg-[#262638] border border-[#2B9B95]/30">
+              <p class="text-[10px] text-slate-400">Total Price</p>
+              <p class="font-bold font-mono text-[#2B9B95] dark:text-[#34B1AA] mt-0.5">{{ formatCurrency(viewingCamp.total_price || viewingCamp.price) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Camp Operations & Rosters -->
+        <div class="p-3 rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] space-y-2">
+          <h5 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <Users class="w-3.5 h-3.5 text-[#3B8FF3]" />
+            <span>Rosters & Operational Metrics</span>
+          </h5>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+            <div class="p-2 rounded bg-white dark:bg-[#262638] border border-slate-200/80 dark:border-white/[0.05]">
+              <p class="text-[10px] text-slate-400">Referees</p>
+              <p class="font-bold font-mono text-slate-900 dark:text-white mt-0.5">{{ viewingCamp.checked_in_referees_count }} Active</p>
+            </div>
+            <div class="p-2 rounded bg-white dark:bg-[#262638] border border-slate-200/80 dark:border-white/[0.05]">
+              <p class="text-[10px] text-slate-400">Evaluators</p>
+              <p class="font-bold font-mono text-slate-900 dark:text-white mt-0.5">{{ viewingCamp.evaluator_registrations_count }} Assigned</p>
+            </div>
+            <div class="p-2 rounded bg-white dark:bg-[#262638] border border-slate-200/80 dark:border-white/[0.05]">
+              <p class="text-[10px] text-slate-400">Game Crews</p>
+              <p class="font-bold font-mono text-slate-900 dark:text-white mt-0.5">{{ viewingCamp.crews_count }} Crews</p>
+            </div>
+            <div class="p-2 rounded bg-white dark:bg-[#262638] border border-slate-200/80 dark:border-white/[0.05]">
+              <p class="text-[10px] text-slate-400">Schedule</p>
+              <p class="font-bold font-mono text-slate-900 dark:text-white mt-0.5">{{ viewingCamp.has_schedule ? (viewingCamp.schedule_status || 'Configured') : 'Not Created' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evaluation & Ranking Permissions Summary -->
+        <div class="p-3 rounded-md bg-slate-50 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] space-y-2">
+          <h5 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <ShieldAlert class="w-3.5 h-3.5 text-[#F29F67]" />
+            <span>Evaluation & Ranking Permissions</span>
+          </h5>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="p-2 rounded bg-white dark:bg-[#262638] border border-slate-200/80 dark:border-white/[0.05] flex items-center justify-between">
+              <span class="text-slate-600 dark:text-slate-300 text-[11px]">Publish for Evaluators</span>
+              <span :class="viewingCamp.publish_ranking_for_evaluators ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' : 'bg-slate-100 dark:bg-[#1E1E2C] text-slate-400 border-slate-200 dark:border-white/[0.08]'" class="px-2 py-0.5 rounded text-[10px] font-mono border uppercase font-semibold">
+                {{ viewingCamp.publish_ranking_for_evaluators ? 'Enabled' : 'Disabled' }}
+              </span>
+            </div>
+            <div class="p-2 rounded bg-white dark:bg-[#262638] border border-slate-200/80 dark:border-white/[0.05] flex items-center justify-between">
+              <span class="text-slate-600 dark:text-slate-300 text-[11px]">Publish for Referees</span>
+              <span :class="viewingCamp.publish_ranking_for_referees ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' : 'bg-slate-100 dark:bg-[#1E1E2C] text-slate-400 border-slate-200 dark:border-white/[0.08]'" class="px-2 py-0.5 rounded text-[10px] font-mono border uppercase font-semibold">
+                {{ viewingCamp.publish_ranking_for_referees ? 'Published' : 'Hidden' }}
+              </span>
+            </div>
+            <div class="p-2 rounded bg-white dark:bg-[#262638] border border-slate-200/80 dark:border-white/[0.05] flex items-center justify-between">
+              <span class="text-slate-600 dark:text-slate-300 text-[11px]">Evaluator Names</span>
+              <span :class="viewingCamp.hide_evaluator_name_from_referees ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' : 'bg-slate-100 dark:bg-[#1E1E2C] text-slate-500 border-slate-200 dark:border-white/[0.08]'" class="px-2 py-0.5 rounded text-[10px] font-mono border uppercase font-semibold">
+                {{ viewingCamp.hide_evaluator_name_from_referees ? 'Anonymized' : 'Visible' }}
+              </span>
+            </div>
+            <div class="p-2 rounded bg-white dark:bg-[#262638] border border-slate-200/80 dark:border-white/[0.05] flex items-center justify-between">
+              <span class="text-slate-600 dark:text-slate-300 text-[11px]">Ranking Numbers</span>
+              <span :class="viewingCamp.hide_ranking_numbers_from_referees ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' : 'bg-slate-100 dark:bg-[#1E1E2C] text-slate-500 border-slate-200 dark:border-white/[0.08]'" class="px-2 py-0.5 rounded text-[10px] font-mono border uppercase font-semibold">
+                {{ viewingCamp.hide_ranking_numbers_from_referees ? 'Concealed' : 'Visible' }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -972,6 +1571,17 @@ const toggleStatus = (camp) => {
         </button>
       </template>
     </Modal>
+
+    <!-- DUPLICATE CONFIRMATION MODAL -->
+    <ConfirmationModal
+      :show="isDuplicateModalOpen"
+      title="Duplicate Camp Program"
+      :message="`Are you sure you want to duplicate '${itemToDuplicate?.camp_name}'? A copy with '(Copy)' appended will be created as an inactive draft.`"
+      confirm-text="Duplicate Camp"
+      type="warning"
+      @close="isDuplicateModalOpen = false"
+      @confirm="confirmDuplicate"
+    />
 
     <!-- DELETE CONFIRMATION MODAL -->
     <ConfirmationModal

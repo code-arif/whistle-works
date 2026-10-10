@@ -31,6 +31,8 @@ Route::get('/verify-email', [V2RegisterController::class, 'verifyEmail'])
         'auth:admin',
     ]);
 
+// Route::post('/rental/webhook', [RentedPaymentController::class, 'handleWebhook']);
+
 /*
 |--------------------------------------------------------------------------
 | Modern Error Page Preview & Testing Route

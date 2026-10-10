@@ -165,6 +165,7 @@ class ScheduleService
                 'camp_id'               => $camp->id,
                 'game_duration'         => $request->game_duration,
                 'max_referees_per_slot' => $request->max_referees_per_slot,
+                'mode'                  => $request->input('mode', 'individual'),
                 'status'                => 'draft',
             ]);
 
@@ -322,6 +323,7 @@ class ScheduleService
                             'court_name'           => "Court {$courtNum}",
                             'court_number'         => $courtNum,
                             'status'               => 'available',
+                            'mode'                 => $schedule->mode ?? 'individual',
                             'is_block'             => false,
                         ]);
 
@@ -492,10 +494,21 @@ class ScheduleService
             ->orderBy('court_number')
             ->get();
 
+        // Determine active mode for schedule
+        $activeMode = $schedule->mode;
+        if (!$activeMode) {
+            $activeMode = $gameSlots->firstWhere('status', 'available')?->mode
+                ?? $gameSlots->first()?->mode
+                ?? $schedule->gameSlots()->latest('id')->value('mode')
+                ?? 'individual';
+        }
+
         $scheduleFormat = [
             'schedule_id'           => $schedule->id,
             'max_referees_per_slot' => $schedule->max_referees_per_slot,
             'status'                => $schedule->status,
+            'mode'                  => $activeMode,
+            'active_mode'           => $activeMode,
         ];
 
         // Group by time and format
@@ -616,6 +629,8 @@ class ScheduleService
             'message' => 'Game slots fetched successfully.',
             'data'    => [
                 'schedule'                => $scheduleFormat,
+                'mode'                    => $activeMode,
+                'active_mode'             => $activeMode,
                 'camp_timezone'           => $campTimezone,
                 'camp_timezone_name'      => $camp->timezone_display_name,
                 'selected_date'           => $selectedDate,
@@ -940,6 +955,8 @@ class ScheduleService
             'camp_id'               => $schedule->camp_id,
             'game_duration'         => $schedule->game_duration,
             'status'                => $schedule->status,
+            'mode'                  => $schedule->mode ?? 'individual',
+            'active_mode'           => $schedule->mode ?? 'individual',
             'max_referees_per_slot' => $schedule->max_referees_per_slot,
             'referee_positions'     => $refereePositions,
             'camp_timezone'         => $campTimezone,

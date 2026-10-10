@@ -49,6 +49,8 @@ Route::prefix('camps')->name('camps.')->group(function () {
     Route::post('/', [CampController::class, 'store'])->name('store');
     Route::post('/{id}', [CampController::class, 'update'])->name('update');
     Route::post('/{id}/status', [CampController::class, 'toggleStatus'])->name('status');
+    Route::post('/{id}/duplicate', [CampController::class, 'duplicate'])->name('duplicate');
+    Route::post('/{id}/ranking-settings', [CampController::class, 'updateRankingSettings'])->name('ranking-settings');
     Route::delete('/{id}', [CampController::class, 'destroy'])->name('destroy');
 });
 

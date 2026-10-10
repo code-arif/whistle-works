@@ -25,12 +25,14 @@ class CampController extends Controller
     public function index(Request $request): Response
     {
         return Inertia::render('Camps/Index', [
-            'camps'            => $this->service->getCamps($request),
-            'filters'          => $this->service->getFilters($request),
-            'metrics'          => $this->service->getMetrics(),
-            'directors'        => $this->service->getDirectors(),
-            'sportsTypes'      => $this->service->getSportsTypes(),
-            'googleMapsApiKey' => config('services.google_maps.api_key') ?: env('GOOGLE_MAPS_API_KEY', ''),
+            'camps'              => $this->service->getCamps($request),
+            'filters'            => $this->service->getFilters($request),
+            'metrics'            => $this->service->getMetrics(),
+            'directors'          => $this->service->getDirectors(),
+            'sportsTypes'        => $this->service->getSportsTypes(),
+            'timezones'          => $this->service->getTimezones(),
+            'coordinateMappings' => config('timezones.coordinate_mapping', []),
+            'googleMapsApiKey'   => config('services.google_maps.api_key') ?: env('GOOGLE_MAPS_API_KEY', ''),
         ]);
     }
 
@@ -75,6 +77,36 @@ class CampController extends Controller
             return redirect()->back()->with('success', "Camp status updated to {$status}.");
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Failed to toggle status: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Duplicate an existing Camp.
+     */
+    public function duplicate(int|string $id): RedirectResponse
+    {
+        try {
+            $camp = Camp::findOrFail($id);
+            $newCamp = $this->service->duplicateCamp($camp);
+
+            return redirect()->back()->with('success', "Camp '{$camp->camp_name}' duplicated as '{$newCamp->camp_name}'.");
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Failed to duplicate camp: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update ranking and evaluation privacy settings for a Camp.
+     */
+    public function updateRankingSettings(Request $request, int|string $id): RedirectResponse
+    {
+        try {
+            $camp = Camp::findOrFail($id);
+            $this->service->updateRankingSettings($camp, $request->all());
+
+            return redirect()->back()->with('success', 'Camp ranking settings updated successfully.');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Failed to update ranking settings: ' . $e->getMessage());
         }
     }
 
