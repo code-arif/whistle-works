@@ -36,8 +36,8 @@ class CheckAiUsageQuota
             return Helper::jsonErrorResponse("Your AI access has been restricted: {$reason}", 403);
         }
 
-        // 5. Check if query limit reached
-        if (!$quota->canPerformQuery()) {
+        // 5. Check if query limit reached (for query-consuming operations like POST chat)
+        if ($request->isMethod('POST') && !$quota->canPerformQuery()) {
             return Helper::jsonErrorResponse(
                 "You have reached your monthly AI query limit ({$quota->monthly_query_limit} queries). Reset date: " .
                 ($quota->quota_resets_at ? $quota->quota_resets_at->format('Y-m-d') : 'next billing cycle') .

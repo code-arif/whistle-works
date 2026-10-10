@@ -4,12 +4,16 @@ namespace Tests\Unit;
 
 use App\Models\AiChatMessage;
 use App\Models\AiChatSession;
+use App\Models\CampEvaluatorRegistration;
+use App\Models\SportsType;
 use App\Models\User;
 use App\Models\UserAiQuota;
 use Illuminate\Foundation\Testing\WithFaker;
 use Modules\Director\app\Services\Ai\AiEngineService;
 use Modules\Director\app\Services\Ai\AiToolRegistry;
 use Modules\Director\app\Services\Ai\Contracts\AiProviderInterface;
+use Modules\Director\Models\Camp;
+use Modules\Director\Models\CampRefereeCheckin;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -200,5 +204,146 @@ class AiPhase4ApiEndpointsTest extends TestCase
             ]);
 
         $response->assertStatus(422);
+    }
+
+    public function test_get_camps_directory_endpoint(): void
+    {
+        $sport = SportsType::firstOrCreate(
+            ['sports_name' => 'Basketball'],
+            ['sports_fee' => 10, 'status' => 'active']
+        );
+
+        $camp = Camp::firstOrCreate(
+            ['camp_name' => 'Elite Director AI Showcase Camp'],
+            [
+                'sports_type_id' => $sport->id,
+                'sports_type_name' => $sport->sports_name,
+                'location' => 'Dallas, TX',
+                'price' => 150.00,
+                'start_date' => '2026-06-01',
+                'end_date' => '2026-06-05',
+                'director_id' => $this->directorUser->id,
+                'status' => 'active',
+            ]
+        );
+
+        // Referees with distinct last names to test sorting (Adams should be before Zimmerman)
+        $refereeZ = User::firstOrCreate(
+            ['email' => 'ref_zimmerman@whistleworks.org'],
+            [
+                'first_name' => 'Zack',
+                'last_name' => 'Zimmerman',
+                'username' => 'ref_zimmerman',
+                'slug' => 'ref-zimmerman',
+            ]
+        );
+
+        $refereeA = User::firstOrCreate(
+            ['email' => 'ref_adams@whistleworks.org'],
+            [
+                'first_name' => 'Alex',
+                'last_name' => 'Adams',
+                'username' => 'ref_adams',
+                'slug' => 'ref-adams',
+            ]
+        );
+
+        CampRefereeCheckin::firstOrCreate([
+            'camp_id' => $camp->id,
+            'referee_id' => $refereeZ->id,
+        ], [
+            'registration_status' => 'registered',
+            'registered_at' => now(),
+        ]);
+
+        CampRefereeCheckin::firstOrCreate([
+            'camp_id' => $camp->id,
+            'referee_id' => $refereeA->id,
+        ], [
+            'registration_status' => 'checked_in',
+            'registered_at' => now(),
+            'checked_in_at' => now(),
+        ]);
+
+        // Evaluators with distinct last names to test sorting (Baker before Williams)
+        $evaluatorW = User::firstOrCreate(
+            ['email' => 'eval_williams@whistleworks.org'],
+            [
+                'first_name' => 'Walter',
+                'last_name' => 'Williams',
+                'username' => 'eval_williams',
+                'slug' => 'eval-williams',
+            ]
+        );
+
+        $evaluatorB = User::firstOrCreate(
+            ['email' => 'eval_baker@whistleworks.org'],
+            [
+                'first_name' => 'Bob',
+                'last_name' => 'Baker',
+                'username' => 'eval_baker',
+                'slug' => 'eval-baker',
+            ]
+        );
+
+        CampEvaluatorRegistration::firstOrCreate([
+            'camp_id' => $camp->id,
+            'evaluator_id' => $evaluatorW->id,
+        ], [
+            'status' => 'approved',
+            'registered_at' => now(),
+        ]);
+
+        CampEvaluatorRegistration::firstOrCreate([
+            'camp_id' => $camp->id,
+            'evaluator_id' => $evaluatorB->id,
+        ], [
+            'status' => 'approved',
+            'registered_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->directorUser, 'api')
+            ->getJson('/api/v1/director/ai/camps');
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'success',
+            'message',
+            'data' => [
+                '*' => [
+                    'id',
+                    'name',
+                    'logo',
+                    'referees' => [
+                        '*' => ['id', 'name', 'avatar'],
+                    ],
+                    'evaluators' => [
+                        '*' => ['id', 'name', 'avatar'],
+                    ],
+                ],
+            ],
+            'code',
+        ]);
+
+        $campsData = collect($response->json('data'));
+        $targetCamp = $campsData->firstWhere('id', $camp->id);
+        $this->assertNotNull($targetCamp);
+        $this->assertEquals('Elite Director AI Showcase Camp', $targetCamp['name']);
+
+        // Check referee sorting by last name (Alex Adams before Zack Zimmerman)
+        $refereeNames = collect($targetCamp['referees'])->pluck('name')->all();
+        $this->assertContains('Alex Adams', $refereeNames);
+        $this->assertContains('Zack Zimmerman', $refereeNames);
+        $adamsIndex = array_search('Alex Adams', $refereeNames);
+        $zimmermanIndex = array_search('Zack Zimmerman', $refereeNames);
+        $this->assertLessThan($zimmermanIndex, $adamsIndex);
+
+        // Check evaluator sorting by last name (Bob Baker before Walter Williams)
+        $evaluatorNames = collect($targetCamp['evaluators'])->pluck('name')->all();
+        $this->assertContains('Bob Baker', $evaluatorNames);
+        $this->assertContains('Walter Williams', $evaluatorNames);
+        $bakerIndex = array_search('Bob Baker', $evaluatorNames);
+        $williamsIndex = array_search('Walter Williams', $evaluatorNames);
+        $this->assertLessThan($williamsIndex, $bakerIndex);
     }
 }

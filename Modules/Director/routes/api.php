@@ -169,6 +169,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
 
         // AI Coach & Analytics Engine
         Route::group(['prefix' => 'ai', 'middleware' => ['ai.quota']], function () {
+            Route::get('/camps', [AiChatController::class, 'campsDirectory']);
             Route::post('/chat', [AiChatController::class, 'chat']);
             Route::post('/session/reset', [AiChatController::class, 'resetSession']);
             Route::get('/quota', [AiChatController::class, 'getQuota']);

@@ -5,6 +5,9 @@ namespace Modules\Director\app\Services\Ai;
 use App\Models\AiChatMessage;
 use App\Models\AiChatSession;
 use App\Models\AiSetting;
+use App\Models\CampEvaluatorRegistration;
+use App\Models\CampRefereeJearsyNumber;
+use App\Models\RefereeEvaluation;
 use App\Models\User;
 use Carbon\Carbon;
 use Exception;
@@ -13,6 +16,8 @@ use Illuminate\Support\Str;
 use Modules\Director\app\Services\Ai\Contracts\AiProviderInterface;
 use Modules\Director\app\Services\Ai\Providers\GeminiProvider;
 use Modules\Director\app\Services\Ai\Providers\OpenAiProvider;
+use Modules\Director\Models\Camp;
+use Modules\Director\Models\CampRefereeCheckin;
 
 class AiEngineService
 {
@@ -228,5 +233,152 @@ PROMPT;
                 'plan_tier' => $userQuota->plan_tier,
             ],
         ];
+    }
+
+    /**
+     * Retrieve lightweight camps directory with referees & evaluators
+     * for AI mention autocomplete and context intelligence.
+     *
+     * @param User $user Authenticated director
+     * @return array
+     */
+    public function getDirectorCampsDirectory(User $user): array
+    {
+        // 1. Fetch all camps for this director (active, upcoming, and previous)
+        $camps = Camp::forDirectorOrAssistant($user->id)
+            ->select(['id', 'director_id', 'camp_name', 'camp_logo', 'start_date', 'end_date'])
+            ->orderBy('start_date', 'desc')
+            ->get();
+
+        if ($camps->isEmpty()) {
+            return [];
+        }
+
+        $campIds = $camps->pluck('id')->all();
+
+        // 2. Bulk load referees (from checkins and jersey number assignments)
+        $checkinRefereesByCamp = CampRefereeCheckin::whereIn('camp_id', $campIds)
+            ->whereIn('registration_status', ['registered', 'checked_in'])
+            ->with(['referee:id,first_name,last_name,avatar'])
+            ->get()
+            ->groupBy('camp_id');
+
+        $jerseyRefereesByCamp = CampRefereeJearsyNumber::whereIn('camp_id', $campIds)
+            ->with(['referee:id,first_name,last_name,avatar'])
+            ->get()
+            ->groupBy('camp_id');
+
+        // 3. Bulk load evaluators (from registrations and evaluations)
+        $evaluatorRegistrationsByCamp = CampEvaluatorRegistration::whereIn('camp_id', $campIds)
+            ->where('status', '!=', 'rejected')
+            ->with(['evaluator:id,first_name,last_name,avatar'])
+            ->get()
+            ->groupBy('camp_id');
+
+        $evaluationsByCamp = RefereeEvaluation::whereIn('camp_id', $campIds)
+            ->with(['evaluator:id,first_name,last_name,avatar'])
+            ->get()
+            ->groupBy('camp_id');
+
+        // Formatter & sorter for person objects (sorted alphabetically by last name)
+        $formatPerson = function ($person) {
+            if (!$person) {
+                return null;
+            }
+
+            $fullName = trim(($person->first_name ?? '') . ' ' . ($person->last_name ?? ''));
+            if ($fullName === '') {
+                $fullName = $person->username ?? "User #{$person->id}";
+            }
+
+            $avatarUrl = null;
+            if (!empty($person->avatar)) {
+                $avatarUrl = filter_var($person->avatar, FILTER_VALIDATE_URL)
+                    ? $person->avatar
+                    : asset($person->avatar);
+            } else {
+                $avatarUrl = asset('default/profile.jpg');
+            }
+
+            $lastName = trim($person->last_name ?? '');
+            $firstName = trim($person->first_name ?? $person->name ?? '');
+
+            return [
+                'id' => (int) $person->id,
+                'name' => $fullName,
+                'avatar' => $avatarUrl,
+                '_last_name' => strtolower($lastName),
+                '_first_name' => strtolower($firstName),
+            ];
+        };
+
+        $sortPeople = function ($peopleCollection) use ($formatPerson) {
+            return $peopleCollection
+                ->map($formatPerson)
+                ->filter()
+                ->unique('id')
+                ->sort(function ($a, $b) {
+                    $lastA = $a['_last_name'];
+                    $lastB = $b['_last_name'];
+
+                    if ($lastA !== '' && $lastB !== '') {
+                        $cmp = strcmp($lastA, $lastB);
+                        if ($cmp !== 0) {
+                            return $cmp;
+                        }
+                    } elseif ($lastA !== '' && $lastB === '') {
+                        return -1;
+                    } elseif ($lastA === '' && $lastB !== '') {
+                        return 1;
+                    }
+
+                    return strcmp($a['_first_name'], $b['_first_name']);
+                })
+                ->values()
+                ->map(function ($item) {
+                    unset($item['_last_name'], $item['_first_name']);
+                    return $item;
+                })
+                ->all();
+        };
+
+        $result = [];
+
+        foreach ($camps as $camp) {
+            $logoUrl = null;
+            if (!empty($camp->camp_logo)) {
+                $logoUrl = filter_var($camp->camp_logo, FILTER_VALIDATE_URL)
+                    ? $camp->camp_logo
+                    : asset($camp->camp_logo);
+            } else {
+                $logoUrl = asset('default/no_image.webp');
+            }
+
+            // Referees
+            $campCheckins = $checkinRefereesByCamp->get($camp->id, collect());
+            $campJerseys = $jerseyRefereesByCamp->get($camp->id, collect());
+            $rawReferees = $campCheckins->pluck('referee')
+                ->merge($campJerseys->pluck('referee'))
+                ->filter();
+            $formattedReferees = $sortPeople($rawReferees);
+
+            // Evaluators
+            $campEvaluatorRegs = $evaluatorRegistrationsByCamp->get($camp->id, collect());
+            $campEvaluations = $evaluationsByCamp->get($camp->id, collect());
+            $rawEvaluators = $campEvaluatorRegs->pluck('evaluator')
+                ->merge($campEvaluations->pluck('evaluator'))
+                ->filter();
+            $formattedEvaluators = $sortPeople($rawEvaluators);
+
+            $result[] = [
+                'id' => (int) $camp->id,
+                'name' => (string) ($camp->camp_name ?? "Camp #{$camp->id}"),
+                'logo' => $logoUrl,
+                'referees' => $formattedReferees,
+                'evaluators' => $formattedEvaluators,
+            ];
+        }
+
+        return $result;
     }
 }
