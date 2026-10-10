@@ -306,7 +306,7 @@ class RefereeCheckinService
         }
 
         $now              = now();
-        $checkinStartTime = $camp->start_date->subHours(24);
+        $checkinStartTime = $camp->start_date->copy()->subHours(24);
 
         if ($now->lt($checkinStartTime)) {
             return [
@@ -320,13 +320,16 @@ class RefereeCheckinService
             ];
         }
 
-        if ($now->gt($camp->end_date)) {
+        $campTimezone    = $camp->timezone ?? config('app.timezone', 'UTC');
+        $campEndDateTime = Carbon::parse($camp->end_date, $campTimezone)->endOfDay();
+
+        if ($now->gt($campEndDateTime)) {
             return [
                 'success' => false,
                 'code'    => 400,
                 'message' => 'This camp has already ended. Check-in is no longer available.',
                 'data'    => [
-                    'camp_ended_on' => $camp->end_date->format('Y-m-d H:i:s'),
+                    'camp_ended_on' => $campEndDateTime->format('Y-m-d H:i:s'),
                 ],
             ];
         }

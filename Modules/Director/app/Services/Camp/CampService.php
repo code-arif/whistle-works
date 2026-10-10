@@ -456,21 +456,38 @@ class CampService
     }
 
     /**
-     * Get paginated list of camps owned by the director.
+     * Get paginated list of camps owned by the director (or assigned assistant director).
      *
-     * @param  User $user
-     * @param  int  $perPage
+     * @param  User         $user
+     * @param  int          $perPage
+     * @param  Request|null $request
      * @return array
      */
-    public function directorCampList(User $user, int $perPage = 8): array
+    public function directorCampList(User $user, int $perPage = 8, ?Request $request = null): array
     {
         $today = now()->toDateString();
 
-        $camps = Camp::where('director_id', $user->id)
+        $query = Camp::forDirectorOrAssistant($user->id)
             ->with(['sportsType', 'checkedInReferees', 'schedule'])
-            ->where('end_date', '>', $today)
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
+            ->orderBy('created_at', 'desc');
+
+        // Optional filter: type (all | previous | upcoming/active)
+        $type = $request?->input('type');
+        if ($type === 'previous') {
+            $query->where('end_date', '<', $today);
+        } elseif ($type === 'all') {
+            // Do not filter by date - return all camps for this director
+        } else {
+            // Default: show all active, ongoing (single-day or multi-day today), and upcoming camps
+            $query->where('end_date', '>=', $today);
+        }
+
+        // Optional filter: status (active | inactive)
+        if ($request && $request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $camps = $query->paginate($perPage);
 
         $response = [
             'camp_list' => $camps->map(function ($camp) {

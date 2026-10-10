@@ -91,15 +91,17 @@ class Camp extends Model
      */
     public function hasStarted(): bool
     {
-        return now()->gte($this->start_date);
+        $timezone = $this->timezone ?? config('app.timezone', 'UTC');
+        return Carbon::now($timezone)->gte(Carbon::parse($this->start_date, $timezone)->startOfDay());
     }
 
     /**
-     * Check if camp has ended
+     * Check if camp has ended (after end-of-day in camp timezone)
      */
     public function hasEnded(): bool
     {
-        return now()->gt($this->end_date);
+        $timezone = $this->timezone ?? config('app.timezone', 'UTC');
+        return Carbon::now($timezone)->gt(Carbon::parse($this->end_date, $timezone)->endOfDay());
     }
 
     /**

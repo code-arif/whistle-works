@@ -160,7 +160,7 @@ class CampManageController extends Controller
     {
         $user    = auth('api')->user();
         $perPage = (int) $request->input('per_page', 8);
-        $result  = $this->campService->directorCampList($user, $perPage);
+        $result  = $this->campService->directorCampList($user, $perPage, $request);
 
         return $this->success($result['message'], $result['data'], $result['code']);
     }
