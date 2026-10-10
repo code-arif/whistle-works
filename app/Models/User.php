@@ -227,4 +227,52 @@ class User extends Authenticatable implements JWTSubject
         );
     }
 
+    /**
+     * User's AI Quota tracking
+     */
+    public function aiQuota()
+    {
+        return $this->hasOne(UserAiQuota::class, 'user_id');
+    }
+
+    /**
+     * User's AI Chat Sessions
+     */
+    public function aiChatSessions()
+    {
+        return $this->hasMany(AiChatSession::class, 'user_id');
+    }
+
+    /**
+     * User's AI Chat Messages
+     */
+    public function aiChatMessages()
+    {
+        return $this->hasMany(AiChatMessage::class, 'user_id');
+    }
+
+    /**
+     * Get or initialize AI Quota for this user.
+     */
+    public function getOrCreateAiQuota(): UserAiQuota
+    {
+        $quota = $this->aiQuota;
+        if (!$quota) {
+            $defaultLimit = (int) AiSetting::getValue('default_monthly_quota', 50);
+            $quota = UserAiQuota::create([
+                'user_id' => $this->id,
+                'plan_tier' => 'free',
+                'monthly_query_limit' => $defaultLimit,
+                'queries_used_this_month' => 0,
+                'tokens_used_this_month' => 0,
+                'is_blocked' => false,
+                'quota_resets_at' => now()->addMonth()->startOfDay(),
+            ]);
+        } else {
+            $quota->checkAndResetMonthlyQuota();
+        }
+
+        return $quota;
+    }
+
 }

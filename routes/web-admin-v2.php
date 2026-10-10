@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AiGovernanceController;
 use App\Http\Controllers\Admin\CampController;
 use App\Http\Controllers\Admin\CmsAboutController;
 use App\Http\Controllers\Admin\CmsHomeController;
@@ -100,6 +101,16 @@ Route::prefix('settings')->name('settings.')->group(function () {
     Route::post('/mail/test', [SettingController::class, 'sendTestMail'])->name('mail.test');
     Route::post('/integrations', [SettingController::class, 'updateIntegrations'])->name('integrations');
     Route::post('/system', [SettingController::class, 'updateSystem'])->name('system');
+});
+
+// V2 AI Coach Governance & Usage Analytics
+Route::prefix('ai-governance')->name('ai.')->group(function () {
+    Route::get('/', [AiGovernanceController::class, 'index'])->name('index');
+    Route::post('/settings', [AiGovernanceController::class, 'updateSettings'])->name('settings.update');
+    Route::post('/users/{id}/quota', [AiGovernanceController::class, 'updateUserQuota'])->name('users.quota');
+    Route::post('/users/{id}/block', [AiGovernanceController::class, 'toggleBlock'])->name('users.block');
+    Route::get('/users/{id}/history', [AiGovernanceController::class, 'userHistory'])->name('users.history');
+    Route::get('/users/{id}/trend', [AiGovernanceController::class, 'userUsageTrend'])->name('users.trend');
 });
 
 // V2 Admin Profile Settings

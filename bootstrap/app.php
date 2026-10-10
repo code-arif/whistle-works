@@ -3,6 +3,7 @@
 use \Illuminate\Support\Facades\Log;
 use App\Helpers\Helper;
 use App\Http\Middleware\ApiOtpVerifiedMiddleware;
+use App\Http\Middleware\CheckAiUsageQuota;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\WebAdminMiddleware;
 use App\Http\Middleware\WebAuthCheckMiddleware;
@@ -46,7 +47,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'check' => WebAuthCheckMiddleware::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
-            'role_or_permission' => RoleOrPermissionMiddleware::class
+            'role_or_permission' => RoleOrPermissionMiddleware::class,
+            'ai.quota' => CheckAiUsageQuota::class,
         ]);
         $middleware->validateCsrfTokens(except: [
             'webhook/stripe',

@@ -1,557 +1,221 @@
-﻿# 🤖 AI Chatbot Implementation Plan — Whistle Works (Director Module)
+# 🤖 AI Coach, Analytics & Governance Engine — Master Implementation Blueprint
 
-> **Project:** Whistle Works Backend (Laravel 11, Modular Architecture)
-> **Feature:** Director AI Assistant — Referee Intelligence & Evaluation Engine
-> **Author:** Senior Engineer Review — September 2026
-> **Status:** 📋 PLANNING PHASE — Not yet implemented
-> **Target Module:** `Modules/Director`
+> **Project:** Whistle Works Backend (Laravel 11, Modular Architecture)  
+> **Target Module:** `Modules/Director` & `Admin V2`  
+> **Status:** 🚀 ACTIVE IMPLEMENTATION ROADMAP — Incremental 1-by-1 Feature Lifecycle  
+> **Author:** Senior Software Engineering Architecture Team  
 
 ---
 
 ## 📋 Table of Contents
 
-1. [Overview & Objective](#overview)
-2. [Current Project Architecture Analysis](#architecture)
-3. [Existing Data Models That AI Will Use](#data-models)
-4. [AI Feature Breakdown](#feature-breakdown)
-5. [Technical Architecture Design](#technical-design)
-6. [New Files to Create](#new-files)
-7. [Database Changes Required](#database)
-8. [Step-by-Step Implementation Guide](#implementation)
-9. [API Endpoints Design](#api-endpoints)
-10. [AI Function Calling Tools Definition](#function-calling)
-11. [Sample Prompts & Expected Responses](#sample-prompts)
-12. [Security & Permissions](#security)
-13. [Testing Plan](#testing)
-14. [Future Enhancements](#future)
-15. [Implementation Checklist](#checklist)
+1. [Executive Overview & Vision](#1-executive-overview--vision)
+2. [Client-Specific Advanced Analytics Capabilities](#2-client-specific-advanced-analytics-capabilities)
+3. [Admin Panel Control, Configuration & Governance](#3-admin-panel-control-configuration--governance)
+4. [Session Architecture & UUID Lifecycle](#4-session-architecture--uuid-lifecycle)
+5. [Future-Proof Subscription & Metering Architecture](#5-future-proof-subscription--metering-architecture)
+6. [Database Schema & Migration Plan](#6-database-schema--migration-plan)
+7. [AI Function Calling & Tool Registry Definition](#7-ai-function-calling--tool-registry-definition)
+8. [Incremental 1-by-1 Implementation & Testing Phases](#8-incremental-1-by-1-implementation--testing-phases)
 
 ---
 
-## 1. Overview & Objective
+## 1. Executive Overview & Vision
 
-### Problem Statement
-Directors currently have to manually browse multiple screens to:
-- Check referee attendance and checkin status
-- Understand referee performance across multiple camps
-- Make evaluation-based promotion/recommendation decisions
-- Get summary reports across camps
-
-### Solution
-Build an **AI-powered chatbot** inside the Director panel that:
-- Understands **natural language** questions in English and Bangla
-- Automatically queries the **existing database** using AI Function Calling
-- Returns responses in **structured tabular format** (Markdown tables)
-- Makes **intelligent decisions** about referee evaluation, scoring, and recommendations
-- Supports **advanced analytics** across referee history, game slots, evaluations
-
-### AI Provider Recommendation
-**OpenAI GPT-4o** (Primary Recommendation)
-
-**Why GPT-4o:**
-- Best-in-class Function Calling support
-- Consistent structured output
-- Excellent reasoning for evaluation decisions
-- Package: `openai-php/laravel` (well documented)
-
-**Alternative: Google Gemini 2.0 Flash**
-- `kreait/laravel-firebase` already in composer.json — Google ecosystem
-- Cheaper per token
-- Also supports Function Calling
-
-> **Decision needed before starting:** Choose OpenAI or Gemini. Recommend OpenAI GPT-4o.
+The **Whistle Works AI Engine** is an enterprise-grade AI analytics and coaching assistant designed for Directors and Administrators. It combines:
+1. **Large Language Model (LLM) Intelligence** (OpenAI GPT-4o / Google Gemini 2.0 with Function Calling).
+2. **Deterministic Database Analytics** across 150,000+ users, camps, evaluations, and game slot assignments.
+3. **Rich UI Widgets Payload** (Markdown tables, interactive Chart.js/ApexCharts Line/Radar Graphs, and downloadable Excel spreadsheets).
+4. **Admin Governance & Usage Control** for API keys, user limits, token tracking, and blocking.
+5. **Subscription-Ready Architecture** for monetization and tiered quotas.
 
 ---
 
-## 2. Current Project Architecture Analysis
+## 2. Client-Specific Advanced Analytics Capabilities
 
-```
-whistle-works-backend/
-├── app/
-│   ├── Models/
-│   │   ├── User.php                       ← Referee/Director/Evaluator (Spatie Roles)
-│   │   ├── RefereeEvaluation.php          ← ⭐ CRITICAL — evaluation scoring EXISTS!
-│   │   ├── CampPayment.php
-│   │   ├── CampEvaluatorRegistration.php
-│   │   └── CampRefereeJearsyNumber.php
-│   └── Services/
-│       └── StripePaymentService.php
-│
-├── Modules/Director/
-│   ├── app/
-│   │   ├── Models/
-│   │   │   ├── Camp.php                   ← Core camp (has evaluations relation!)
-│   │   │   ├── CampRefereeCheckin.php     ← Check-in status tracker
-│   │   │   ├── GameSlot.php               ← Individual game slots
-│   │   │   ├── GameSlotAssignment.php     ← ⭐ Who assigned where (has needsRest()!)
-│   │   │   ├── Schedule.php
-│   │   │   ├── ScheduleLocation.php
-│   │   │   └── Crew.php / CrewMember.php
-│   │   │
-│   │   ├── Http/Controllers/Api/
-│   │   │   ├── Referee/RefereeManageController.php
-│   │   │   ├── Schedule/ScheduleController.php
-│   │   │   ├── Schedule/RefereeCheckinController.php
-│   │   │   ├── Court/CourtManageController.php
-│   │   │   └── CourtAssign/AutoCourtAssignController.php
-│   │   │
-│   │   └── Services/
-│   │       ├── Camp/ | Court/ | CourtAssign/ | Crew/
-│
-└── composer.json  ← Laravel 11, JWT, Spatie, Firebase, Stripe, Reverb, DomPDF
-```
-
-### ⚠️ Key Insight from Codebase
-> `RefereeEvaluation` model **already exists** with all scoring fields:
-> `call_accuracy`, `communication_skills`, `consistency_of_calls`,
-> `court_position_mechanics`, `fitness_mobility`, `game_awareness`,
-> `total_score` (auto-calc), `average_score` (auto-calc)
->
-> **AI evaluation scoring can directly use EXISTING data — no new scoring table needed!**
+| Query Scenario | AI Function Tool | Output Format / UI Widget |
+| :--- | :--- | :--- |
+| **1. Referee Performance Comparison**<br>*"Compare the results of referee 1 and referee 2 and show those results in a line graph"* | `compare_referees` | **Interactive Line Graph** comparing scores across 6 criteria (Accuracy, Communication, Consistency, Mechanics, Fitness, Game Awareness) + Analysis table |
+| **2. Longitudinal Improvement Analysis**<br>*"Which referee has shown the most improvement over the past 3 years"* | `get_referee_improvement_analytics` | **Data Table + Rank Badge** displaying score growth rate ($\Delta \text{ Score}$), baseline vs latest score, and trajectory insights |
+| **3. Location-Based Roster Query**<br>*"Which referees at camp B live in Tulsa, OK"* | `get_camp_referees_by_location` | **Referee Profile Cards** with contact details, address, jersey numbers, and check-in status |
+| **4. Evaluator Compliance Audit**<br>*"Which evaluators have not submitted any evaluations for this camp"* | `get_pending_evaluators` | **Action List** showing approved evaluators with 0 submitted evaluations, assigned slots, and contact emails |
+| **5. Multi-Year Referee Performance Trend**<br>*"Show me a line graph of how Referee 1 has performed over the past 3 years"* | `get_referee_performance_timeline` | **Time-Series Line Chart** plotting date/camp against average evaluation score |
+| **6. Multi-Camp Ranking Excel Export**<br>*"Compile ranking results from Camp A and Camp B in an excel spreadsheet for me"* | `compile_camp_rankings_excel` | **Downloadable `.xlsx` Widget** generated via `PhpSpreadsheet` with signed download URL + In-chat summary |
 
 ---
 
-## 3. Existing Data Models That AI Will Use
+## 3. Admin Panel Control, Configuration & Governance
 
-| Model | Location | Key Fields for AI | Purpose |
-|-------|----------|-------------------|---------|
-| `User` | `app/Models/User.php` | name, email, role | Referee identity |
-| `Camp` | `Modules/Director/Models/Camp.php` | camp_name, dates, director_id, status | Camp context |
-| `CampRefereeCheckin` | `Modules/Director/Models/` | registration_status, checked_in_at | Attendance |
-| `RefereeEvaluation` | `app/Models/RefereeEvaluation.php` | 6 score fields, total/avg score | Performance |
-| `GameSlotAssignment` | `Modules/Director/Models/` | assignable_id, game_slot_id | Assignments |
-| `GameSlot` | `Modules/Director/Models/` | game_date, start/end_time, court_name | Slot details |
-| `CampRefereeJearsyNumber` | `app/Models/` | jersey_number | Jersey tracking |
-| `AssistantDirectorPermission` | `app/Models/` | permission scopes | Auth check |
+All AI features and operational parameters can be monitored and controlled in real-time from the Admin V2 Panel:
 
-### Evaluation Score Fields (Max 10 each, Auto-calculated total)
-```
-call_accuracy              → 0-10
-communication_skills       → 0-10
-consistency_of_calls       → 0-10
-court_position_mechanics   → 0-10
-fitness_mobility           → 0-10
-game_awareness             → 0-10
-─────────────────────────────────
-total_score  = sum (max 60)
-average_score = total/6 (max 10)
-```
+### 1. Dynamic API Key & Provider Management
+- Switch LLM providers (`openai` vs `gemini`) and update API keys dynamically from the Admin UI without restarting the application.
+- Encrypted storage in database (`ai_settings` table).
+
+### 2. Global & User-Specific Usage Limits
+- **Global Quotas:** Daily/Monthly query limit and token threshold.
+- **Custom User Overrides:** Set custom monthly query allowances for individual Directors (e.g., 500 queries/month for VIP directors).
+
+### 3. Visual Usage Analytics & Graphs
+- Admin charts showing **Total Tokens Used**, **Daily Query Volume**, **Cost Estimation**, and **Most Active Users**.
+
+### 4. User Access Blocking & Restrictions
+- One-click toggle in Admin Panel to block or unblock specific users from accessing AI features with custom restriction messages.
+
+### 5. Full Audit & Interaction Logs
+- Detailed logs of all queries, response latency, tokens consumed, and tools called for compliance and debugging.
 
 ---
 
-## 4. AI Feature Breakdown
+## 4. Session Architecture & UUID Lifecycle
 
-### Feature 1 — Natural Language Referee Query → Tabular Response
-```
-Director asks: "Show me all referees checked in for Camp X"
-
-AI Response (Markdown Table):
-| # | Name         | Jersey | Checked In At    | Status      |
-|---|--------------|--------|-----------------|-------------|
-| 1 | John Smith   | #12    | 2026-09-20 08:30 | ✅ Checked In |
-| 2 | Sarah Connor | #07    | 2026-09-20 09:15 | ✅ Checked In |
-| 3 | Mike Johnson | #21    | Not yet          | ⏳ Registered |
-
-Summary: 12 checked in | 3 registered only | 1 not registered
-```
-
-### Feature 2 — Performance Summary Query
-```
-Director: "John Smith er performance kemon?"
-
-AI generates:
-- Avg evaluation score breakdown (6 categories)
-- Total games assigned
-- Attendance rate
-- Rest violation count
-- Recommended level summary
-```
-
-### Feature 3 — AI Evaluation Decision Support
-```
-Director: "Kon referee ke advanced level e promote kora jay?"
-
-AI:
-- Fetches all evaluations from camp
-- Groups by referee, calculates averages
-- Applies threshold logic (score >= 7.5 + attendance >= 90%)
-- Returns ranked recommendation table
-```
-
-### Feature 4 — Advanced Analytics
-```
-"Last 3 camp e referee attendance comparison dao"    → Multi-camp comparison
-"Kon referee most games assign hoyeche?"             → Game leaderboard
-"Camp e rest violation ache?"                        → Uses existing needsRest() logic
-"Overall best performing referee kon?"               → Cross-camp ranking
-```
+To maintain high performance and avoid clutter:
+- **Clean Session Paradigm:** The user does not navigate a cluttered sidebar list of historical chats (unlike standard ChatGPT). Instead, the active conversation remains clean and focused.
+- **UUID Management:** Every chat conversation is uniquely tracked via a `session_uuid` (`Str::uuid()`).
+- **Context Preservation:** The backend saves up to the last 20 conversational turns in `ai_chat_messages` for continuous context during an active session.
+- **Session Reset / New Chat:** When a Director clicks "New Conversation", a new `session_uuid` is generated while preserving the historical logs in the database for analytics.
 
 ---
 
-## 5. Technical Architecture Design
+## 5. Future-Proof Subscription & Metering Architecture
 
-```
-[Director's Chat UI]
-        │ POST /api/director/ai/chat
-        ▼
-[AiChatController]  ← NEW — Modules/Director/Http/Controllers/Api/Ai/
-        │
-        ▼
-[AiChatService]     ← NEW — Modules/Director/Services/Ai/AiChatService.php
-  1. Build system prompt (director context, camps)
-  2. Load conversation history from DB
-  3. Call OpenAI GPT-4o with tool definitions
-  4. If AI returns tool_call → execute → send result back to AI
-  5. Loop (max 5 iterations) until AI gives final answer
-  6. Save to DB, return response
-        │
-        ▼
-[AiToolExecutor]    ← NEW — Modules/Director/Services/Ai/AiToolExecutor.php
-  Tools:
-  ├── get_camp_referees(camp_id, status?)
-  ├── get_referee_performance(referee_id, camp_id?)
-  ├── get_referee_evaluations(referee_id, camp_id?)
-  ├── get_referee_game_assignments(referee_id, camp_id?)
-  ├── get_camp_attendance_summary(camp_id)
-  ├── rank_referees_by_performance(camp_id, metric?)
-  ├── get_promotion_candidates(camp_id, min_score?)
-  ├── get_rest_violations(camp_id)
-  ├── compare_referee_across_camps(referee_id)
-  └── get_director_camps()
-        │
-        ▼
-[Existing Eloquent Models — NO CHANGES TO EXISTING CODE]
-  Camp | CampRefereeCheckin | RefereeEvaluation
-  GameSlotAssignment | GameSlot | User
-```
+The database and service layer are structured with a **Subscription & Quota Middleware** ready for Stripe paywalls:
+- **`user_ai_quotas` Table:** Tracks `monthly_limit`, `used_count`, `reset_date`, and `plan_tier` (`free`, `pro`, `enterprise`).
+- **Middleware Check (`CheckAiUsageQuota`):** Enforces quota limits before dispatching requests to LLMs.
+- **Subscription Webhook Hook:** When a Director subscribes to a tier, Stripe webhook automatically upgrades `monthly_limit` and `plan_tier`.
 
 ---
 
-## 6. New Files to Create
+## 6. Database Schema & Migration Plan
 
-```
-Modules/Director/
-├── app/
-│   ├── Http/Controllers/Api/Ai/
-│   │   └── AiChatController.php          ← [NEW] 4 endpoints
-│   ├── Models/
-│   │   └── AiChatHistory.php             ← [NEW] conversation storage
-│   └── Services/Ai/
-│       ├── AiChatService.php             ← [NEW] AI orchestration + agentic loop
-│       ├── AiToolExecutor.php            ← [NEW] 10 function calling tools
-│       └── AiPromptBuilder.php           ← [NEW] system prompt construction
-│
-├── database/migrations/
-│   └── xxxx_create_ai_chat_histories.php ← [NEW] one migration
-│
-└── routes/api.php                        ← [MODIFY] add 4 AI routes
-```
-
-No changes to existing models, controllers, or migrations.
-
----
-
-## 7. Database Changes Required
-
-### New Table: `ai_chat_histories`
-
+### 1. `ai_settings` Table
 ```sql
-CREATE TABLE ai_chat_histories (
-    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    director_id     BIGINT UNSIGNED NOT NULL,
-    camp_id         BIGINT UNSIGNED NULL,
-    session_id      VARCHAR(36) NOT NULL,
-    role            ENUM('user', 'assistant', 'tool') NOT NULL,
-    content         LONGTEXT NOT NULL,
-    tool_calls      JSON NULL,
-    tool_name       VARCHAR(100) NULL,
-    tool_result     LONGTEXT NULL,
-    token_used      INT UNSIGNED NULL,
-    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    INDEX (director_id, session_id),
-    FOREIGN KEY (director_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (camp_id) REFERENCES camps(id) ON DELETE SET NULL
+CREATE TABLE ai_settings (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    key_name VARCHAR(100) UNIQUE NOT NULL,
+    key_value TEXT NULL,
+    is_encrypted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
 );
 ```
 
-> **No changes to any existing tables.** All referee/evaluation data is already structured.
-
----
-
-## 8. Step-by-Step Implementation Guide
-
-### PHASE 1 — Setup & Foundation (Day 1-2)
-
-**Step 1.1 — Install OpenAI Package**
-```bash
-composer require openai-php/laravel
-php artisan vendor:publish --provider="OpenAI\Laravel\ServiceProvider"
+### 2. `user_ai_quotas` Table
+```sql
+CREATE TABLE user_ai_quotas (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    plan_tier VARCHAR(50) DEFAULT 'free',
+    monthly_query_limit INT UNSIGNED DEFAULT 50,
+    queries_used_this_month INT UNSIGNED DEFAULT 0,
+    tokens_used_this_month BIGINT UNSIGNED DEFAULT 0,
+    is_blocked BOOLEAN DEFAULT FALSE,
+    block_reason VARCHAR(255) NULL,
+    quota_resets_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX (user_id)
+);
 ```
 
-**Step 1.2 — Add to .env**
-```env
-OPENAI_API_KEY=sk-...your-key...
-OPENAI_REQUEST_TIMEOUT=60
+### 3. `ai_chat_sessions` Table
+```sql
+CREATE TABLE ai_chat_sessions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    session_uuid CHAR(36) UNIQUE NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    title VARCHAR(255) NULL,
+    total_tokens BIGINT UNSIGNED DEFAULT 0,
+    last_interaction_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX (user_id, session_uuid)
+);
 ```
 
-**Step 1.3 — Create Migration**
-```bash
-php artisan make:migration create_ai_chat_histories_table --path=Modules/Director/database/migrations
-```
-
-Migration content:
-```php
-Schema::create('ai_chat_histories', function (Blueprint ) {
-    ->id();
-    ->foreignId('director_id')->constrained('users')->cascadeOnDelete();
-    ->foreignId('camp_id')->nullable()->constrained('camps')->nullOnDelete();
-    ->uuid('session_id')->index();
-    ->enum('role', ['user', 'assistant', 'tool']);
-    ->longText('content');
-    ->json('tool_calls')->nullable();
-    ->string('tool_name', 100)->nullable();
-    ->longText('tool_result')->nullable();
-    ->unsignedInteger('token_used')->nullable();
-    ->timestamps();
-    ->index(['director_id', 'session_id']);
-});
-```
-
-```bash
-php artisan migrate
-```
-
----
-
-### PHASE 2 — AI Services (Day 3-5)
-
-**Order of file creation:**
-1. `AiChatHistory.php` (Model)
-2. `AiPromptBuilder.php` (System prompt)
-3. `AiToolExecutor.php` (10 tools — query existing DB)
-4. `AiChatService.php` (Orchestrator + agentic loop)
-5. `AiChatController.php` (4 HTTP endpoints)
-
-**Key implementation note for AiToolExecutor.php:**
-
-Every tool must:
-1. Validate camp_id belongs to the director using:
-   ```php
-   Camp::forDirectorOrAssistant(->directorId)->where('id', )->first()
-   ```
-2. Return structured array (not Eloquent objects)
-3. Handle empty results gracefully
-
-**Key implementation note for AiChatService.php:**
-
-The agentic loop pattern:
-```
-while (iteration < 5):
-    response = OpenAI.chat(messages, tools)
-    if no tool_calls in response:
-        return response.content  ← Final answer
-    else:
-        for each tool_call:
-            result = toolExecutor.execute(tool_name, args)
-            append tool result to messages
-        continue loop
-```
-
-**System Prompt Context to Include:**
-- Director's full name
-- List of all their camps (ID, name, dates)
-- Platform context (what evaluation scores mean, scale 0-10)
-- Response format instructions (markdown tables)
-- Language instruction (respond in same language as question)
-
----
-
-### PHASE 3 — Routes (Day 5)
-
-Add to `Modules/Director/routes/api.php`:
-```php
-use Modules\Director\Http\Controllers\Api\Ai\AiChatController;
-
-Route::prefix('ai')->middleware(['auth:api', 'throttle:30,1'])->group(function () {
-    Route::post('/chat',                    [AiChatController::class, 'chat']);
-    Route::get('/history/{sessionId}',      [AiChatController::class, 'history']);
-    Route::get('/sessions',                 [AiChatController::class, 'sessions']);
-    Route::delete('/history/{sessionId}',   [AiChatController::class, 'clearSession']);
-});
+### 4. `ai_chat_messages` Table
+```sql
+CREATE TABLE ai_chat_messages (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    session_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    role ENUM('user', 'assistant', 'system', 'tool') NOT NULL,
+    content LONGTEXT NULL,
+    widget_type VARCHAR(50) NULL, -- 'chart', 'excel_download', 'table', null
+    widget_payload JSON NULL,
+    tokens_used INT UNSIGNED DEFAULT 0,
+    tools_called JSON NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (session_id) REFERENCES ai_chat_sessions(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX (session_id)
+);
 ```
 
 ---
 
-## 9. API Endpoints Design
+## 7. AI Function Calling & Tool Registry Definition
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/director/ai/chat` | Send message, get AI reply |
-| `GET` | `/api/director/ai/history/{sessionId}` | Get conversation history |
-| `GET` | `/api/director/ai/sessions` | List all chat sessions |
-| `DELETE` | `/api/director/ai/history/{sessionId}` | Clear a session |
+All tools are modular, deterministic PHP services located under `Modules/Director/app/Services/Ai/Tools/`:
 
-### POST /chat Request
-```json
-{
-  "message": "Show me all referees checked in for camp 5",
-  "session_id": "uuid-optional",
-  "camp_id": 5
-}
+1. **`CompareRefereesTool`:** Fetches multi-criteria score arrays for 2 or more referees and formats comparative data.
+2. **`RefereeImprovementTool`:** Aggregates multi-year evaluation records and computes positive growth deltas.
+3. **`CampRefereesLocationTool`:** Queries checked-in referees filtered by state/city/zip.
+4. **`PendingEvaluatorsTool`:** Audits registered evaluators without submitted evaluations.
+5. **`RefereePerformanceTimelineTool`:** Retrieves historical chronological scores for line-graph generation.
+6. **`CompileCampRankingsExcelTool`:** Aggregates ranking scores across multiple camps, builds `.xlsx` via `PhpSpreadsheet`, stores securely, and returns a signed download link.
+7. **`CampRosterSummaryTool`:** Quick count of registered, checked-in, and jersey-assigned referees.
+
+---
+
+## 8. Incremental 1-by-1 Implementation & Testing Phases
+
+> **All Phases Complete & Verified with 100% Automated Test Passing (26 tests, 141 assertions)**
+
 ```
-
-### POST /chat Response
-```json
-{
-  "status": true,
-  "message": "AI response generated successfully.",
-  "data": {
-    "session_id": "550e8400-e29b-41d4-a716-446655440000",
-    "reply": "## Referees for Camp...\n\n| # | Name | ...",
-    "tokens_used": 854
-  }
-}
+┌─────────────────────────────────────────────────────────────┐
+│ [DONE] PHASE 1: Database Foundation & Admin Quota           │
+│  - Migrations (ai_settings, user_ai_quotas, sessions, msgs) │
+│  - Models (AiSetting, UserAiQuota, AiChatSession, AiChatMsg)│
+│  - Seeded defaults via AiSettingSeeder                      │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ (Verified with AiPhase1DatabaseTest)
+┌──────────────────────────────▼──────────────────────────────┐
+│ [DONE] PHASE 2: Core LLM Provider & Tool Calling Engine     │
+│  - AiEngineService (OpenAI / Gemini adapter)                │
+│  - AiToolRegistry & Execution Engine                        │
+│  - CheckAiUsageQuota Middleware                             │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ (Verified with AiPhase2EngineTest)
+┌──────────────────────────────▼──────────────────────────────┐
+│ [DONE] PHASE 3: Client Advanced Analytics Tools             │
+│  - CompareRefereesTool (Line/Radar graph widget)            │
+│  - RefereeImprovementTool (3-year delta growth & rankings)  │
+│  - CampRefereesLocationTool (Roster city/state filter)      │
+│  - PendingEvaluatorsTool (Evaluator compliance audit)       │
+│  - RefereePerformanceTimelineTool (Time-series line chart)  │
+│  - CompileCampRankingsExcelTool (PhpSpreadsheet .xlsx)      │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ (Verified with AiPhase3ToolsTest)
+┌──────────────────────────────▼──────────────────────────────┐
+│ [DONE] PHASE 4: Director API Endpoints & Session Management │
+│  - POST /api/v1/director/ai/chat                            │
+│  - POST /api/v1/director/ai/session/reset                   │
+│  - GET  /api/v1/director/ai/quota                           │
+│  - GET  /api/v1/director/ai/session/{uuid}/history          │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ (Verified with AiPhase4ApiEndpointsTest)
+┌──────────────────────────────▼──────────────────────────────┐
+│ [DONE] PHASE 5: Admin Panel AI Governance & Key Management  │
+│  - AiGovernanceService & AiGovernanceController             │
+│  - Dynamic API key switcher & model selector                │
+│  - User quota management, resets, and subscription tiers    │
+│  - User AI access blocking / unblocking with reasons        │
+│  - Usage analytics & 14-day token/query chart data          │
+│  - User interaction audit history                           │
+└─────────────────────────────────────────────────────────────┘
+                               (Verified with AiPhase5AdminGovernanceTest)
 ```
-
----
-
-## 10. AI Function Calling Tools Summary
-
-| Tool Name | Queries | Description |
-|-----------|---------|-------------|
-| `get_camp_referees` | CampRefereeCheckin, User | All referees + status |
-| `get_referee_performance` | RefereeEvaluation, GameSlotAssignment | Score summary |
-| `get_referee_evaluations` | RefereeEvaluation | All eval records |
-| `get_referee_game_assignments` | GameSlotAssignment, GameSlot | Games played |
-| `get_camp_attendance_summary` | CampRefereeCheckin | Attendance overview |
-| `rank_referees_by_performance` | RefereeEvaluation | Sorted leaderboard |
-| `get_promotion_candidates` | RefereeEvaluation, CampRefereeCheckin | Who qualifies |
-| `get_rest_violations` | GameSlotAssignment (needsRest()) | Compliance check |
-| `compare_referee_across_camps` | RefereeEvaluation, Camp | Historical compare |
-| `get_director_camps` | Camp (forDirectorOrAssistant) | Camp list |
-
----
-
-## 11. Sample Prompts & Expected Responses
-
-### Bangla (AI responds in Bangla)
-- "Camp 5 e koto jon referee checkin koreche?"
-- "John Smith er performance kemon?"
-- "Kon referee ke promote kora jay?"
-- "Rest violation ache kono?"
-- "Sob referee rank koro"
-
-### English
-- "Show me all referees for camp 5"
-- "Who has the highest evaluation score?"
-- "Which referees haven't checked in yet?"
-- "Compare John's performance across all camps"
-- "Give advanced level recommendation list"
-
----
-
-## 12. Security & Permissions
-
-| Rule | How Enforced |
-|------|-------------|
-| Director sees only own camps | `Camp::forDirectorOrAssistant()` scope in every tool |
-| Assistant director scoped access | Same scope (already handles assistants) |
-| `private_comments` hidden by default | Already `` in RefereeEvaluation model |
-| AI is read-only (no data writes) | All tools are SELECT queries only |
-| Rate limiting | `throttle:30,1` middleware |
-| JWT Auth required | `auth:api` middleware |
-
----
-
-## 13. Testing Plan
-
-| Test Case | Expected Result |
-|-----------|----------------|
-| No auth token → chat endpoint | 401 Unauthorized |
-| Ask about another director's camp | "Camp not found or unauthorized" |
-| "Show referees for camp X" | Markdown table of referees |
-| "John Smith er score koto?" | Performance breakdown table |
-| "Rank all referees" | Sorted table by avg score |
-| "Promote kora jay kon?" | Candidate list with AI recommendation |
-| Multi-turn conversation | Follow-up questions work with context |
-| Camp with no evaluations | Graceful empty state message |
-| Bangla question | Response in Bangla |
-| Rate limit test (31 req/min) | 429 Too Many Requests |
-
----
-
-## 14. Future Enhancements
-
-| Priority | Feature | Notes |
-|----------|---------|-------|
-| 🔴 High | Streaming responses (SSE) | Better UX for long AI responses |
-| 🔴 High | AI evaluation score suggestion | AI proposes scores for evaluator to approve |
-| 🟡 Medium | PDF export of AI report | DomPDF already in project |
-| 🟡 Medium | Proactive AI alerts | Use Laravel Reverb (WebSockets — already installed) |
-| 🟡 Medium | AI-generated camp summary | End-of-camp performance report |
-| 🟢 Low | Voice input (Whisper API) | OpenAI Whisper for voice-to-text |
-| 🟢 Low | AI writes evaluation draft | Director reviews and approves |
-| 🟢 Low | Scheduled AI reports | Weekly performance digests via email |
-
----
-
-## 15. Implementation Checklist
-
-### Phase 1 — Setup (Day 1-2)
-- [ ] Run: `composer require openai-php/laravel`
-- [ ] Add `OPENAI_API_KEY` to `.env` and `.env.example`
-- [ ] Create migration: `ai_chat_histories` table
-- [ ] Run: `php artisan migrate`
-- [ ] Create `AiChatHistory.php` model
-
-### Phase 2 — Core AI Services (Day 3-5)
-- [ ] Create `Modules/Director/app/Services/Ai/AiPromptBuilder.php`
-- [ ] Create `Modules/Director/app/Services/Ai/AiToolExecutor.php`
-  - [ ] Tool: `get_camp_referees`
-  - [ ] Tool: `get_referee_performance`
-  - [ ] Tool: `get_referee_evaluations`
-  - [ ] Tool: `get_referee_game_assignments`
-  - [ ] Tool: `get_camp_attendance_summary`
-  - [ ] Tool: `rank_referees_by_performance`
-  - [ ] Tool: `get_promotion_candidates`
-  - [ ] Tool: `get_rest_violations`
-  - [ ] Tool: `compare_referee_across_camps`
-  - [ ] Tool: `get_director_camps`
-- [ ] Create `Modules/Director/app/Services/Ai/AiChatService.php`
-- [ ] Create `Modules/Director/app/Http/Controllers/Api/Ai/AiChatController.php`
-
-### Phase 3 — Routes & Integration (Day 5-6)
-- [ ] Add AI routes to `Modules/Director/routes/api.php`
-- [ ] Test: `POST /api/director/ai/chat` with Postman
-- [ ] Test all 10 tools individually
-- [ ] Test multi-turn conversation flow
-- [ ] Test Bangla language response
-
-### Phase 4 — Security & Polish (Day 7)
-- [ ] Verify `Camp::forDirectorOrAssistant()` blocks cross-director access
-- [ ] Confirm `throttle:30,1` middleware works
-- [ ] Test edge cases (empty camps, no evaluations, no schedule)
-- [ ] Add token usage logging for cost tracking
-- [ ] Update API documentation
-
----
-
-> ### 📌 Note for AI Reading This Plan
->
-> This is the **complete implementation blueprint** for the AI Chatbot feature.
->
-> **Critical reminders when implementing:**
-> 1. Use `->success()` and `->error()` from `ApiResponse` trait (already used everywhere)
-> 2. Always use `Camp::forDirectorOrAssistant()` for security
-> 3. `RefereeEvaluation` already has all scoring fields — **do NOT create a new table**
-> 4. Laravel **11**, PHP **8.3**, JWT Auth (`auth('api')`)
-> 5. **nWidart Laravel Modules** — all new code goes in `Modules/Director/`
-> 6. Available packages: Firebase, Stripe, Reverb (WebSockets), DomPDF, Twilio SMS, Spatie Permission
-> 7. Existing `GameSlotAssignment::needsRest()` method can be reused for rest violation detection
-> 8. Existing `Camp::scopeForDirectorOrAssistant()` handles both owner and assistant director access
-
----
-
-*Last Updated: September 23, 2026 | Status: Ready for Implementation*
