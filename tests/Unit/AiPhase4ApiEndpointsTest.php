@@ -303,7 +303,7 @@ class AiPhase4ApiEndpointsTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->directorUser, 'api')
-            ->getJson('/api/v1/director/ai/camps');
+            ->getJson('/api/v1/director/ai/camps?search=Showcase');
 
         $response->assertStatus(200);
         $response->assertJsonStructure([
@@ -314,13 +314,13 @@ class AiPhase4ApiEndpointsTest extends TestCase
                     'id',
                     'name',
                     'logo',
-                    'referees' => [
-                        '*' => ['id', 'name', 'avatar'],
-                    ],
-                    'evaluators' => [
-                        '*' => ['id', 'name', 'avatar'],
-                    ],
                 ],
+            ],
+            'pagination' => [
+                'total',
+                'per_page',
+                'current_page',
+                'last_page',
             ],
             'code',
         ]);
@@ -329,21 +329,67 @@ class AiPhase4ApiEndpointsTest extends TestCase
         $targetCamp = $campsData->firstWhere('id', $camp->id);
         $this->assertNotNull($targetCamp);
         $this->assertEquals('Elite Director AI Showcase Camp', $targetCamp['name']);
+        $this->assertGreaterThanOrEqual(1, $response->json('pagination.total'));
+    }
 
-        // Check referee sorting by last name (Alex Adams before Zack Zimmerman)
-        $refereeNames = collect($targetCamp['referees'])->pluck('name')->all();
-        $this->assertContains('Alex Adams', $refereeNames);
-        $this->assertContains('Zack Zimmerman', $refereeNames);
-        $adamsIndex = array_search('Alex Adams', $refereeNames);
-        $zimmermanIndex = array_search('Zack Zimmerman', $refereeNames);
+    public function test_get_participants_directory_endpoint(): void
+    {
+        $camp = Camp::where('camp_name', 'Elite Director AI Showcase Camp')->first();
+
+        // 1. Test fetching with specific camp_id
+        $responseCamp = $this->actingAs($this->directorUser, 'api')
+            ->getJson("/api/v1/director/ai/participants?camp_id={$camp->id}");
+
+        $responseCamp->assertStatus(200);
+        $responseCamp->assertJsonStructure([
+            'success',
+            'message',
+            'data' => [
+                '*' => ['id', 'name', 'avatar', 'role'],
+            ],
+            'pagination' => [
+                'total',
+                'per_page',
+                'current_page',
+                'last_page',
+            ],
+            'code',
+        ]);
+
+        $this->assertGreaterThanOrEqual(4, $responseCamp->json('pagination.total'));
+
+        // Check alphabetical sorting by last name (Alex Adams before Bob Baker before Walter Williams before Zack Zimmerman)
+        $names = collect($responseCamp->json('data'))->pluck('name')->all();
+        $this->assertContains('Alex Adams', $names);
+        $this->assertContains('Zack Zimmerman', $names);
+        $adamsIndex = array_search('Alex Adams', $names);
+        $zimmermanIndex = array_search('Zack Zimmerman', $names);
         $this->assertLessThan($zimmermanIndex, $adamsIndex);
 
-        // Check evaluator sorting by last name (Bob Baker before Walter Williams)
-        $evaluatorNames = collect($targetCamp['evaluators'])->pluck('name')->all();
-        $this->assertContains('Bob Baker', $evaluatorNames);
-        $this->assertContains('Walter Williams', $evaluatorNames);
-        $bakerIndex = array_search('Bob Baker', $evaluatorNames);
-        $williamsIndex = array_search('Walter Williams', $evaluatorNames);
-        $this->assertLessThan($williamsIndex, $bakerIndex);
+        // 2. Test filtering by role=referee
+        $responseRef = $this->actingAs($this->directorUser, 'api')
+            ->getJson("/api/v1/director/ai/participants?camp_id={$camp->id}&role=referee");
+
+        $responseRef->assertStatus(200);
+        $refRoles = collect($responseRef->json('data'))->pluck('role')->unique()->all();
+        $this->assertContains('referee', $refRoles);
+        $this->assertNotContains('evaluator', $refRoles);
+
+        // 3. Test filtering by role=evaluator
+        $responseEval = $this->actingAs($this->directorUser, 'api')
+            ->getJson("/api/v1/director/ai/participants?camp_id={$camp->id}&role=evaluator");
+
+        $responseEval->assertStatus(200);
+        $evalRoles = collect($responseEval->json('data'))->pluck('role')->unique()->all();
+        $this->assertContains('evaluator', $evalRoles);
+        $this->assertNotContains('referee', $evalRoles);
+
+        // 4. Test searching by name
+        $responseSearch = $this->actingAs($this->directorUser, 'api')
+            ->getJson("/api/v1/director/ai/participants?search=Adams");
+
+        $responseSearch->assertStatus(200);
+        $searchNames = collect($responseSearch->json('data'))->pluck('name')->all();
+        $this->assertContains('Alex Adams', $searchNames);
     }
 }

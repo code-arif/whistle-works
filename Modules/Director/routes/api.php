@@ -1,6 +1,7 @@
 <?php
 
-use \Modules\Director\app\Http\Controllers\Api\Ai\AiChatController;
+use Modules\Director\app\Http\Controllers\Api\Ai\AiChatController;
+use Modules\Director\app\Http\Controllers\Api\Ai\AiDirectoryController;
 use Illuminate\Support\Facades\Route;
 use Modules\Director\Http\Controllers\Api\Camp\CampManageController;
 use Modules\Director\Http\Controllers\Api\Camp\NoAuthCampController;
@@ -169,7 +170,10 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
 
         // AI Coach & Analytics Engine
         Route::group(['prefix' => 'ai', 'middleware' => ['ai.quota']], function () {
-            Route::get('/camps', [AiChatController::class, 'campsDirectory']);
+            // Mention & Context Directory APIs
+            Route::get('/camps', [AiDirectoryController::class, 'getCamps']);
+            Route::get('/participants', [AiDirectoryController::class, 'getParticipants']);
+
             Route::post('/chat', [AiChatController::class, 'chat']);
             Route::post('/session/reset', [AiChatController::class, 'resetSession']);
             Route::get('/quota', [AiChatController::class, 'getQuota']);

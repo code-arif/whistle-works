@@ -139,27 +139,4 @@ class AiChatController extends Controller
             'messages' => $messages,
         ], 200);
     }
-
-    /**
-     * Retrieve lightweight camps directory with referees & evaluators
-     * for AI Coach & Analytics Engine mention tagging and context.
-     * GET /api/v1/director/ai/camps
-     */
-    public function campsDirectory(Request $request): JsonResponse
-    {
-        $user = auth('api')->user() ?? auth()->user();
-        if (!$user) {
-            return $this->error([], 'Unauthenticated.', 401);
-        }
-
-        try {
-            $directory = $this->aiEngineService->getDirectorCampsDirectory($user);
-
-            return $this->success('AI camps directory retrieved successfully.', $directory, 200);
-        } catch (Throwable $e) {
-            return $this->error([
-                'exception' => config('app.debug') ? $e->getMessage() : null,
-            ], 'Failed to retrieve AI camps directory: ' . $e->getMessage(), 500);
-        }
-    }
 }
