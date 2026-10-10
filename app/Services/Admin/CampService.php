@@ -182,6 +182,8 @@ class CampService
             return User::role('director')
                 ->where('status', 'active')
                 ->select('id', 'first_name', 'last_name', 'email', 'avatar', 'username')
+                ->orderBy('first_name', 'asc')
+                ->orderBy('last_name', 'asc')
                 ->get()
                 ->map(function ($u) {
                     $fullName = trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? ''));
@@ -194,6 +196,8 @@ class CampService
                 });
         } catch (Exception $e) {
             return User::select('id', 'first_name', 'last_name', 'email', 'avatar', 'username')
+                ->orderBy('first_name', 'asc')
+                ->orderBy('last_name', 'asc')
                 ->limit(50)
                 ->get()
                 ->map(function ($u) {

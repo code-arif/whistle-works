@@ -95,10 +95,24 @@ const statusOptions = [
 ];
 
 const directorOptions = computed(() => {
-  return props.directors.map((dir) => ({
-    label: `${dir.name} (${dir.email})`,
+  const list = props.directors.map((dir) => ({
+    label: dir.name,
+    subLabel: dir.email,
     value: dir.id,
+    avatar: dir.avatar,
   }));
+
+  // Fallback if editing a camp whose director is not in current active directors list
+  if (editingCamp.value && editingCamp.value.director_id && !list.some(o => o.value === editingCamp.value.director_id)) {
+    list.unshift({
+      label: editingCamp.value.director_name || `Director #${editingCamp.value.director_id}`,
+      subLabel: editingCamp.value.director_email || '',
+      value: editingCamp.value.director_id,
+      avatar: editingCamp.value.director_avatar || null,
+    });
+  }
+
+  return list;
 });
 
 const sportsTypeOptions = computed(() => {
@@ -687,6 +701,8 @@ const toggleStatus = (camp) => {
             <Dropdown
               v-model="createForm.director_id"
               :options="directorOptions"
+              searchable
+              search-placeholder="Search director by name or email..."
               placeholder="Select a director"
               size="sm"
               align="left"
@@ -1048,6 +1064,8 @@ const toggleStatus = (camp) => {
             <Dropdown
               v-model="editForm.director_id"
               :options="directorOptions"
+              searchable
+              search-placeholder="Search director by name or email..."
               placeholder="Select a director"
               size="sm"
               align="left"
