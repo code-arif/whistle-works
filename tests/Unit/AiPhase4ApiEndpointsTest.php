@@ -392,4 +392,120 @@ class AiPhase4ApiEndpointsTest extends TestCase
         $searchNames = collect($responseSearch->json('data'))->pluck('name')->all();
         $this->assertContains('Alex Adams', $searchNames);
     }
+
+    public function test_get_sessions_list_with_pagination(): void
+    {
+        AiChatSession::where('user_id', $this->directorUser->id)->delete();
+
+        // Create multiple sessions for the director
+        $session1 = AiChatSession::create([
+            'user_id' => $this->directorUser->id,
+            'title' => 'Referee Performance Discussion',
+            'total_tokens' => 150,
+            'last_interaction_at' => now()->subMinutes(10),
+        ]);
+
+        $session2 = AiChatSession::create([
+            'user_id' => $this->directorUser->id,
+            'title' => 'Camp Tulsa Location Query',
+            'total_tokens' => 80,
+            'last_interaction_at' => now()->subMinutes(5),
+        ]);
+
+        // Add a message to session2 to verify latest_message and message_count
+        AiChatMessage::create([
+            'session_id' => $session2->id,
+            'user_id' => $this->directorUser->id,
+            'role' => 'user',
+            'content' => 'Show me all referees in Tulsa',
+        ]);
+        AiChatMessage::create([
+            'session_id' => $session2->id,
+            'user_id' => $this->directorUser->id,
+            'role' => 'assistant',
+            'content' => 'Here are 3 referees located in Tulsa',
+        ]);
+
+        $response = $this->actingAs($this->directorUser, 'api')
+            ->getJson('/api/v1/director/ai/sessions?per_page=10');
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'success',
+            'message',
+            'data' => [
+                'sessions' => [
+                    '*' => [
+                        'id',
+                        'session_uuid',
+                        'title',
+                        'total_tokens',
+                        'messages_count',
+                        'last_interaction_at',
+                        'created_at',
+                        'updated_at',
+                    ],
+                ],
+                'pagination' => [
+                    'total',
+                    'per_page',
+                    'current_page',
+                    'last_page',
+                ],
+            ],
+            'code',
+        ]);
+
+        $this->assertGreaterThanOrEqual(2, $response->json('data.pagination.total'));
+        $this->assertEquals(10, $response->json('data.pagination.per_page'));
+        $this->assertEquals(1, $response->json('data.pagination.current_page'));
+
+        // Verify ordering: session2 has more recent interaction than session1
+        $sessions = collect($response->json('data.sessions'));
+        $foundSession2 = $sessions->firstWhere('session_uuid', $session2->session_uuid);
+        $this->assertNotNull($foundSession2);
+        $this->assertEquals('Camp Tulsa Location Query', $foundSession2['title']);
+        $this->assertEquals(2, $foundSession2['messages_count']);
+        $this->assertNotNull($foundSession2['last_message']);
+    }
+
+    public function test_get_sessions_list_search_and_alias(): void
+    {
+        AiChatSession::create([
+            'user_id' => $this->directorUser->id,
+            'title' => 'Special Keyword Session Search Target',
+        ]);
+
+        $response = $this->actingAs($this->directorUser, 'api')
+            ->getJson('/api/v1/director/ai/session/list?search=Keyword');
+
+        $response->assertStatus(200);
+        $sessions = collect($response->json('data.sessions'));
+        $this->assertTrue($sessions->contains(fn($s) => str_contains($s['title'], 'Special Keyword')));
+    }
+
+    public function test_update_and_delete_session(): void
+    {
+        $session = AiChatSession::create([
+            'user_id' => $this->directorUser->id,
+            'title' => 'Initial Title',
+        ]);
+
+        // 1. Rename
+        $renameResponse = $this->actingAs($this->directorUser, 'api')
+            ->patchJson("/api/v1/director/ai/session/{$session->session_uuid}", [
+                'title' => 'Renamed Conversation',
+            ]);
+
+        $renameResponse->assertStatus(200);
+        $this->assertEquals('Renamed Conversation', $renameResponse->json('data.title'));
+        $this->assertEquals('Renamed Conversation', $session->fresh()->title);
+
+        // 2. Delete
+        $deleteResponse = $this->actingAs($this->directorUser, 'api')
+            ->deleteJson("/api/v1/director/ai/session/{$session->session_uuid}");
+
+        $deleteResponse->assertStatus(200);
+        $this->assertNull(AiChatSession::find($session->id));
+    }
 }

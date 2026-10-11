@@ -96,6 +96,10 @@ PROMPT;
                 'title' => $title,
                 'last_interaction_at' => Carbon::now(),
             ]);
+        } elseif ($session->title === 'New Conversation' || empty($session->title)) {
+            $session->update([
+                'title' => Str::limit(trim($userPrompt), 60),
+            ]);
         }
 
         // 2. Persist incoming user message

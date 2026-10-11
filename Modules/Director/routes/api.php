@@ -177,7 +177,10 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
             Route::post('/chat', [AiChatController::class, 'chat']);
             Route::post('/session/reset', [AiChatController::class, 'resetSession']);
             Route::get('/quota', [AiChatController::class, 'getQuota']);
+            Route::get('/sessions', [AiChatController::class, 'getSessions']);
             Route::get('/session/{session_uuid}/history', [AiChatController::class, 'getSessionHistory']);
+            Route::patch('/session/rename/{session_uuid}', [AiChatController::class, 'updateSession']);
+            Route::delete('/session/delete/{session_uuid}', [AiChatController::class, 'deleteSession']);
         });
     });
 });

@@ -202,10 +202,14 @@ All tools are modular, deterministic PHP services located under `Modules/Directo
                                │ (Verified with AiPhase3ToolsTest)
 ┌──────────────────────────────▼──────────────────────────────┐
 │ [DONE] PHASE 4: Director API Endpoints & Session Management │
-│  - POST /api/v1/director/ai/chat                            │
-│  - POST /api/v1/director/ai/session/reset                   │
-│  - GET  /api/v1/director/ai/quota                           │
-│  - GET  /api/v1/director/ai/session/{uuid}/history          │
+│  - POST   /api/v1/director/ai/chat                          │
+│  - POST   /api/v1/director/ai/session/reset                 │
+│  - GET    /api/v1/director/ai/quota                         │
+│  - GET    /api/v1/director/ai/sessions (Paginated list)     │
+│  - GET    /api/v1/director/ai/session/list (Alias)          │
+│  - GET    /api/v1/director/ai/session/{uuid}/history        │
+│  - PATCH  /api/v1/director/ai/session/{uuid} (Rename)       │
+│  - DELETE /api/v1/director/ai/session/{uuid} (Delete)       │
 └──────────────────────────────┬──────────────────────────────┘
                                │ (Verified with AiPhase4ApiEndpointsTest)
 ┌──────────────────────────────▼──────────────────────────────┐
