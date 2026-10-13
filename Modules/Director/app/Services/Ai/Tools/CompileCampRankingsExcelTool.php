@@ -53,7 +53,7 @@ class CompileCampRankingsExcelTool implements AiToolInterface
         $campIds = $arguments['camp_ids'] ?? [];
 
         // Resolve Camps
-        $campsQuery = Camp::query();
+        $campsQuery = Camp::forDirectorOrAssistant($userId);
         if (!empty($campIds)) {
             $campsQuery->whereIn('id', $campIds);
         } elseif (!empty($campNames)) {
@@ -68,8 +68,8 @@ class CompileCampRankingsExcelTool implements AiToolInterface
         $camps = $campsQuery->get();
 
         if ($camps->isEmpty()) {
-            // Fallback to recent camps
-            $camps = Camp::orderBy('id', 'desc')->limit(2)->get();
+            // Fallback to recent camps for this director
+            $camps = Camp::forDirectorOrAssistant($userId)->orderBy('id', 'desc')->limit(2)->get();
         }
 
         if ($camps->isEmpty()) {
