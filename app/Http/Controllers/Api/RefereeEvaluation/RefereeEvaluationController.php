@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\RefereeEvaluation;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\RefereeEvaluation\RefereeEvaluationRequest;
+use App\Http\Requests\Api\RefereeEvaluation\UpdateRefereeEvaluationRequest;
 use App\Services\Api\RefereeEvaluation\RefereeEvaluationExportService;
 use App\Services\Api\RefereeEvaluation\RefereeEvaluationService;
 use App\Traits\ApiResponse;
@@ -27,12 +28,12 @@ class RefereeEvaluationController extends Controller
     }
 
     /**
-     * Create or update referee evaluation.
+     * Create a new referee evaluation.
      *
      * @param  RefereeEvaluationRequest  $request
      * @return JsonResponse
      */
-    public function storeOrUpdate(RefereeEvaluationRequest $request): JsonResponse
+    public function store(RefereeEvaluationRequest $request): JsonResponse
     {
         $user = auth('api')->user();
 
@@ -40,13 +41,59 @@ class RefereeEvaluationController extends Controller
             return $this->error([], 'Unauthenticated.', 401);
         }
 
-        $result = $this->refereeEvaluationService->storeOrUpdate($user, $request->validated());
+        $result = $this->refereeEvaluationService->store($user, $request->validated());
 
         if (!$result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
         }
 
         return $this->success($result['message'], $result['data'], $result['code']);
+    }
+
+    /**
+     * Update an existing referee evaluation.
+     *
+     * @param  UpdateRefereeEvaluationRequest  $request
+     * @param  int|string                      $id
+     * @return JsonResponse
+     */
+    public function update(UpdateRefereeEvaluationRequest $request, $id): JsonResponse
+    {
+        $user = auth('api')->user();
+
+        if (!$user) {
+            return $this->error([], 'Unauthenticated.', 401);
+        }
+
+        $result = $this->refereeEvaluationService->update($user, $id, $request->validated());
+
+        if (!$result['success']) {
+            return $this->error($result['data'], $result['message'], $result['code']);
+        }
+
+        return $this->success($result['message'], $result['data'], $result['code']);
+    }
+
+    /**
+     * Alias for store to support 'create' action.
+     *
+     * @param  RefereeEvaluationRequest  $request
+     * @return JsonResponse
+     */
+    public function create(RefereeEvaluationRequest $request): JsonResponse
+    {
+        return $this->store($request);
+    }
+
+    /**
+     * Backward-compatible alias for store.
+     *
+     * @param  RefereeEvaluationRequest  $request
+     * @return JsonResponse
+     */
+    public function storeOrUpdate(RefereeEvaluationRequest $request): JsonResponse
+    {
+        return $this->store($request);
     }
 
     /**

@@ -43,7 +43,7 @@ class AiChatController extends Controller
             );
 
             return $this->success('AI response generated successfully.', $response, 200);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return $this->error([
                 'exception' => config('app.debug') ? $e->getMessage() : null,
             ], 'Failed to process AI query: ' . $e->getMessage(), 500);

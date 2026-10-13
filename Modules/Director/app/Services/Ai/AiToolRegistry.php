@@ -5,6 +5,14 @@ namespace Modules\Director\app\Services\Ai;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Modules\Director\app\Services\Ai\Contracts\AiToolInterface;
+use Modules\Director\app\Services\Ai\Tools\CampRefereesLocationTool;
+use Modules\Director\app\Services\Ai\Tools\CompareRefereesTool;
+use Modules\Director\app\Services\Ai\Tools\CompileCampRankingsExcelTool;
+use Modules\Director\app\Services\Ai\Tools\PendingEvaluatorsTool;
+use Modules\Director\app\Services\Ai\Tools\RefereeCheckinStatusTool;
+use Modules\Director\app\Services\Ai\Tools\RefereeImprovementTool;
+use Modules\Director\app\Services\Ai\Tools\RefereePerformanceTimelineTool;
+use Throwable;
 
 class AiToolRegistry
 {
@@ -90,7 +98,7 @@ class AiToolRegistry
             ]);
 
             return $executionResult;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error("[AiToolRegistry] Tool {$name} execution failed: " . $e->getMessage(), [
                 'exception' => get_class($e),
                 'trace' => $e->getTraceAsString(),
@@ -113,12 +121,12 @@ class AiToolRegistry
      */
     protected function registerDefaultTools(): void
     {
-        $this->register(new \Modules\Director\app\Services\Ai\Tools\CompareRefereesTool());
-        $this->register(new \Modules\Director\app\Services\Ai\Tools\RefereeImprovementTool());
-        $this->register(new \Modules\Director\app\Services\Ai\Tools\CampRefereesLocationTool());
-        $this->register(new \Modules\Director\app\Services\Ai\Tools\PendingEvaluatorsTool());
-        $this->register(new \Modules\Director\app\Services\Ai\Tools\RefereePerformanceTimelineTool());
-        $this->register(new \Modules\Director\app\Services\Ai\Tools\CompileCampRankingsExcelTool());
-        $this->register(new \Modules\Director\app\Services\Ai\Tools\RefereeCheckinStatusTool());
+        $this->register(new CompareRefereesTool());
+        $this->register(new RefereeImprovementTool());
+        $this->register(new CampRefereesLocationTool());
+        $this->register(new PendingEvaluatorsTool());
+        $this->register(new RefereePerformanceTimelineTool());
+        $this->register(new CompileCampRankingsExcelTool());
+        $this->register(new RefereeCheckinStatusTool());
     }
 }

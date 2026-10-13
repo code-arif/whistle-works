@@ -21,13 +21,13 @@ use Modules\Director\Transformers\Referee\CheckedInRefereeResource;
 class RefereeEvaluationService
 {
     /**
-     * Create or update referee evaluation.
+     * Create a new referee evaluation.
      *
      * @param  User   $user
      * @param  array  $validated
      * @return array
      */
-    public function storeOrUpdate(User $user, array $validated): array
+    public function store(User $user, array $validated): array
     {
         if (!$user->hasAnyRole(['evaluator', 'director'])) {
             return [
@@ -101,74 +101,31 @@ class RefereeEvaluationService
         DB::beginTransaction();
 
         try {
-            if (isset($validated['evaluation_id'])) {
-                $evaluation = RefereeEvaluation::find($validated['evaluation_id']);
+            $evaluation = RefereeEvaluation::create([
+                'referee_id'               => $validated['referee_id'],
+                'evaluator_id'             => $user->id,
+                'camp_id'                  => $validated['camp_id'],
+                'game_slot_id'             => $validated['game_slot_id'] ?? null,
+                'call_accuracy'            => $validated['call_accuracy'] ?? null,
+                'communication_skills'     => $validated['communication_skills'] ?? null,
+                'consistency_of_calls'     => $validated['consistency_of_calls'] ?? null,
+                'court_position_mechanics' => $validated['court_position_mechanics'] ?? null,
+                'fitness_mobility'         => $validated['fitness_mobility'] ?? null,
+                'game_awareness'           => $validated['game_awareness'] ?? null,
+                'private_comments'         => $validated['private_comments'] ?? null,
+                'referee_feedback'         => $validated['referee_feedback'] ?? null,
+                'status'                   => $validated['status'] ?? 'draft',
+                'submitted_at'             => ($validated['status'] ?? 'draft') === 'submitted' ? now() : null,
+            ]);
 
-                if (!$evaluation) {
-                    return [
-                        'success' => false,
-                        'code'    => 404,
-                        'message' => 'Evaluation not found.',
-                        'data'    => [],
-                    ];
-                }
-
-                if ($evaluation->evaluator_id !== $user->id) {
-                    return [
-                        'success' => false,
-                        'code'    => 403,
-                        'message' => 'You can only update your own evaluations.',
-                        'data'    => [],
-                    ];
-                }
-
-                $evaluation->update([
-                    'call_accuracy'            => $validated['call_accuracy'] ?? null,
-                    'communication_skills'     => $validated['communication_skills'] ?? null,
-                    'consistency_of_calls'     => $validated['consistency_of_calls'] ?? null,
-                    'court_position_mechanics' => $validated['court_position_mechanics'] ?? null,
-                    'fitness_mobility'         => $validated['fitness_mobility'] ?? null,
-                    'game_awareness'           => $validated['game_awareness'] ?? null,
-                    'private_comments'         => $validated['private_comments'] ?? null,
-                    'referee_feedback'         => $validated['referee_feedback'] ?? null,
-                    'status'                   => $validated['status'] ?? 'draft',
-                    'submitted_at'             => ($validated['status'] ?? 'draft') === 'submitted' ? now() : null,
-                ]);
-
-                $this->saveRecommendedLevel($evaluation, $validated);
-
-                $message = 'Evaluation updated successfully.';
-                $statusCode = 200;
-            } else {
-                $evaluation = RefereeEvaluation::create([
-                    'referee_id'               => $validated['referee_id'],
-                    'evaluator_id'             => $user->id,
-                    'camp_id'                  => $validated['camp_id'],
-                    'game_slot_id'             => $validated['game_slot_id'] ?? null,
-                    'call_accuracy'            => $validated['call_accuracy'] ?? null,
-                    'communication_skills'     => $validated['communication_skills'] ?? null,
-                    'consistency_of_calls'     => $validated['consistency_of_calls'] ?? null,
-                    'court_position_mechanics' => $validated['court_position_mechanics'] ?? null,
-                    'fitness_mobility'         => $validated['fitness_mobility'] ?? null,
-                    'game_awareness'           => $validated['game_awareness'] ?? null,
-                    'private_comments'         => $validated['private_comments'] ?? null,
-                    'referee_feedback'         => $validated['referee_feedback'] ?? null,
-                    'status'                   => $validated['status'] ?? 'draft',
-                    'submitted_at'             => ($validated['status'] ?? 'draft') === 'submitted' ? now() : null,
-                ]);
-
-                $this->saveRecommendedLevel($evaluation, $validated);
-
-                $message = 'Evaluation created successfully.';
-                $statusCode = 201;
-            }
+            $this->saveRecommendedLevel($evaluation, $validated);
 
             DB::commit();
 
             return [
                 'success' => true,
-                'code'    => $statusCode,
-                'message' => $message,
+                'code'    => 201,
+                'message' => 'Evaluation created successfully.',
                 'data'    => new RefereeEvaluationResource($evaluation->load(['referee', 'evaluator', 'camp', 'gameSlot', 'recommendedLevels'])),
             ];
         } catch (Exception $e) {
@@ -181,6 +138,118 @@ class RefereeEvaluationService
                 'data'    => [],
             ];
         }
+    }
+
+    /**
+     * Update an existing referee evaluation.
+     *
+     * @param  User        $user
+     * @param  int|string  $id
+     * @param  array       $validated
+     * @return array
+     */
+    public function update(User $user, $id, array $validated): array
+    {
+        if (!$user->hasAnyRole(['evaluator', 'director'])) {
+            return [
+                'success' => false,
+                'code'    => 403,
+                'message' => 'Only evaluators and directors can update evaluations.',
+                'data'    => [],
+            ];
+        }
+
+        $evaluation = RefereeEvaluation::find($id);
+
+        if (!$evaluation) {
+            return [
+                'success' => false,
+                'code'    => 404,
+                'message' => 'Evaluation not found.',
+                'data'    => [],
+            ];
+        }
+
+        if (!$evaluation->canBeEditedBy($user)) {
+            return [
+                'success' => false,
+                'code'    => 403,
+                'message' => 'You do not have permission to update this evaluation.',
+                'data'    => [],
+            ];
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $updateData = [];
+            $fields = [
+                'game_slot_id',
+                'call_accuracy',
+                'communication_skills',
+                'consistency_of_calls',
+                'court_position_mechanics',
+                'fitness_mobility',
+                'game_awareness',
+                'private_comments',
+                'referee_feedback',
+                'status',
+            ];
+
+            foreach ($fields as $field) {
+                if (array_key_exists($field, $validated)) {
+                    $updateData[$field] = $validated[$field];
+                }
+            }
+
+            if (isset($updateData['status'])) {
+                if ($updateData['status'] === 'submitted' && !$evaluation->submitted_at) {
+                    $updateData['submitted_at'] = now();
+                } elseif ($updateData['status'] === 'draft') {
+                    $updateData['submitted_at'] = null;
+                }
+            }
+
+            if (!empty($updateData)) {
+                $evaluation->update($updateData);
+            }
+
+            $this->saveRecommendedLevel($evaluation, $validated);
+
+            DB::commit();
+
+            return [
+                'success' => true,
+                'code'    => 200,
+                'message' => 'Evaluation updated successfully.',
+                'data'    => new RefereeEvaluationResource($evaluation->fresh()->load(['referee', 'evaluator', 'camp', 'gameSlot', 'recommendedLevels'])),
+            ];
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return [
+                'success' => false,
+                'code'    => 500,
+                'message' => 'Failed to update evaluation: ' . $e->getMessage(),
+                'data'    => [],
+            ];
+        }
+    }
+
+    /**
+     * Backward-compatible storeOrUpdate method.
+     *
+     * @param  User   $user
+     * @param  array  $validated
+     * @return array
+     */
+    public function storeOrUpdate(User $user, array $validated): array
+    {
+        if (!empty($validated['evaluation_id'])) {
+            return $this->update($user, $validated['evaluation_id'], $validated);
+        }
+
+        return $this->store($user, $validated);
     }
 
     /**

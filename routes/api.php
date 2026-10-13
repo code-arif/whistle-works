@@ -209,7 +209,9 @@ Route::middleware(['auth:api', 'role:evaluator,api'])->group(function () {
 */
 Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function () {
     Route::prefix('referee/evaluation')->group(function () {
-        Route::post('/upsert', [RefereeEvaluationController::class, 'storeOrUpdate']);
+        Route::post('/create', [RefereeEvaluationController::class, 'store']);
+        Route::post('/store', [RefereeEvaluationController::class, 'store']);
+        Route::match(['post', 'put'], '/update/{id}', [RefereeEvaluationController::class, 'update']);
         Route::delete('/destroy/{id}', [RefereeEvaluationController::class, 'destroy']);
         Route::get('/my-evaluations/{campId}', [RefereeEvaluationController::class, 'getMyEvaluations']);
         // Route::get('/camp/{campId}', [RefereeEvaluationController::class, 'getEvaluationsByCamp']);
