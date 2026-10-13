@@ -268,14 +268,19 @@ class RefereeEvaluationController extends Controller
     }
 
     /**
-     * Get sports types.
+     * Get sports types and recommended evaluation levels.
      *
      * @param  Request  $request
      * @return JsonResponse
      */
     public function getSportTypes(Request $request): JsonResponse
     {
-        $result = $this->refereeEvaluationService->getSportTypes($request->name);
+        $result = $this->refereeEvaluationService->getSportTypes(
+            $request->name,
+            $request->camp_id,
+            $request->sports_type_id,
+            $request->query('format')
+        );
 
         return $this->success($result['message'], $result['data'], $result['code']);
     }

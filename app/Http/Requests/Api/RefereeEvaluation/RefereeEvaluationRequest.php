@@ -43,18 +43,8 @@ class RefereeEvaluationRequest extends FormRequest
             'private_comments' => 'nullable|string|max:5000',
             'referee_feedback' => 'nullable|string|max:5000',
 
-            'recommended_level' => ['nullable', Rule::in([
-                'NCAA D1',
-                'NCAA D2',
-                'NAIA',
-                'JUCO',
-                'HS',
-                'JH/ELEM',
-                'Large School Varsity',
-                'Mid Size School Varsity',
-                'Small School Varsity',
-                'Junior Varsity',
-            ])],
+            'sports_type_level_id' => 'nullable|exists:sports_type_levels,id',
+            'recommended_level'    => 'nullable|string|max:191',
 
             'status' => 'nullable|in:draft,submitted',
         ];

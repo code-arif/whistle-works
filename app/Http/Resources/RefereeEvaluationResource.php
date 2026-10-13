@@ -67,6 +67,9 @@ class RefereeEvaluationResource extends JsonResource
             'recommended_level' => $this->relationLoaded('recommendedLevels')
                 ? $this->recommendedLevels->first()?->level
                 : null,
+            'sports_type_level_id' => $this->relationLoaded('recommendedLevels')
+                ? $this->recommendedLevels->first()?->sports_type_level_id
+                : null,
             'status' => $this->status,
             'submitted_at' => $this->submitted_at?->format('Y-m-d H:i:s'),
         ];

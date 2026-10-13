@@ -10,6 +10,7 @@ use App\Models\CampRefereeJearsyNumber;
 use App\Models\RecommendedLevel;
 use App\Models\RefereeEvaluation;
 use App\Models\SportsType;
+use App\Models\SportsTypeLevel;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -134,13 +135,7 @@ class RefereeEvaluationService
                     'submitted_at'             => ($validated['status'] ?? 'draft') === 'submitted' ? now() : null,
                 ]);
 
-                if (isset($validated['recommended_level'])) {
-                    $evaluation->recommendedLevels()->delete();
-                    RecommendedLevel::create([
-                        'evaluation_id' => $evaluation->id,
-                        'level'         => $validated['recommended_level'],
-                    ]);
-                }
+                $this->saveRecommendedLevel($evaluation, $validated);
 
                 $message = 'Evaluation updated successfully.';
                 $statusCode = 200;
@@ -162,12 +157,7 @@ class RefereeEvaluationService
                     'submitted_at'             => ($validated['status'] ?? 'draft') === 'submitted' ? now() : null,
                 ]);
 
-                if (isset($validated['recommended_level'])) {
-                    RecommendedLevel::create([
-                        'evaluation_id' => $evaluation->id,
-                        'level'         => $validated['recommended_level'],
-                    ]);
-                }
+                $this->saveRecommendedLevel($evaluation, $validated);
 
                 $message = 'Evaluation created successfully.';
                 $statusCode = 201;
@@ -1018,41 +1008,143 @@ class RefereeEvaluationService
     }
 
     /**
-     * Get sports types for referee levels.
+     * Save or sync recommended evaluation level (with both relational ID and immutable snapshot).
      *
-     * @param  string|null  $sportsName
+     * @param  RefereeEvaluation  $evaluation
+     * @param  array              $validated
+     * @return void
+     */
+    protected function saveRecommendedLevel(RefereeEvaluation $evaluation, array $validated): void
+    {
+        $sportsTypeLevelId = $validated['sports_type_level_id'] ?? null;
+        $levelName = $validated['recommended_level'] ?? null;
+
+        // If neither was provided, leave existing
+        if (!$sportsTypeLevelId && !$levelName) {
+            return;
+        }
+
+        if ($sportsTypeLevelId) {
+            $sportsTypeLevel = SportsTypeLevel::find($sportsTypeLevelId);
+            if ($sportsTypeLevel) {
+                $levelName = $sportsTypeLevel->name;
+            }
+        } elseif ($levelName) {
+            $campId = $validated['camp_id'] ?? $evaluation->camp_id;
+            if ($campId) {
+                $camp = Camp::find($campId);
+                if ($camp && $camp->sports_type_id) {
+                    $matched = SportsTypeLevel::where('sports_type_id', $camp->sports_type_id)
+                        ->where('name', $levelName)
+                        ->first();
+                    if ($matched) {
+                        $sportsTypeLevelId = $matched->id;
+                    }
+                }
+            }
+        }
+
+        $evaluation->recommendedLevels()->delete();
+
+        RecommendedLevel::create([
+            'evaluation_id'        => $evaluation->id,
+            'sports_type_level_id' => $sportsTypeLevelId,
+            'level'                => $levelName,
+        ]);
+    }
+
+    /**
+     * Get sports types and active recommended evaluation levels.
+     *
+     * Supports filtering by camp_id, sports_type_id, or legacy sports_name.
+     * Supports format='objects' for rich level models, default returns string array.
+     *
+     * @param  string|null      $sportsName
+     * @param  int|string|null  $campId
+     * @param  int|string|null  $sportsTypeId
+     * @param  string|null      $format
      * @return array
      */
-    public function getSportTypes(?string $sportsName): array
+    public function getSportTypes(?string $sportsName = null, $campId = null, $sportsTypeId = null, ?string $format = null): array
     {
-        $sportType = SportsType::where('status', 'active')
-            ->where('sports_name', $sportsName)
-            ->first();
+        $sportType = null;
 
-        if ($sportType && $sportType->sports_name === 'HS Basketball') {
-            $data = [
-                'Large School Varsity',
-                'Mid Size School Varsity',
-                'Small School Varsity',
-                'Junior Varsity',
-                'JH/ELEM',
-            ];
+        if ($campId) {
+            $camp = Camp::find($campId);
+            if ($camp && $camp->sports_type_id) {
+                $sportType = SportsType::with('activeLevels')->find($camp->sports_type_id);
+            }
+        }
+
+        if (!$sportType && $sportsTypeId) {
+            $sportType = SportsType::with('activeLevels')->find($sportsTypeId);
+        }
+
+        if (!$sportType && $sportsName) {
+            $sportType = SportsType::with('activeLevels')
+                ->where('sports_name', $sportsName)
+                ->first();
+        }
+
+        if (!$sportType) {
+            $sportType = SportsType::with('activeLevels')
+                ->where('status', 'active')
+                ->first();
+        }
+
+        $levels = ($sportType && $sportType->relationLoaded('activeLevels') && $sportType->activeLevels->isNotEmpty())
+            ? $sportType->activeLevels
+            : null;
+
+        if ($format === 'objects' || $format === 'detailed') {
+            if ($levels) {
+                $data = $levels->map(function ($lvl) {
+                    return [
+                        'id'             => $lvl->id,
+                        'sports_type_id' => $lvl->sports_type_id,
+                        'name'           => $lvl->name,
+                        'level'          => $lvl->name,
+                        'sort_order'     => $lvl->sort_order,
+                        'status'         => $lvl->status,
+                    ];
+                })->values()->all();
+            } else {
+                $fallback = ['NCAA D1', 'NCAA D2', 'NAIA', 'JUCO', 'HS', 'JH/ELEM'];
+                $data = array_map(function ($name, $index) {
+                    return [
+                        'id'             => null,
+                        'sports_type_id' => null,
+                        'name'           => $name,
+                        'level'          => $name,
+                        'sort_order'     => $index + 1,
+                        'status'         => 'active',
+                    ];
+                }, $fallback, array_keys($fallback));
+            }
         } else {
-            $data = [
-                'NCAA D1',
-                'NCAA D2',
-                'NAIA',
-                'JUCO',
-                'HS',
-                'JH/ELEM',
-            ];
+            if ($levels) {
+                $data = $levels->pluck('name')->values()->all();
+            } else {
+                $data = [
+                    'NCAA D1',
+                    'NCAA D2',
+                    'NAIA',
+                    'JUCO',
+                    'HS',
+                    'JH/ELEM',
+                ];
+            }
         }
 
         return [
-            'success' => true,
-            'code'    => 200,
-            'message' => 'Data retrieved successfully.',
-            'data'    => $data,
+            'success'     => true,
+            'code'        => 200,
+            'message'     => 'Data retrieved successfully.',
+            'sports_type' => $sportType ? [
+                'id'          => $sportType->id,
+                'sports_name' => $sportType->sports_name,
+            ] : null,
+            'data'        => $data,
         ];
     }
 }

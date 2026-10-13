@@ -26,6 +26,7 @@ class UpdateSportsTypeRequest extends FormRequest
             'sports_fee'  => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'icon'        => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg,webp', 'max:5120'],
             'status'      => ['nullable', 'in:active,inactive'],
+            'evaluation_levels' => ['nullable'],
         ];
     }
 }

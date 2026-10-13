@@ -29,6 +29,7 @@ class SportsTypeService
         $sortOrder = strtolower($sortOrder) === 'asc' ? 'asc' : 'desc';
 
         $query = SportsType::query()
+            ->with(['levels'])
             ->withCount('camps');
 
         if (!empty($search)) {
@@ -45,14 +46,23 @@ class SportsTypeService
             ->withQueryString()
             ->through(function ($item) {
                 return [
-                    'id'          => $item->id,
-                    'sports_name' => $item->sports_name,
-                    'sports_fee'  => (float) ($item->sports_fee ?? 0),
-                    'icon'        => $item->icon ? asset($item->icon) : null,
-                    'raw_icon'    => $item->icon,
-                    'status'      => $item->status,
-                    'camps_count' => (int) $item->camps_count,
-                    'created_at'  => $item->created_at ? $item->created_at->format('M d, Y') : 'N/A',
+                    'id'           => $item->id,
+                    'sports_name'  => $item->sports_name,
+                    'sports_fee'   => (float) ($item->sports_fee ?? 0),
+                    'icon'         => $item->icon ? asset($item->icon) : null,
+                    'raw_icon'     => $item->icon,
+                    'status'       => $item->status,
+                    'camps_count'  => (int) $item->camps_count,
+                    'levels_count' => (int) $item->levels->count(),
+                    'levels'       => $item->levels->map(function ($lvl) {
+                        return [
+                            'id'         => $lvl->id,
+                            'name'       => $lvl->name,
+                            'sort_order' => (int) $lvl->sort_order,
+                            'status'     => $lvl->status,
+                        ];
+                    })->values()->toArray(),
+                    'created_at'   => $item->created_at ? $item->created_at->format('M d, Y') : 'N/A',
                 ];
             });
     }
@@ -102,12 +112,17 @@ class SportsTypeService
             $iconPath = Helper::fileUpload($iconFile, 'sportsType');
         }
 
-        return SportsType::create([
+        $sportsType = SportsType::create([
             'sports_name' => $data['sports_name'],
             'sports_fee'  => $data['sports_fee'] ?? 0,
             'icon'        => $iconPath,
             'status'      => $data['status'] ?? 'active',
         ]);
+
+        // Process dynamic evaluation levels
+        $this->syncEvaluationLevels($sportsType, $data['evaluation_levels'] ?? null);
+
+        return $sportsType;
     }
 
     /**
@@ -131,7 +146,71 @@ class SportsTypeService
 
         $sportsType->save();
 
+        // Process dynamic evaluation levels
+        if (array_key_exists('evaluation_levels', $data)) {
+            $this->syncEvaluationLevels($sportsType, $data['evaluation_levels']);
+        }
+
         return $sportsType;
+    }
+
+    /**
+     * Synchronize evaluation levels for a sports type.
+     */
+    protected function syncEvaluationLevels(SportsType $sportsType, mixed $rawLevels): void
+    {
+        if (empty($rawLevels)) {
+            return;
+        }
+
+        // Parse if JSON string from FormData
+        $levels = is_string($rawLevels) ? json_decode($rawLevels, true) : $rawLevels;
+
+        if (!is_array($levels)) {
+            return;
+        }
+
+        $incomingIds = [];
+        $order = 1;
+
+        foreach ($levels as $levelData) {
+            $name = is_array($levelData) ? trim($levelData['name'] ?? '') : trim((string) $levelData);
+            if (empty($name)) {
+                continue;
+            }
+
+            $id = is_array($levelData) ? ($levelData['id'] ?? null) : null;
+            $sortOrder = is_array($levelData) && isset($levelData['sort_order']) ? (int) $levelData['sort_order'] : $order;
+            $status = is_array($levelData) && isset($levelData['status']) ? $levelData['status'] : 'active';
+
+            if ($id) {
+                $existing = $sportsType->levels()->where('id', $id)->first();
+                if ($existing) {
+                    $existing->update([
+                        'name'       => $name,
+                        'sort_order' => $sortOrder,
+                        'status'     => $status,
+                    ]);
+                    $incomingIds[] = $existing->id;
+                    $order++;
+                    continue;
+                }
+            }
+
+            // Create new level
+            $newLevel = $sportsType->levels()->create([
+                'name'       => $name,
+                'sort_order' => $sortOrder,
+                'status'     => $status,
+            ]);
+            $incomingIds[] = $newLevel->id;
+            $order++;
+        }
+
+        // Remove deleted levels if any
+        if (!empty($incomingIds)) {
+            $sportsType->levels()->whereNotIn('id', $incomingIds)->delete();
+        }
     }
 
     /**
