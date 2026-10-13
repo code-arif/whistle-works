@@ -214,7 +214,6 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
         Route::match(['post', 'put'], '/update/{id}', [RefereeEvaluationController::class, 'update']);
         Route::delete('/destroy/{id}', [RefereeEvaluationController::class, 'destroy']);
         Route::get('/my-evaluations/{campId}', [RefereeEvaluationController::class, 'getMyEvaluations']);
-        // Route::get('/camp/{campId}', [RefereeEvaluationController::class, 'getEvaluationsByCamp']);
         Route::get('/details/{evaluationId}', [RefereeEvaluationController::class, 'show']);
 
         // Get referee statistics

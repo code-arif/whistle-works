@@ -345,7 +345,7 @@ class RefereeEvaluationService
             }
         }
 
-        $query = RefereeEvaluation::with(['referee', 'evaluator', 'gameSlot', 'recommendedLevels'])
+        $query = RefereeEvaluation::with(['referee', 'evaluator', 'gameSlot', 'recommendedLevels.sportsTypeLevel'])
             ->forCamp($campId);
 
         $evaluations = $query->orderBy('created_at', 'asc')->get();
@@ -368,27 +368,41 @@ class RefereeEvaluationService
 
             $recommendedLevels = [];
             foreach ($refereeEvaluations as $evaluation) {
-                foreach ($evaluation->recommendedLevels as $level) {
-                    if (isset($recommendedLevels[$level->level])) {
-                        $recommendedLevels[$level->level]++;
+                foreach ($evaluation->recommendedLevels as $recLevel) {
+                    $levelId = $recLevel->sports_type_level_id;
+                    $levelName = $recLevel->sportsTypeLevel?->name ?? $recLevel->level;
+
+                    if (is_numeric($levelName) && !$recLevel->sportsTypeLevel) {
+                        $matchedLevel = SportsTypeLevel::find($levelName);
+                        if ($matchedLevel) {
+                            $levelName = $matchedLevel->name;
+                            $levelId = $matchedLevel->id;
+                        }
+                    }
+
+                    $key = $levelName ?? (string) $levelId;
+                    if (!$key) {
+                        continue;
+                    }
+
+                    if (isset($recommendedLevels[$key])) {
+                        $recommendedLevels[$key]['count']++;
                     } else {
-                        $recommendedLevels[$level->level] = 1;
+                        $recommendedLevels[$key] = [
+                            'sports_type_level_id' => $levelId,
+                            'name'                 => $levelName,
+                            'level'                => $levelName,
+                            'count'                => 1,
+                        ];
                     }
                 }
             }
 
-            $recommendedLevelsFormatted = [];
-            foreach ($recommendedLevels as $level => $count) {
-                $recommendedLevelsFormatted[] = [
-                    'level' => $level,
-                    'count' => $count,
-                ];
-            }
-
+            $recommendedLevelsFormatted = array_values($recommendedLevels);
             usort($recommendedLevelsFormatted, fn($a, $b) => $b['count'] <=> $a['count']);
 
             $highestRecommendedLevel = !empty($recommendedLevelsFormatted)
-                ? $recommendedLevelsFormatted[0]['level']
+                ? $recommendedLevelsFormatted[0]['name']
                 : null;
 
             $evaluators = $refereeEvaluations->map(function ($eval) {
@@ -1099,15 +1113,25 @@ class RefereeEvaluationService
                 $levelName = $sportsTypeLevel->name;
             }
         } elseif ($levelName) {
-            $campId = $validated['camp_id'] ?? $evaluation->camp_id;
-            if ($campId) {
-                $camp = Camp::find($campId);
-                if ($camp && $camp->sports_type_id) {
-                    $matched = SportsTypeLevel::where('sports_type_id', $camp->sports_type_id)
-                        ->where('name', $levelName)
-                        ->first();
-                    if ($matched) {
-                        $sportsTypeLevelId = $matched->id;
+            if (is_numeric($levelName)) {
+                $matchedById = SportsTypeLevel::find((int) $levelName);
+                if ($matchedById) {
+                    $sportsTypeLevelId = $matchedById->id;
+                    $levelName = $matchedById->name;
+                }
+            }
+
+            if (!$sportsTypeLevelId) {
+                $campId = $validated['camp_id'] ?? $evaluation->camp_id;
+                if ($campId) {
+                    $camp = Camp::find($campId);
+                    if ($camp && $camp->sports_type_id) {
+                        $matched = SportsTypeLevel::where('sports_type_id', $camp->sports_type_id)
+                            ->where('name', $levelName)
+                            ->first();
+                        if ($matched) {
+                            $sportsTypeLevelId = $matched->id;
+                        }
                     }
                 }
             }

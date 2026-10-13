@@ -60,7 +60,7 @@ class RefereeEvaluationListResource extends JsonResource
             ),
             'referee_feedback' => $this->referee_feedback,
             'current_recommended_level' => $this->relationLoaded('recommendedLevels')
-                ? $this->recommendedLevels->first()?->level
+                ? ($this->recommendedLevels->first()?->sportsTypeLevel?->name ?? $this->recommendedLevels->first()?->level)
                 : null,
             'current_sports_type_level_id' => $this->relationLoaded('recommendedLevels')
                 ? $this->recommendedLevels->first()?->sports_type_level_id
@@ -77,7 +77,7 @@ class RefereeEvaluationListResource extends JsonResource
     {
         // Get all evaluations for this referee with recommended levels
         $allEvaluations = \App\Models\RefereeEvaluation::where('referee_id', $this->referee_id)
-            ->with('recommendedLevels')
+            ->with('recommendedLevels.sportsTypeLevel')
             ->has('recommendedLevels')
             ->get();
 
@@ -89,28 +89,46 @@ class RefereeEvaluationListResource extends JsonResource
             ];
         }
 
-        // Collect all recommended levels
-        $allLevels = $allEvaluations->flatMap(function ($evaluation) {
-            return $evaluation->recommendedLevels->pluck('level');
-        })->toArray();
+        $levelsGrouped = [];
 
-        // Count occurrences
-        $levelCounts = array_count_values($allLevels);
+        foreach ($allEvaluations as $evaluation) {
+            foreach ($evaluation->recommendedLevels as $recLevel) {
+                $levelId = $recLevel->sports_type_level_id;
+                $levelName = $recLevel->sportsTypeLevel?->name ?? $recLevel->level;
 
-        // Format as array of objects with level name and count
-        $levelsArray = [];
-        foreach ($levelCounts as $level => $count) {
-            $levelsArray[] = [
-                'level' => $level,
-                'count' => $count,
-            ];
+                if (is_numeric($levelName) && !$recLevel->sportsTypeLevel) {
+                    $matched = \App\Models\SportsTypeLevel::find((int) $levelName);
+                    if ($matched) {
+                        $levelName = $matched->name;
+                        $levelId = $matched->id;
+                    }
+                }
+
+                $key = $levelName ?? (string) $levelId;
+                if (!$key) {
+                    continue;
+                }
+
+                if (isset($levelsGrouped[$key])) {
+                    $levelsGrouped[$key]['count']++;
+                } else {
+                    $levelsGrouped[$key] = [
+                        'sports_type_level_id' => $levelId,
+                        'name'                 => $levelName,
+                        'level'                => $levelName,
+                        'count'                => 1,
+                    ];
+                }
+            }
         }
+
+        $levelsArray = array_values($levelsGrouped);
 
         // Sort by count descending
         usort($levelsArray, fn($a, $b) => $b['count'] <=> $a['count']);
 
         // Get most recommended
-        $mostRecommended = !empty($levelsArray) ? $levelsArray[0] : null;
+        $mostRecommended = !empty($levelsArray) ? $levelsArray[0]['name'] : null;
 
         return [
             'total_evaluations_with_recommendations' => $allEvaluations->count(),
