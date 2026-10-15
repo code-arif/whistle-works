@@ -126,7 +126,7 @@ class RefereeEvaluationService
                 'success' => true,
                 'code'    => 201,
                 'message' => 'Evaluation created successfully.',
-                'data'    => new RefereeEvaluationResource($evaluation->load(['referee', 'evaluator', 'camp', 'gameSlot', 'recommendedLevels'])),
+                'data'    => new RefereeEvaluationResource($evaluation->load(['referee', 'evaluator', 'camp', 'gameSlot', 'recommendedLevels.sportsTypeLevel'])),
             ];
         } catch (Exception $e) {
             DB::rollBack();
@@ -222,7 +222,7 @@ class RefereeEvaluationService
                 'success' => true,
                 'code'    => 200,
                 'message' => 'Evaluation updated successfully.',
-                'data'    => new RefereeEvaluationResource($evaluation->fresh()->load(['referee', 'evaluator', 'camp', 'gameSlot', 'recommendedLevels'])),
+                'data'    => new RefereeEvaluationResource($evaluation->fresh()->load(['referee', 'evaluator', 'camp', 'gameSlot', 'recommendedLevels.sportsTypeLevel'])),
             ];
         } catch (Exception $e) {
             DB::rollBack();
@@ -578,7 +578,13 @@ class RefereeEvaluationService
      */
     public function show(User $user, $id): array
     {
-        $evaluation = RefereeEvaluation::with(['referee', 'evaluator', 'camp', 'gameSlot'])->find($id);
+        $evaluation = RefereeEvaluation::with([
+            'referee',
+            'evaluator',
+            'camp',
+            'gameSlot',
+            'recommendedLevels.sportsTypeLevel',
+        ])->find($id);
 
         if (!$evaluation) {
             return [
@@ -946,7 +952,7 @@ class RefereeEvaluationService
             ];
         }
 
-        $query = RefereeEvaluation::with(['evaluator', 'gameSlot', 'recommendedLevels'])
+        $query = RefereeEvaluation::with(['evaluator', 'gameSlot', 'recommendedLevels.sportsTypeLevel'])
             ->where('camp_id', $campId)
             ->where('referee_id', $refereeId)
             ->orderBy('submitted_at', 'desc');
@@ -961,7 +967,8 @@ class RefereeEvaluationService
 
         $evaluations = $query->paginate($perPage);
 
-        $allEvaluations = RefereeEvaluation::where('camp_id', $campId)
+        $allEvaluations = RefereeEvaluation::with('recommendedLevels.sportsTypeLevel')
+            ->where('camp_id', $campId)
             ->where('referee_id', $refereeId)
             ->when($user->hasRole('evaluator') && !$user->hasRole('director'), function ($q) use ($user) {
                 $q->where('evaluator_id', $user->id);
@@ -1049,7 +1056,10 @@ class RefereeEvaluationService
                 'max_score'          => 60,
                 'percentage'         => $evaluation->total_score ? round(($evaluation->total_score / 60) * 100, 2) : 0,
                 'recommended_level'  => $evaluation->relationLoaded('recommendedLevels') && $evaluation->recommendedLevels->isNotEmpty()
-                    ? $evaluation->recommendedLevels->first()->level
+                    ? ($evaluation->recommendedLevels->first()->sportsTypeLevel?->name ?? $evaluation->recommendedLevels->first()->level)
+                    : null,
+                'sports_type_level_id' => $evaluation->relationLoaded('recommendedLevels') && $evaluation->recommendedLevels->isNotEmpty()
+                    ? $evaluation->recommendedLevels->first()->sports_type_level_id
                     : null,
                 'private_comments'   => $evaluation->private_comments,
                 'referee_feedback'   => $evaluation->referee_feedback,

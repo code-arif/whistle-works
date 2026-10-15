@@ -60,18 +60,66 @@ class RefereeEvaluationResource extends JsonResource
             // Referee feedback - visible to referee, evaluator, and directors
             'referee_feedback' => $this->referee_feedback,
 
-            // 'recommended_level' => $this->whenLoaded('recommendedLevels', function () {
-            //     return $this->recommendedLevels->first()?->level;
-            // }),
-
-            'recommended_level' => $this->relationLoaded('recommendedLevels')
-                ? $this->recommendedLevels->first()?->level
-                : null,
-            'sports_type_level_id' => $this->relationLoaded('recommendedLevels')
-                ? $this->recommendedLevels->first()?->sports_type_level_id
-                : null,
+            'recommended_level' => $this->resolveRecommendedLevelName(),
+            'sports_type_level_id' => $this->resolveSportsTypeLevelId(),
             'status' => $this->status,
             'submitted_at' => $this->submitted_at?->format('Y-m-d H:i:s'),
         ];
+    }
+
+    /**
+     * Resolve the first recommended level record, with eager-load optimization and lazy fallback.
+     */
+    protected function getFirstRecommendedLevelRecord()
+    {
+        return $this->relationLoaded('recommendedLevels')
+            ? $this->recommendedLevels->first()
+            : $this->recommendedLevels()->with('sportsTypeLevel')->first();
+    }
+
+    /**
+     * Resolve recommended level display name.
+     */
+    protected function resolveRecommendedLevelName(): ?string
+    {
+        $firstRec = $this->getFirstRecommendedLevelRecord();
+        if (!$firstRec) {
+            return null;
+        }
+
+        $levelName = $firstRec->sportsTypeLevel?->name ?? $firstRec->level;
+
+        if (is_numeric($levelName) && !$firstRec->sportsTypeLevel) {
+            $matched = \App\Models\SportsTypeLevel::find((int) $levelName);
+            if ($matched) {
+                $levelName = $matched->name;
+            }
+        }
+
+        return $levelName;
+    }
+
+    /**
+     * Resolve sports type level master ID.
+     */
+    protected function resolveSportsTypeLevelId(): ?int
+    {
+        $firstRec = $this->getFirstRecommendedLevelRecord();
+        if (!$firstRec) {
+            return null;
+        }
+
+        if ($firstRec->sports_type_level_id) {
+            return (int) $firstRec->sports_type_level_id;
+        }
+
+        if (is_numeric($firstRec->level)) {
+            $matched = \App\Models\SportsTypeLevel::find((int) $firstRec->level);
+            if ($matched) {
+                return (int) $matched->id;
+            }
+        }
+
+        return null;
     }
 }
