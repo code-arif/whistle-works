@@ -4,10 +4,12 @@ namespace App\Services\Api\Contact;
 
 use App\Mail\ContactSubmittedMail;
 use App\Models\Contact;
+use App\Models\Setting;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 class ContactService
 {
@@ -24,9 +26,20 @@ class ContactService
         try {
             $contact = Contact::create($data);
 
-            $adminEmail = config('mail.from.address');
+            $setting = Setting::first();
+            $adminEmail = !empty($setting?->email)
+                ? $setting->email
+                : (!empty($setting?->email) ? $setting->email : (config('mail.from.address') ?: env('ADMIN_MAIL')));
+
             if ($adminEmail) {
-                Mail::to($adminEmail)->queue(new ContactSubmittedMail($contact));
+                try {
+                    Mail::to($adminEmail)->queue(new ContactSubmittedMail($contact));
+                } catch (Throwable $mailError) {
+                    Log::warning('Contact notification email dispatch failed: ' . $mailError->getMessage(), [
+                        'contact_id'  => $contact->id,
+                        'email' => $adminEmail,
+                    ]);
+                }
             }
 
             DB::commit();

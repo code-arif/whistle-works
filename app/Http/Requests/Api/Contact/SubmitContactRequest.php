@@ -27,10 +27,24 @@ class SubmitContactRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'    => 'nullable|string|max:50',
+            'name'    => 'nullable|string|max:100',
             'email'   => 'required|email|max:100',
-            'subject' => 'nullable|string|max:100',
-            'message' => 'nullable|string|max:1000',
+            'phone'   => 'nullable|string|max:30',
+            'subject' => 'nullable|string|max:200',
+            'message' => 'required|string|max:5000',
+        ];
+    }
+
+    /**
+     * Custom validation messages.
+     */
+    public function messages(): array
+    {
+        return [
+            'email.required'   => 'Your email address is required.',
+            'email.email'      => 'Please provide a valid email address.',
+            'message.required' => 'A message is required.',
+            'message.max'      => 'The message cannot exceed 5000 characters.',
         ];
     }
 

@@ -21,7 +21,18 @@ class ContactSubmittedMail extends Mailable implements ShouldQueue
 
     public function build()
     {
-        return $this->subject('New Contact Form Submission')
-                    ->view('emails.contact_submitted');
+        $subject = 'New Inquiry: ' . ($this->contact->subject ?: 'General Contact Submission');
+
+        $mail = $this->subject($subject)
+                     ->view('emails.contact_submitted')
+                     ->with([
+                         'contact' => $this->contact,
+                     ]);
+
+        if (!empty($this->contact->email)) {
+            $mail->replyTo($this->contact->email, $this->contact->name ?: null);
+        }
+
+        return $mail;
     }
 }
