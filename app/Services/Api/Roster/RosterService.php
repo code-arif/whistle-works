@@ -3,6 +3,7 @@
 namespace App\Services\Api\Roster;
 
 use App\Models\CampRefereeJearsyNumber;
+use App\Models\CampRefereeNote;
 use App\Models\User;
 use Modules\Director\Models\Camp;
 use Modules\Director\Models\GameSlot;
@@ -48,6 +49,10 @@ class RosterService
             return $gameSlot->slotAssignments;
         }) ?? collect();
 
+        // Preload jersey numbers and director notes for all referees in this camp
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)->pluck('jersey_number', 'referee_id');
+        $refereeNotes  = CampRefereeNote::where('camp_id', $camp->id)->pluck('note', 'referee_id');
+
         $response = [
             'camp' => [
                 'camp_id'     => $camp->id,
@@ -82,7 +87,7 @@ class RosterService
                             'address'   => $location->address ?? null,
                         ];
                     }) ?? collect(),
-                    'game_courts' => $camp->schedule?->gameSlots->map(function ($gameSlot) use ($camp) {
+                    'game_courts' => $camp->schedule?->gameSlots->map(function ($gameSlot) use ($camp, $jerseyNumbers, $refereeNotes) {
                         return [
                             'id'           => $gameSlot->id,
                             'game_date'    => $gameSlot->game_date->toDateString(),
@@ -94,7 +99,7 @@ class RosterService
                             'location'     => $gameSlot->location->location_name ?? 'N/A',
                             'address'      => $gameSlot->location->address ?? null,
                             'assignments'  => $gameSlot->slotAssignments
-                                ->map(function ($assignment) use ($camp) {
+                                ->map(function ($assignment) use ($camp, $jerseyNumbers, $refereeNotes) {
                                     if ($assignment->assignment_type === 'crew') {
                                         return [
                                             'type'             => 'crew',
@@ -103,6 +108,9 @@ class RosterService
                                             'position'         => $assignment->position,
                                             'is_auto_assigned' => $assignment->is_auto_assigned,
                                             'jourcy_number'    => $assignment->jourcy_number ?? null,
+                                            'jersey_number'    => $assignment->jourcy_number ?? null,
+                                            'note'             => null,
+                                            'notes'            => null,
                                             'phone'            => $assignment->phone ?? null,
                                             'address'          => $assignment->address ?? null,
                                             'biography'        => $assignment->biography ?? null,
@@ -110,20 +118,23 @@ class RosterService
                                         ];
                                     }
 
-                                    $referee = $assignment->assignable;
-                                    $jerseyNumber = $referee ? CampRefereeJearsyNumber::where('camp_id', $camp->id)
-                                        ->where('referee_id', $referee->id)
-                                        ->value('jersey_number') : null;
+                                    $referee      = $assignment->assignable;
+                                    $refereeId    = $referee?->id;
+                                    $jerseyNumber = $refereeId ? ($jerseyNumbers[$refereeId] ?? null) : null;
+                                    $refereeNote  = $refereeId ? ($refereeNotes[$refereeId] ?? null) : null;
 
                                     return [
                                         'type'             => 'individual',
-                                        'referee_id'       => $referee->id ?? null,
+                                        'referee_id'       => $refereeId,
                                         'name'             => $referee ? trim($referee->first_name . ' ' . $referee->last_name) : 'N/A',
                                         'avatar'           => $referee?->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
                                         'email'            => $referee->email ?? null,
                                         'position'         => $assignment->position,
                                         'is_auto_assigned' => $assignment->is_auto_assigned,
                                         'jourcy_number'    => $jerseyNumber,
+                                        'jersey_number'    => $jerseyNumber,
+                                        'note'             => $refereeNote,
+                                        'notes'            => $refereeNote,
                                         'phone'            => $referee->phone ?? null,
                                         'address'          => $referee->address ?? null,
                                         'biography'        => $referee->biography ?? null,
@@ -141,7 +152,7 @@ class RosterService
                 ],
                 'referees'    => $camp->checkedInReferees
                     ->sortBy(fn($checkin) => strtolower($checkin->referee?->last_name ?? ''))
-                    ->map(function ($referee) use ($gameSlotAssignments, $camp) {
+                    ->map(function ($referee) use ($gameSlotAssignments, $camp, $jerseyNumbers, $refereeNotes) {
                         $refereeUser = $referee->referee;
                         if (!$refereeUser) {
                             return null;
@@ -158,9 +169,8 @@ class RosterService
                                 ->whereIn('assignable_id', $refereeCrewIds)
                                 ->count();
 
-                        $jerseyNumber = CampRefereeJearsyNumber::where('camp_id', $camp->id)
-                            ->where('referee_id', $refereeUser->id)
-                            ->value('jersey_number');
+                        $jerseyNumber = $jerseyNumbers[$refereeUser->id] ?? null;
+                        $refereeNote  = $refereeNotes[$refereeUser->id] ?? null;
 
                         return [
                             'id'                   => $refereeUser->id,
@@ -170,6 +180,9 @@ class RosterService
                             'phone'                => $refereeUser->phone,
                             'address'              => $refereeUser->address ?? null,
                             'jourcy_number'        => $jerseyNumber,
+                            'jersey_number'        => $jerseyNumber,
+                            'note'                 => $refereeNote,
+                            'notes'                => $refereeNote,
                             'biography'            => $refereeUser->biography ?? null,
                             'status'               => $referee->registration_status,
                             'assigned_games_count' => $assignedGamesCount,
@@ -197,7 +210,7 @@ class RosterService
                     }),
                 'crews'       => $camp->crews
                     ->sortBy(fn($crew) => strtolower($crew->name ?? ''))
-                    ->map(function ($crew) use ($camp) {
+                    ->map(function ($crew) use ($camp, $jerseyNumbers, $refereeNotes) {
                         return [
                             'id'          => $crew->id,
                             'name'        => $crew->name ?? 'N/A',
@@ -205,10 +218,9 @@ class RosterService
                             'status'      => $crew->status ?? 'N/A',
                             'members'     => $crew->members
                                 ->sortBy(fn($member) => strtolower($member->last_name ?? ''))
-                                ->map(function ($member) use ($camp) {
-                                    $jerseyNumber = CampRefereeJearsyNumber::where('camp_id', $camp->id)
-                                        ->where('referee_id', $member->id)
-                                        ->value('jersey_number');
+                                ->map(function ($member) use ($camp, $jerseyNumbers, $refereeNotes) {
+                                    $jerseyNumber = $jerseyNumbers[$member->id] ?? null;
+                                    $refereeNote  = $refereeNotes[$member->id] ?? null;
 
                                     return [
                                         'id'            => $member->id,
@@ -219,6 +231,9 @@ class RosterService
                                         'phone'         => $member->phone ?? null,
                                         'address'       => $member->address ?? null,
                                         'jersey_number' => $jerseyNumber,
+                                        'jourcy_number' => $jerseyNumber,
+                                        'note'          => $refereeNote,
+                                        'notes'         => $refereeNote,
                                         'biography'     => $member->biography ?? null,
                                     ];
                                 })
@@ -380,9 +395,12 @@ class RosterService
             return $gameSlot->slotAssignments;
         }) ?? collect();
 
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)->pluck('jersey_number', 'referee_id');
+        $refereeNotes  = CampRefereeNote::where('camp_id', $camp->id)->pluck('note', 'referee_id');
+
         $referees = $camp->checkedInReferees
             ->sortBy(fn($checkin) => strtolower($checkin->referee?->last_name ?? ''))
-            ->map(function ($referee) use ($gameSlotAssignments, $camp) {
+            ->map(function ($referee) use ($gameSlotAssignments, $camp, $jerseyNumbers, $refereeNotes) {
                 $refereeUser = $referee->referee;
                 if (!$refereeUser) {
                     return null;
@@ -399,9 +417,8 @@ class RosterService
                         ->whereIn('assignable_id', $refereeCrewIds)
                         ->count();
 
-                $jerseyNumber = CampRefereeJearsyNumber::where('camp_id', $camp->id)
-                    ->where('referee_id', $refereeUser->id)
-                    ->value('jersey_number');
+                $jerseyNumber = $jerseyNumbers[$refereeUser->id] ?? null;
+                $refereeNote  = $refereeNotes[$refereeUser->id] ?? null;
 
                 return [
                     'name'                 => trim(($refereeUser->first_name ?? '') . ' ' . ($refereeUser->last_name ?? '')),
@@ -409,6 +426,7 @@ class RosterService
                     'address'              => $refereeUser->address ?? '-',
                     'phone'                => $refereeUser->phone ?? '-',
                     'jourcy_number'        => $jerseyNumber ?? '-',
+                    'notes'                => $refereeNote ?? '-',
                     'assigned_games_count' => $assignedGamesCount ?? '-',
                     'status'               => $referee->registration_status ?? '-',
                 ];
@@ -429,8 +447,9 @@ class RosterService
             'C3' => 'Address',
             'D3' => 'Phone',
             'E3' => 'Jersey Number',
-            'F3' => 'Assigned Games Count',
-            'G3' => 'Status',
+            'F3' => 'Notes',
+            'G3' => 'Assigned Games Count',
+            'H3' => 'Status',
         ];
 
         foreach ($headers as $cell => $value) {
@@ -444,8 +463,9 @@ class RosterService
             $sheet->setCellValue('C' . $rowIndex, $data['address']);
             $sheet->setCellValue('D' . $rowIndex, $data['phone']);
             $sheet->setCellValue('E' . $rowIndex, $data['jourcy_number']);
-            $sheet->setCellValue('F' . $rowIndex, $data['assigned_games_count']);
-            $sheet->setCellValue('G' . $rowIndex, $data['status']);
+            $sheet->setCellValue('F' . $rowIndex, $data['notes']);
+            $sheet->setCellValue('G' . $rowIndex, $data['assigned_games_count']);
+            $sheet->setCellValue('H' . $rowIndex, $data['status']);
             $rowIndex++;
         }
 

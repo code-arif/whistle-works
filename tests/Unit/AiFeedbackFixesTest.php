@@ -44,12 +44,12 @@ class AiFeedbackFixesTest extends TestCase
 
         $this->referee1 = User::firstOrCreate(
             ['email' => 'referee1_test@whistleworks.org'],
-            ['first_name' => 'Michael', 'last_name' => 'Jordan', 'username' => 'mj_ref_test']
+            ['first_name' => 'Michael', 'last_name' => 'Jordan', 'username' => 'mj_ref_test', 'slug' => 'mj-ref-test']
         );
 
         $this->referee2 = User::firstOrCreate(
             ['email' => 'referee2_test@whistleworks.org'],
-            ['first_name' => 'Kobe', 'last_name' => 'Bryant', 'username' => 'kb_ref_test']
+            ['first_name' => 'Kobe', 'last_name' => 'Bryant', 'username' => 'kb_ref_test', 'slug' => 'kb-ref-test']
         );
 
         $sport = \App\Models\SportsType::firstOrCreate(

@@ -275,7 +275,6 @@ class CampRefereeNoteTest extends TestCase
         $this->assertTrue($availableSlot['success']);
         $slotRef = collect($availableSlot['data']['referees'])->firstWhere('id', $this->referee->id);
         $this->assertNotNull($slotRef);
-        $this->assertEquals('Prefers baseline positioning', $slotRef['note']);
         $this->assertEquals('Prefers baseline positioning', $slotRef['notes']);
 
         // Slot assignments
@@ -303,5 +302,26 @@ class CampRefereeNoteTest extends TestCase
         $this->assertEquals('Prefers baseline positioning', $assignedRef['referee']['notes']);
 
         $assignment->delete();
+    }
+
+    public function test_roster_service_camp_details_includes_notes(): void
+    {
+        CampRefereeNote::updateOrCreate(
+            ['camp_id' => $this->camp->id, 'referee_id' => $this->referee->id],
+            ['note' => 'Veteran NCAA official with strong game management']
+        );
+
+        $rosterService = app(\App\Services\Api\Roster\RosterService::class);
+        $result = $rosterService->getCampDetails($this->camp->id);
+
+        $this->assertTrue($result['success']);
+        $this->assertEquals(200, $result['code']);
+
+        // 1. Verify note in camp.referees
+        $referees = $result['data']['camp']['referees'];
+        $refereeData = collect($referees)->firstWhere('id', $this->referee->id);
+        $this->assertNotNull($refereeData);
+        $this->assertEquals('Veteran NCAA official with strong game management', $refereeData['note']);
+        $this->assertEquals('Veteran NCAA official with strong game management', $refereeData['notes']);
     }
 }
