@@ -40,8 +40,6 @@ class CheckedInRefereeResource extends JsonResource
                 ? asset($this->referee->avatar)
                 : asset('default/profile.jpg'),
 
-            // jersey number
-            'jersey_number' => $jersey,
             'jourcy_number' => $jersey,
             'note'          => $this->refereeNotes[$refereeId] ?? null,
             'notes'         => $this->refereeNotes[$refereeId] ?? null,
