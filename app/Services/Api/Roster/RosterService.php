@@ -107,7 +107,6 @@ class RosterService
                                             'crew_name'        => $assignment->assignable->name ?? 'N/A',
                                             'position'         => $assignment->position,
                                             'is_auto_assigned' => $assignment->is_auto_assigned,
-                                            'jourcy_number'    => $assignment->jourcy_number ?? null,
                                             'jersey_number'    => $assignment->jourcy_number ?? null,
                                             'note'             => null,
                                             'notes'            => null,
@@ -131,7 +130,6 @@ class RosterService
                                         'email'            => $referee->email ?? null,
                                         'position'         => $assignment->position,
                                         'is_auto_assigned' => $assignment->is_auto_assigned,
-                                        'jourcy_number'    => $jerseyNumber,
                                         'jersey_number'    => $jerseyNumber,
                                         'note'             => $refereeNote,
                                         'notes'            => $refereeNote,
@@ -179,7 +177,6 @@ class RosterService
                             'email'                => $refereeUser->email,
                             'phone'                => $refereeUser->phone,
                             'address'              => $refereeUser->address ?? null,
-                            'jourcy_number'        => $jerseyNumber,
                             'jersey_number'        => $jerseyNumber,
                             'note'                 => $refereeNote,
                             'notes'                => $refereeNote,
@@ -231,7 +228,6 @@ class RosterService
                                         'phone'         => $member->phone ?? null,
                                         'address'       => $member->address ?? null,
                                         'jersey_number' => $jerseyNumber,
-                                        'jourcy_number' => $jerseyNumber,
                                         'note'          => $refereeNote,
                                         'notes'         => $refereeNote,
                                         'biography'     => $member->biography ?? null,
@@ -425,7 +421,7 @@ class RosterService
                     'email'                => $refereeUser->email ?? '-',
                     'address'              => $refereeUser->address ?? '-',
                     'phone'                => $refereeUser->phone ?? '-',
-                    'jourcy_number'        => $jerseyNumber ?? '-',
+                    'jersey_number'        => $jerseyNumber ?? '-',
                     'notes'                => $refereeNote ?? '-',
                     'assigned_games_count' => $assignedGamesCount ?? '-',
                     'status'               => $referee->registration_status ?? '-',
@@ -462,7 +458,7 @@ class RosterService
             $sheet->setCellValue('B' . $rowIndex, $data['email']);
             $sheet->setCellValue('C' . $rowIndex, $data['address']);
             $sheet->setCellValue('D' . $rowIndex, $data['phone']);
-            $sheet->setCellValue('E' . $rowIndex, $data['jourcy_number']);
+            $sheet->setCellValue('E' . $rowIndex, $data['jersey_number']);
             $sheet->setCellValue('F' . $rowIndex, $data['notes']);
             $sheet->setCellValue('G' . $rowIndex, $data['assigned_games_count']);
             $sheet->setCellValue('H' . $rowIndex, $data['status']);

@@ -164,6 +164,7 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
         Route::patch('camp/{campId}/referee/{refereeId}/update-note', [RefereeManageController::class, 'updateRefereeNote']);
         Route::patch('camp/{campId}/referee/{refereeId}/note', [RefereeManageController::class, 'updateRefereeNote']);
         Route::get('camp/{campId}/referee/{refereeId}/note', [RefereeManageController::class, 'getRefereeNote']);
+        Route::delete('camp/{campId}/referee/{refereeId}/note', [RefereeManageController::class, 'deleteRefereeNote']);
 
         // Remote referee from camp
         Route::delete('camps/{campId}/referees/{refereeId}', [RefereeManageController::class, 'removeRefereeFromCamp']);

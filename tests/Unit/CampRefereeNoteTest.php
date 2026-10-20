@@ -162,6 +162,29 @@ class CampRefereeNoteTest extends TestCase
             ->where('referee_id', $this->referee->id)
             ->count();
         $this->assertEquals(1, $count);
+
+        // 4. Delete note
+        $deleteResult = $service->deleteRefereeNote(
+            $this->director,
+            $this->camp->id,
+            $this->referee->id
+        );
+        $this->assertTrue($deleteResult['success']);
+        $this->assertEquals(200, $deleteResult['code']);
+
+        $this->assertDatabaseMissing('camp_referee_notes', [
+            'camp_id' => $this->camp->id,
+            'referee_id' => $this->referee->id,
+        ]);
+
+        // Delete non-existent note returns 404
+        $deleteAgain = $service->deleteRefereeNote(
+            $this->director,
+            $this->camp->id,
+            $this->referee->id
+        );
+        $this->assertFalse($deleteAgain['success']);
+        $this->assertEquals(404, $deleteAgain['code']);
     }
 
     public function test_update_jersey_number_with_optional_note(): void

@@ -686,6 +686,85 @@ class RefereeService
     }
 
     /**
+     * Delete/remove referee note for a specific camp.
+     *
+     * @param  mixed $director
+     * @param  int   $campId
+     * @param  int   $refereeId
+     * @return array
+     */
+    public function deleteRefereeNote($director, int $campId, int $refereeId): array
+    {
+        $camp = Camp::forDirectorOrAssistant($director->id)
+            ->where('id', $campId)
+            ->first();
+
+        if (!$camp) {
+            return [
+                'success' => false,
+                'code'    => 404,
+                'message' => 'Camp not found.',
+                'data'    => null,
+            ];
+        }
+
+        if ($camp->director_id !== $director->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $director->id)
+                ->first();
+
+            if (!$permission) {
+                return [
+                    'success' => false,
+                    'code'    => 403,
+                    'message' => 'Unauthorized.',
+                    'data'    => null,
+                ];
+            }
+
+            if (!$permission->manage_roster_referees) {
+                return [
+                    'success' => false,
+                    'code'    => 403,
+                    'message' => 'You do not have permission to manage referees for this camp.',
+                    'data'    => null,
+                ];
+            }
+        }
+
+        $noteAssignment = CampRefereeNote::where('camp_id', $campId)
+            ->where('referee_id', $refereeId)
+            ->first();
+
+        if (!$noteAssignment) {
+            return [
+                'success' => false,
+                'code'    => 404,
+                'message' => 'No note found for this referee in this camp.',
+                'data'    => null,
+            ];
+        }
+
+        $noteAssignment->delete();
+
+        Log::info('Director deleted referee note', [
+            'director_id' => $director->id,
+            'camp_id'     => $campId,
+            'referee_id'  => $refereeId,
+        ]);
+
+        return [
+            'success' => true,
+            'code'    => 200,
+            'message' => 'Referee note deleted successfully.',
+            'data'    => [
+                'camp_id'    => $campId,
+                'referee_id' => $refereeId,
+            ],
+        ];
+    }
+
+    /**
      * Remove a referee from a camp (delete registration/check-in & evaluations).
      *
      * @param  mixed $director

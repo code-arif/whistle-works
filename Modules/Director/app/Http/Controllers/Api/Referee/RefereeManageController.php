@@ -168,6 +168,31 @@ class RefereeManageController extends Controller
     }
 
     /**
+     * Delete/remove referee note for a specific camp.
+     *
+     * @param  Request      $request
+     * @param  mixed        $campId
+     * @param  mixed        $refereeId
+     * @return JsonResponse
+     */
+    public function deleteRefereeNote(Request $request, $campId, $refereeId): JsonResponse
+    {
+        $director = auth('api')->user();
+
+        $result = $this->refereeService->deleteRefereeNote(
+            $director,
+            (int) $campId,
+            (int) $refereeId
+        );
+
+        if (!$result['success']) {
+            return $this->error($result['data'], $result['message'], $result['code']);
+        }
+
+        return $this->success($result['message'], $result['data'], $result['code']);
+    }
+
+    /**
      * Director: Remove a referee from a camp (delete registration/check-in).
      *
      * @param  Request      $request
