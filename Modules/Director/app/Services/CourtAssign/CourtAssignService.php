@@ -4,6 +4,7 @@ namespace Modules\Director\Services\CourtAssign;
 
 use App\Models\AssistantDirectorPermission;
 use App\Models\CampRefereeJearsyNumber;
+use App\Models\CampRefereeNote;
 use App\Models\User;
 use Carbon\Carbon;
 use Exception;
@@ -508,6 +509,8 @@ class CourtAssignService
 
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $campId)
             ->pluck('jersey_number', 'referee_id');
+        $refereeNotes  = CampRefereeNote::where('camp_id', $campId)
+            ->pluck('note', 'referee_id');
 
         $assignmentCounts = GameSlotAssignment::where('assignable_type', User::class)
             ->whereHas('gameSlot.schedule', function ($q) use ($campId) {
@@ -562,7 +565,7 @@ class CourtAssignService
             $crewRefereesAssignedOnCourt
         ));
 
-        $refereesWithStatus = $allReferees->map(function ($referee) use ($slot, $assignedRefereeIds, $jerseyNumbers, $assignmentCounts, $allRefereesAssignedToCourtIds) {
+        $refereesWithStatus = $allReferees->map(function ($referee) use ($slot, $assignedRefereeIds, $jerseyNumbers, $refereeNotes, $assignmentCounts, $allRefereesAssignedToCourtIds) {
             $isAssignedToThisSlot  = in_array($referee->id, $assignedRefereeIds);
             $isAssignedToThisCourt = in_array($referee->id, $allRefereesAssignedToCourtIds);
 
@@ -610,6 +613,9 @@ class CourtAssignService
                 'status'                     => $status,
                 'is_assigned_to_this_court'  => $isAssignedToThisCourt,
                 'jourcy_number'              => $jerseyNumbers[$referee->id] ?? null,
+                'jersey_number'              => $jerseyNumbers[$referee->id] ?? null,
+                'note'                       => $refereeNotes[$referee->id] ?? null,
+                'notes'                      => $refereeNotes[$referee->id] ?? null,
                 'status_message'             => $statusMessage,
                 'can_assign'                 => $canAssign,
                 'conflict_details'           => $conflictDetails,
@@ -871,10 +877,14 @@ class CourtAssignService
             return ['success' => false, 'code' => 403, 'message' => 'Unauthorized.', 'data' => null];
         }
 
+        $campId = $slot->schedule->camp->id;
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $campId)->pluck('jersey_number', 'referee_id');
+        $refereeNotes  = CampRefereeNote::where('camp_id', $campId)->pluck('note', 'referee_id');
+
         $assignments = GameSlotAssignment::where('game_slot_id', $slotId)
             ->with(['assignable'])
             ->get()
-            ->map(function ($assignment) {
+            ->map(function ($assignment) use ($jerseyNumbers, $refereeNotes) {
                 if ($assignment->assignment_type === 'crew') {
                     return [
                         'assignment_id'    => $assignment->id,
@@ -883,22 +893,31 @@ class CourtAssignService
                             'id'      => $assignment->assignable->id,
                             'name'    => $assignment->assignable->name,
                             'members' => $assignment->assignable->members->map(fn($m) => [
-                                'id'     => $m->id,
-                                'name'   => $m->first_name . ' ' . $m->last_name,
-                                'avatar' => $m->avatar ? asset($m->avatar) : null,
+                                'id'            => $m->id,
+                                'name'          => $m->first_name . ' ' . $m->last_name,
+                                'avatar'        => $m->avatar ? asset($m->avatar) : null,
+                                'jersey_number' => $jerseyNumbers[$m->id] ?? null,
+                                'jourcy_number' => $jerseyNumbers[$m->id] ?? null,
+                                'note'          => $refereeNotes[$m->id] ?? null,
+                                'notes'         => $refereeNotes[$m->id] ?? null,
                             ]),
                         ],
                         'is_auto_assigned' => $assignment->is_auto_assigned,
                     ];
                 } else {
+                    $refereeId = $assignment->assignable->id;
                     return [
                         'assignment_id'    => $assignment->id,
                         'type'             => 'individual',
                         'referee'          => [
-                            'id'     => $assignment->assignable->id,
-                            'name'   => $assignment->assignable->first_name . ' ' . $assignment->assignable->last_name,
-                            'email'  => $assignment->assignable->email,
-                            'avatar' => $assignment->assignable->avatar ? asset($assignment->assignable->avatar) : null,
+                            'id'            => $refereeId,
+                            'name'          => $assignment->assignable->first_name . ' ' . $assignment->assignable->last_name,
+                            'email'         => $assignment->assignable->email,
+                            'avatar'        => $assignment->assignable->avatar ? asset($assignment->assignable->avatar) : null,
+                            'jersey_number' => $jerseyNumbers[$refereeId] ?? null,
+                            'jourcy_number' => $jerseyNumbers[$refereeId] ?? null,
+                            'note'          => $refereeNotes[$refereeId] ?? null,
+                            'notes'         => $refereeNotes[$refereeId] ?? null,
                         ],
                         'is_auto_assigned' => $assignment->is_auto_assigned,
                     ];
@@ -947,15 +966,22 @@ class CourtAssignService
 
         $availableRefereeIds = $checkedInRefereeIds->diff($assignedRefereeIds);
 
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $campId)->pluck('jersey_number', 'referee_id');
+        $refereeNotes  = CampRefereeNote::where('camp_id', $campId)->pluck('note', 'referee_id');
+
         $referees = User::whereIn('id', $availableRefereeIds)
             ->select('id', 'first_name', 'last_name', 'email', 'avatar')
             ->get()
-            ->map(function ($ref) {
+            ->map(function ($ref) use ($jerseyNumbers, $refereeNotes) {
                 return [
-                    'id'     => $ref->id,
-                    'name'   => $ref->first_name . ' ' . $ref->last_name,
-                    'email'  => $ref->email,
-                    'avatar' => $ref->avatar ? asset($ref->avatar) : asset('default/profile.jpg'),
+                    'id'            => $ref->id,
+                    'name'          => $ref->first_name . ' ' . $ref->last_name,
+                    'email'         => $ref->email,
+                    'avatar'        => $ref->avatar ? asset($ref->avatar) : asset('default/profile.jpg'),
+                    'jersey_number' => $jerseyNumbers[$ref->id] ?? null,
+                    'jourcy_number' => $jerseyNumbers[$ref->id] ?? null,
+                    'note'          => $refereeNotes[$ref->id] ?? null,
+                    'notes'         => $refereeNotes[$ref->id] ?? null,
                 ];
             });
 
@@ -990,6 +1016,10 @@ class CourtAssignService
             'court_name' => $slot->court_name ?? 'Unknown',
         ];
 
+        $campId = $slot->schedule->camp->id;
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $campId)->pluck('jersey_number', 'referee_id');
+        $refereeNotes  = CampRefereeNote::where('camp_id', $campId)->pluck('note', 'referee_id');
+
         $individualAssignments = GameSlotAssignment::with([
             'assignable' => fn($q) => $q->select('id', 'first_name', 'last_name', 'email', 'avatar'),
         ])
@@ -1004,15 +1034,19 @@ class CourtAssignService
             ->where('assignment_type', 'crew')
             ->get();
 
-        $referees = $individualAssignments->map(function ($item) {
+        $referees = $individualAssignments->map(function ($item) use ($jerseyNumbers, $refereeNotes) {
             $referee = $item->assignable;
             return [
                 'assignment_id' => $item->id,
                 'referee'       => [
-                    'referee_id' => $referee->id,
-                    'name'       => trim("{$referee->first_name} {$referee->last_name}"),
-                    'email'      => $referee->email,
-                    'avatar'     => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
+                    'referee_id'    => $referee->id,
+                    'name'          => trim("{$referee->first_name} {$referee->last_name}"),
+                    'email'         => $referee->email,
+                    'avatar'        => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
+                    'jersey_number' => $jerseyNumbers[$referee->id] ?? null,
+                    'jourcy_number' => $jerseyNumbers[$referee->id] ?? null,
+                    'note'          => $refereeNotes[$referee->id] ?? null,
+                    'notes'         => $refereeNotes[$referee->id] ?? null,
                 ],
             ];
         })->values();
@@ -1029,13 +1063,17 @@ class CourtAssignService
                     'crew_name'    => $crew->name,
                     'description'  => $crew->description,
                     'member_count' => $crew->members->count(),
-                    'members'      => $crew->members->map(function ($member) {
+                    'members'      => $crew->members->map(function ($member) use ($jerseyNumbers, $refereeNotes) {
                         $ref = $member->referee ?? $member;
                         return [
-                            'referee_id' => $ref->id,
-                            'name'       => trim("{$ref->first_name} {$ref->last_name}"),
-                            'email'      => $ref->email,
-                            'avatar'     => $ref->avatar ? asset($ref->avatar) : asset('default/profile.jpg'),
+                            'referee_id'    => $ref->id,
+                            'name'          => trim("{$ref->first_name} {$ref->last_name}"),
+                            'email'         => $ref->email,
+                            'avatar'        => $ref->avatar ? asset($ref->avatar) : asset('default/profile.jpg'),
+                            'jersey_number' => $jerseyNumbers[$ref->id] ?? null,
+                            'jourcy_number' => $jerseyNumbers[$ref->id] ?? null,
+                            'note'          => $refereeNotes[$ref->id] ?? null,
+                            'notes'         => $refereeNotes[$ref->id] ?? null,
                         ];
                     })->values(),
                 ],
@@ -1095,6 +1133,9 @@ class CourtAssignService
             ->groupBy('assignable_id')
             ->pluck('total', 'assignable_id');
 
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $slot->schedule->camp_id)->pluck('jersey_number', 'referee_id');
+        $refereeNotes  = CampRefereeNote::where('camp_id', $slot->schedule->camp_id)->pluck('note', 'referee_id');
+
         $allCrews = Crew::where('camp_id', $slot->schedule->camp_id)
             ->where('status', 'active')
             ->withCount('members')
@@ -1108,7 +1149,7 @@ class CourtAssignService
             ->where('assignable_type', Crew::class)
             ->value('assignable_id');
 
-        $crewsWithStatus = $allCrews->map(function ($crew) use ($slot, $assignedCrewId, $crewAssignmentCounts) {
+        $crewsWithStatus = $allCrews->map(function ($crew) use ($slot, $assignedCrewId, $crewAssignmentCounts, $jerseyNumbers, $refereeNotes) {
             $isAssignedToThisSlot = ($assignedCrewId && $crew->id == (int) $assignedCrewId);
 
             $hasTimeConflict = GameSlotAssignment::hasTimeConflict($crew->id, Crew::class, $slot);
@@ -1156,14 +1197,18 @@ class CourtAssignService
                 'conflict_details'  => $conflictDetails,
                 'member_count'      => $crew->members_count,
                 'total_assignments' => (int) ($crewAssignmentCounts[$crew->id] ?? 0),
-                'members'           => $crew->members->map(function ($member) {
+                'members'           => $crew->members->map(function ($member) use ($jerseyNumbers, $refereeNotes) {
                     return [
-                        'id'        => $member->id,
-                        'name'      => $member->first_name . ' ' . $member->last_name,
-                        'email'     => $member->email,
-                        'avatar'    => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
-                        'position'  => $member->pivot->position ?? null,
-                        'joined_at' => $member->pivot->joined_at,
+                        'id'            => $member->id,
+                        'name'          => $member->first_name . ' ' . $member->last_name,
+                        'email'         => $member->email,
+                        'avatar'        => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
+                        'position'      => $member->pivot->position ?? null,
+                        'joined_at'     => $member->pivot->joined_at,
+                        'jersey_number' => $jerseyNumbers[$member->id] ?? null,
+                        'jourcy_number' => $jerseyNumbers[$member->id] ?? null,
+                        'note'          => $refereeNotes[$member->id] ?? null,
+                        'notes'         => $refereeNotes[$member->id] ?? null,
                     ];
                 }),
                 'created_at'        => $crew->created_at->format('Y-m-d H:i:s'),
@@ -1353,12 +1398,18 @@ class CourtAssignService
      */
     private function getSlotReferees(int $slotId)
     {
+        $slot   = GameSlot::with('schedule.camp')->find($slotId);
+        $campId = $slot?->schedule?->camp_id;
+
         $assignments = GameSlotAssignment::with('assignable')
             ->where('game_slot_id', $slotId)
             ->where('assignment_type', 'individual')
             ->where('assignable_type', User::class)
             ->get();
 
-        return GameSlotRefereeResource::collection($assignments);
+        $jerseyNumbers = $campId ? CampRefereeJearsyNumber::where('camp_id', $campId)->pluck('jersey_number', 'referee_id') : collect();
+        $refereeNotes  = $campId ? CampRefereeNote::where('camp_id', $campId)->pluck('note', 'referee_id') : collect();
+
+        return GameSlotRefereeResource::collectionWithExtra($assignments, $jerseyNumbers, $refereeNotes);
     }
 }

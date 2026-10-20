@@ -9,6 +9,7 @@ use App\Models\SportsType;
 use App\Models\RefereeEvaluation;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\CampEvaluatorRegistration;
+use App\Models\CampRefereeNote;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -208,6 +209,14 @@ class Camp extends Model
             'referee_id'
         )->withPivot('jersey_number')
             ->withTimestamps();
+    }
+
+    /**
+     * Relation with referee notes
+     */
+    public function refereeNotes(): HasMany
+    {
+        return $this->hasMany(CampRefereeNote::class, 'camp_id');
     }
 
     /**

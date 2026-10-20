@@ -4,6 +4,7 @@ namespace Modules\Director\Services\Crew;
 
 use App\Models\AssistantDirectorPermission;
 use App\Models\CampRefereeJearsyNumber;
+use App\Models\CampRefereeNote;
 use App\Models\User;
 use Carbon\Carbon;
 use Exception;
@@ -154,6 +155,7 @@ class CrewService
         }
 
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $campId)->pluck('jersey_number', 'referee_id');
+        $refereeNotes  = CampRefereeNote::where('camp_id', $campId)->pluck('note', 'referee_id');
 
         $crews = Crew::where('camp_id', $campId)
             ->withCount('members')
@@ -162,20 +164,23 @@ class CrewService
             }])
             ->get();
 
-        $formatted = $crews->map(function ($crew) use ($jerseyNumbers) {
+        $formatted = $crews->map(function ($crew) use ($jerseyNumbers, $refereeNotes) {
             return [
                 'id'           => $crew->id,
                 'name'         => $crew->name,
                 'description'  => $crew->description,
                 'status'       => $crew->status,
                 'member_count' => $crew->members_count,
-                'members'      => $crew->members->map(function ($member) use ($jerseyNumbers) {
+                'members'      => $crew->members->map(function ($member) use ($jerseyNumbers, $refereeNotes) {
                     return [
                         'id'             => $member->id,
                         'name'           => $member->first_name . ' ' . $member->last_name,
                         'email'          => $member->email,
                         'avatar'         => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
                         'jersey_number'  => $jerseyNumbers[$member->id] ?? null,
+                        'jourcy_number'  => $jerseyNumbers[$member->id] ?? null,
+                        'note'           => $refereeNotes[$member->id] ?? null,
+                        'notes'          => $refereeNotes[$member->id] ?? null,
                         'position'       => $member->pivot->position ?? null,
                         'joined_at'      => $member->pivot->joined_at,
                         'address'        => $member->address,
@@ -303,6 +308,8 @@ class CrewService
 
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $crew->camp->id)
             ->pluck('jersey_number', 'referee_id');
+        $refereeNotes = CampRefereeNote::where('camp_id', $crew->camp->id)
+            ->pluck('note', 'referee_id');
 
         return [
             'success' => true,
@@ -314,7 +321,7 @@ class CrewService
                 'description'    => $crew->description,
                 'status'         => $crew->status,
                 'member_count'   => $crew->members_count,
-                'members'        => $crew->members->map(function ($member) use ($jerseyNumbers) {
+                'members'        => $crew->members->map(function ($member) use ($jerseyNumbers, $refereeNotes) {
                     return [
                         'id'             => $member->id,
                         'name'           => $member->first_name . ' ' . $member->last_name ?? null,
@@ -323,6 +330,9 @@ class CrewService
                         'position'       => $member->pivot?->position ?? null,
                         'joined_at'      => $member->pivot?->joined_at,
                         'jersey_number'  => $jerseyNumbers->get($member->id) ?? null,
+                        'jourcy_number'  => $jerseyNumbers->get($member->id) ?? null,
+                        'note'           => $refereeNotes->get($member->id) ?? null,
+                        'notes'          => $refereeNotes->get($member->id) ?? null,
                         'address'        => $member->address,
                         'phone'          => $member->phone,
                     ];
@@ -830,6 +840,7 @@ class CrewService
         }
 
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)->pluck('jersey_number', 'referee_id');
+        $refereeNotes  = CampRefereeNote::where('camp_id', $camp->id)->pluck('note', 'referee_id');
 
         $checkedInRefereeIds = CampRefereeCheckin::where('camp_id', $campId)->pluck('referee_id');
         $assignedRefereeIds  = CrewMember::whereHas('crew', function ($q) use ($campId) {
@@ -852,8 +863,8 @@ class CrewService
                 'total_checked_in' => $checkedInRefereeIds->count(),
                 'in_crews'         => $assignedRefereeIds->count(),
                 'available'        => $availableReferees->total(),
-                'referees'         => $availableReferees->getCollection()->map(function ($referee) use ($jerseyNumbers) {
-                    return new AvailableRefereeResource($referee, $jerseyNumbers);
+                'referees'         => $availableReferees->getCollection()->map(function ($referee) use ($jerseyNumbers, $refereeNotes) {
+                    return new AvailableRefereeResource($referee, $jerseyNumbers, $refereeNotes);
                 }),
                 'pagination' => [
                     'total'        => $availableReferees->total(),
@@ -882,6 +893,7 @@ class CrewService
         }
 
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)->pluck('jersey_number', 'referee_id');
+        $refereeNotes  = CampRefereeNote::where('camp_id', $camp->id)->pluck('note', 'referee_id');
         $perPage       = $request->get('per_page', 15);
 
         $checkedInReferees = CampRefereeCheckin::where('camp_id', $campId)
@@ -894,7 +906,7 @@ class CrewService
             'message' => 'Checked-in referees fetched successfully.',
             'data'    => [
                 'total'      => $checkedInReferees->total(),
-                'referees'   => CheckedInRefereeResource::collectionWithJersey($checkedInReferees, $jerseyNumbers),
+                'referees'   => CheckedInRefereeResource::collectionWithJersey($checkedInReferees, $jerseyNumbers, $refereeNotes),
                 'pagination' => [
                     'total'        => $checkedInReferees->total(),
                     'per_page'     => $checkedInReferees->perPage(),

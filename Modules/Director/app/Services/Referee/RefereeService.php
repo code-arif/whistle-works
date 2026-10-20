@@ -5,6 +5,7 @@ namespace Modules\Director\Services\Referee;
 use App\Models\AssistantDirectorPermission;
 use App\Models\CampPayment;
 use App\Models\CampRefereeJearsyNumber;
+use App\Models\CampRefereeNote;
 use App\Models\RefereeEvaluation;
 use App\Models\User;
 use App\Notifications\RefereeRemovedFromCampNotification;
@@ -291,7 +292,7 @@ class RefereeService
      * @param  string|null $jourcyNumber
      * @return array
      */
-    public function updateRefereeJourcyNumber($director, int $campId, int $refereeId, ?string $jourcyNumber): array
+    public function updateRefereeJourcyNumber($director, int $campId, int $refereeId, ?string $jourcyNumber, ?string $note = null): array
     {
         // Find the camp (accessible by director or assistant director)
         $camp = Camp::forDirectorOrAssistant($director->id)
@@ -405,6 +406,23 @@ class RefereeService
                 ]
             );
 
+            // If note is also provided, update it
+            if ($note !== null) {
+                CampRefereeNote::updateOrCreate(
+                    [
+                        'camp_id'    => $campId,
+                        'referee_id' => $refereeId,
+                    ],
+                    [
+                        'note' => $note,
+                    ]
+                );
+            }
+
+            $currentNote = CampRefereeNote::where('camp_id', $campId)
+                ->where('referee_id', $refereeId)
+                ->value('note');
+
             DB::commit();
 
             Log::info('Director updated referee jersey number', [
@@ -432,10 +450,13 @@ class RefereeService
                     'jersey_assignment' => [
                         'id'                     => $jerseyAssignment->id,
                         'jersey_number'          => $jerseyAssignment->jersey_number,
+                        'jourcy_number'          => $jerseyAssignment->jersey_number,
                         'previous_jersey_number' => $oldJerseyNumber,
                         'assigned_at'            => $jerseyAssignment->created_at->format('Y-m-d H:i:s'),
                         'updated_at'             => $jerseyAssignment->updated_at->format('Y-m-d H:i:s'),
                     ],
+                    'note'  => $currentNote,
+                    'notes' => $currentNote,
                     'registration' => [
                         'id'            => $registration->id,
                         'status'        => $registration->registration_status,
@@ -467,6 +488,201 @@ class RefereeService
                 'data'    => ['error' => $e->getMessage()],
             ];
         }
+    }
+
+    /**
+     * Update referee note for a specific camp.
+     *
+     * @param  mixed       $director
+     * @param  int         $campId
+     * @param  int         $refereeId
+     * @param  string|null $note
+     * @return array
+     */
+    public function updateRefereeNote($director, int $campId, int $refereeId, ?string $note): array
+    {
+        // Find the camp (accessible by director or assistant director)
+        $camp = Camp::forDirectorOrAssistant($director->id)
+            ->where('id', $campId)
+            ->first();
+
+        if (!$camp) {
+            return [
+                'success' => false,
+                'code'    => 404,
+                'message' => 'Camp not found.',
+                'data'    => null,
+            ];
+        }
+
+        if ($camp->director_id !== $director->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $director->id)
+                ->first();
+
+            if (!$permission) {
+                return [
+                    'success' => false,
+                    'code'    => 403,
+                    'message' => 'Unauthorized.',
+                    'data'    => null,
+                ];
+            }
+
+            if (!$permission->manage_roster_referees) {
+                return [
+                    'success' => false,
+                    'code'    => 403,
+                    'message' => 'You do not have permission to manage referees for this camp.',
+                    'data'    => null,
+                ];
+            }
+        }
+
+        // Verify referee is registered for this camp
+        $registration = CampRefereeCheckin::where('camp_id', $campId)
+            ->where('referee_id', $refereeId)
+            ->with('referee:id,first_name,last_name,email,avatar')
+            ->first();
+
+        if (!$registration) {
+            return [
+                'success' => false,
+                'code'    => 404,
+                'message' => 'Referee is not registered for this camp.',
+                'data'    => [
+                    'referee_id' => $refereeId,
+                    'camp_id'    => $campId,
+                ],
+            ];
+        }
+
+        DB::beginTransaction();
+        try {
+            $referee = $registration->referee;
+
+            $oldNoteAssignment = CampRefereeNote::where('camp_id', $campId)
+                ->where('referee_id', $refereeId)
+                ->first();
+
+            $oldNote = $oldNoteAssignment?->note;
+
+            $noteAssignment = CampRefereeNote::updateOrCreate(
+                [
+                    'camp_id'    => $campId,
+                    'referee_id' => $refereeId,
+                ],
+                [
+                    'note' => $note,
+                ]
+            );
+
+            DB::commit();
+
+            Log::info('Director updated referee note', [
+                'director_id' => $director->id,
+                'camp_id'     => $campId,
+                'referee_id'  => $refereeId,
+                'action'      => $oldNoteAssignment ? 'updated' : 'created',
+            ]);
+
+            return [
+                'success' => true,
+                'code'    => 200,
+                'message' => $oldNoteAssignment
+                    ? 'Referee note updated successfully.'
+                    : 'Referee note added successfully.',
+                'data'    => [
+                    'referee' => [
+                        'id'     => $referee->id,
+                        'name'   => $referee->first_name . ' ' . $referee->last_name,
+                        'email'  => $referee->email,
+                        'avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
+                    ],
+                    'note_assignment' => [
+                        'id'            => $noteAssignment->id,
+                        'camp_id'       => $campId,
+                        'referee_id'    => $refereeId,
+                        'note'          => $noteAssignment->note,
+                        'notes'         => $noteAssignment->note,
+                        'previous_note' => $oldNote,
+                        'assigned_at'   => $noteAssignment->created_at?->format('Y-m-d H:i:s'),
+                        'updated_at'    => $noteAssignment->updated_at?->format('Y-m-d H:i:s'),
+                    ],
+                    'note'  => $noteAssignment->note,
+                    'notes' => $noteAssignment->note,
+                    'registration' => [
+                        'id'            => $registration->id,
+                        'status'        => $registration->registration_status,
+                        'registered_at' => $registration->registered_at->format('Y-m-d H:i:s'),
+                        'checked_in_at' => $registration->checked_in_at?->format('Y-m-d H:i:s'),
+                    ],
+                    'camp' => [
+                        'id'   => $camp->id,
+                        'name' => $camp->camp_name,
+                    ],
+                ],
+            ];
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to update referee note', [
+                'director_id' => $director->id,
+                'camp_id'     => $campId,
+                'referee_id'  => $refereeId,
+                'error'       => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'code'    => 500,
+                'message' => 'Failed to update referee note.',
+                'data'    => [
+                    'error' => $e->getMessage(),
+                ],
+            ];
+        }
+    }
+
+    /**
+     * Get referee note for a specific camp.
+     *
+     * @param  mixed $director
+     * @param  int   $campId
+     * @param  int   $refereeId
+     * @return array
+     */
+    public function getRefereeNote($director, int $campId, int $refereeId): array
+    {
+        $camp = Camp::forDirectorOrAssistant($director->id)
+            ->where('id', $campId)
+            ->first();
+
+        if (!$camp) {
+            return [
+                'success' => false,
+                'code'    => 404,
+                'message' => 'Camp not found.',
+                'data'    => null,
+            ];
+        }
+
+        $noteAssignment = CampRefereeNote::where('camp_id', $campId)
+            ->where('referee_id', $refereeId)
+            ->first();
+
+        return [
+            'success' => true,
+            'code'    => 200,
+            'message' => 'Referee note fetched successfully.',
+            'data'    => [
+                'camp_id'    => $campId,
+                'referee_id' => $refereeId,
+                'note'       => $noteAssignment?->note,
+                'notes'      => $noteAssignment?->note,
+                'updated_at' => $noteAssignment?->updated_at?->format('Y-m-d H:i:s'),
+            ],
+        ];
     }
 
     /**

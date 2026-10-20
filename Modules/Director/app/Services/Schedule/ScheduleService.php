@@ -5,6 +5,7 @@ namespace Modules\Director\Services\Schedule;
 use App\Models\AssistantDirectorPermission;
 use App\Models\CampEvaluatorRegistration;
 use App\Models\CampRefereeJearsyNumber;
+use App\Models\CampRefereeNote;
 use App\Notifications\SchedulePublishNotification;
 use App\Notifications\ScheduleUpdatedNotification;
 use App\Services\LocationService;
@@ -414,6 +415,8 @@ class ScheduleService
 
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)
             ->pluck('jersey_number', 'referee_id');
+        $refereeNotes = CampRefereeNote::where('camp_id', $camp->id)
+            ->pluck('note', 'referee_id');
 
         $schedule = $camp->schedule;
         if (!$schedule) {
@@ -513,13 +516,13 @@ class ScheduleService
 
         // Group by time and format
         $timeSlots = $gameSlots->groupBy('start_time')
-            ->map(function ($slots, $time) use ($campTimezone, $jerseyNumbers) {
+            ->map(function ($slots, $time) use ($campTimezone, $jerseyNumbers, $refereeNotes) {
                 $timeCarbon = Carbon::parse($time, $campTimezone);
 
                 return [
                     'time'     => $timeCarbon->format('h:i A'),
                     'time_24h' => $time,
-                    'courts'   => $slots->map(function ($slot) use ($campTimezone, $jerseyNumbers) {
+                    'courts'   => $slots->map(function ($slot) use ($campTimezone, $jerseyNumbers, $refereeNotes) {
                         $startTime = Carbon::parse($slot->start_time, $campTimezone);
                         $endTime   = Carbon::parse($slot->end_time, $campTimezone);
 
@@ -537,7 +540,7 @@ class ScheduleService
                             'end_time'           => $endTime->format('H:i'),
                             'start_time_display' => $startTime->format('h:i A'),
                             'end_time_display'   => $endTime->format('h:i A'),
-                            'positions'          => $slot->assignmentPositions->map(function ($pos) use ($jerseyNumbers) {
+                            'positions'          => $slot->assignmentPositions->map(function ($pos) use ($jerseyNumbers, $refereeNotes) {
                                 $assignment   = $pos->gameSlotAssignment;
                                 $referee      = $assignment?->assignable;
                                 $jerseyNumber = $referee ? ($jerseyNumbers[$referee->id] ?? null) : null;
@@ -551,22 +554,28 @@ class ScheduleService
                                         'referee_id'    => $referee->id,
                                         'referee_name'  => trim(($referee->first_name ?? '') . ' ' . ($referee->last_name ?? '')),
                                         'jersey_number' => $jerseyNumber,
+                                        'jourcy_number' => $jerseyNumber,
+                                        'note'          => $refereeNotes[$referee->id] ?? null,
+                                        'notes'         => $refereeNotes[$referee->id] ?? null,
                                         'email'         => $referee->email ?? null,
                                         'avatar'        => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
                                     ] : null,
                                 ];
                             })->values(),
                             'assignments_count'  => $slot->slotAssignments->count(),
-                            'assignments'        => $slot->slotAssignments->map(function ($assignment) use ($jerseyNumbers) {
+                            'assignments'        => $slot->slotAssignments->map(function ($assignment) use ($jerseyNumbers, $refereeNotes) {
                                 if ($assignment->assignment_type === 'crew') {
                                     $crew    = $assignment->assignable;
-                                    $members = $crew->members->map(function ($member) use ($jerseyNumbers) {
+                                    $members = $crew->members->map(function ($member) use ($jerseyNumbers, $refereeNotes) {
                                         return [
                                             'referee_id'    => $member->id,
                                             'referee_name'  => $member->first_name . ' ' . $member->last_name,
                                             'avatar'        => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
                                             'email'         => $member->email,
                                             'jersey_number' => $jerseyNumbers[$member->id] ?? null,
+                                            'jourcy_number' => $jerseyNumbers[$member->id] ?? null,
+                                            'note'          => $refereeNotes[$member->id] ?? null,
+                                            'notes'         => $refereeNotes[$member->id] ?? null,
                                         ];
                                     });
 
@@ -590,7 +599,10 @@ class ScheduleService
                                         'referee_name'  => $referee
                                             ? trim(($referee->first_name ?? '') . ' ' . ($referee->last_name ?? ''))
                                             : null,
+                                        'jersey_number' => $jerseyNumber,
                                         'jourcy_number' => $jerseyNumber,
+                                        'note'          => $referee ? ($refereeNotes[$referee->id] ?? null) : null,
+                                        'notes'         => $referee ? ($refereeNotes[$referee->id] ?? null) : null,
                                         'avatar'        => $referee?->avatar
                                             ? asset($referee->avatar)
                                             : asset('default/profile.jpg'),
