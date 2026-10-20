@@ -8,6 +8,7 @@ use Modules\Director\app\Services\Ai\Contracts\AiToolInterface;
 use Modules\Director\app\Services\Ai\Tools\CampRefereesLocationTool;
 use Modules\Director\app\Services\Ai\Tools\CompareRefereesTool;
 use Modules\Director\app\Services\Ai\Tools\CompileCampRankingsExcelTool;
+use Modules\Director\app\Services\Ai\Tools\GetCampInventoryTool;
 use Modules\Director\app\Services\Ai\Tools\PendingEvaluatorsTool;
 use Modules\Director\app\Services\Ai\Tools\RefereeCheckinStatusTool;
 use Modules\Director\app\Services\Ai\Tools\RefereeImprovementTool;
@@ -128,5 +129,6 @@ class AiToolRegistry
         $this->register(new RefereePerformanceTimelineTool());
         $this->register(new CompileCampRankingsExcelTool());
         $this->register(new RefereeCheckinStatusTool());
+        $this->register(new GetCampInventoryTool());
     }
 }

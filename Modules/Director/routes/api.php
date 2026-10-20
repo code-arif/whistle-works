@@ -32,6 +32,9 @@ Route::prefix('v1/camp')->group(function () {
 // No auth camp details
 Route::get('no-auth/camp/details/{id}', [CampManageController::class, 'noAuthCampDetails']);
 
+// Public download route for AI Excel spreadsheets
+Route::get('v1/director/ai/export/download/{filename}', [AiChatController::class, 'downloadExport']);
+
 /*
 |--------------------------------------------------------------------------
 | Global Camp Details (Mixed Auth)
@@ -178,9 +181,12 @@ Route::middleware(['auth:api', 'role:director'])->prefix('v1')->group(function (
             Route::post('/session/reset', [AiChatController::class, 'resetSession']);
             Route::get('/quota', [AiChatController::class, 'getQuota']);
             Route::get('/sessions', [AiChatController::class, 'getSessions']);
+            Route::get('/session/list', [AiChatController::class, 'getSessions']);
             Route::get('/session/{session_uuid}/history', [AiChatController::class, 'getSessionHistory']);
             Route::patch('/session/rename/{session_uuid}', [AiChatController::class, 'updateSession']);
+            Route::patch('/session/{session_uuid}', [AiChatController::class, 'updateSession']);
             Route::delete('/session/delete/{session_uuid}', [AiChatController::class, 'deleteSession']);
+            Route::delete('/session/{session_uuid}', [AiChatController::class, 'deleteSession']);
         });
     });
 });

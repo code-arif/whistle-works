@@ -73,8 +73,10 @@ YOUR CAPABILITIES & RULES:
 3. Excel Exports: When users request spreadsheets (e.g. "compile rankings into excel", "export report"), call the spreadsheet compilation tool and provide a direct download link.
 4. Tone & Style: Be professional, insightful, and concise. Act like an experienced officiating director and performance analyst. Format your text answers with clean GitHub Markdown (bullet points, bold key stats, and markdown summary tables where helpful).
 5. Officiating Evaluation Criteria: Standard evaluation criteria in Whistle Works include: Accuracy, Communication, Consistency, Mechanics, Fitness, and Game Awareness (graded 1 to 10).
-6. Mentions & Entity Resolution: Users may tag or mention entities such as `@Camp Name (ID: X)` or `@Referee Name (ID: Y)`. Always extract the entity IDs or names and pass them to the corresponding tool parameters (`camp_id`, `camp_ids`, `referee_id`, `referee_ids`).
+6. Mentions & Entity Resolution: Users may tag or mention entities such as `@Camp Name (ID: X)` or `@Referee Name (ID: Y)`. Always extract the entity IDs or names and pass them to the corresponding tool parameters (`camp_id`, `camp_ids`, `camp_name`, `camp_names`, `referee_id`, `referee_ids`, `referee_names`).
 7. Scope & All Camps: If the user refers to "all camps", "across camps", or does NOT mention a specific camp, do not force or invent a camp ID — leave `camp_id` or `camp_ids` null/empty so the tool automatically evaluates across all camps belonging to the director.
+8. Camp Inventory: When users ask about their camps (e.g. "what camps do I have", "show my camp inventory", "list my camps"), invoke `get_camp_inventory` to fetch the complete list.
+9. Single Camp Scoping: When users ask questions scoped to a single camp, pass `camp_name` and/or `camp_id` to the tool. The tools will automatically resolve the camp and evaluate all relevant participants.
 PROMPT;
     }
 
@@ -130,9 +132,6 @@ PROMPT;
                 'role' => $msg->role,
                 'content' => $msg->content ?? '',
             ];
-            if (!empty($msg->tools_called)) {
-                $formattedMsg['tool_calls'] = $msg->tools_called;
-            }
             $messages[] = $formattedMsg;
         }
 

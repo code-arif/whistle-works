@@ -40,7 +40,12 @@ class OpenAiProvider implements AiProviderInterface
             }
 
             if ($msg['role'] === 'assistant' && !empty($msg['tool_calls'])) {
-                $formatted['tool_calls'] = $msg['tool_calls'];
+                $validToolCalls = array_values(array_filter($msg['tool_calls'], function ($tc) {
+                    return is_array($tc) && isset($tc['id'], $tc['type']);
+                }));
+                if (!empty($validToolCalls)) {
+                    $formatted['tool_calls'] = $validToolCalls;
+                }
             }
 
             return $formatted;

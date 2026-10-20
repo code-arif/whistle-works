@@ -2,10 +2,13 @@
 
 namespace Modules\Director\app\Services\Ai\Tools;
 
+use App\Models\CampRefereeJearsyNumber;
 use App\Models\RefereeEvaluation;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Director\app\Services\Ai\Contracts\AiToolInterface;
+use Modules\Director\Models\Camp;
+use Modules\Director\Models\CampRefereeCheckin;
 
 class CompareRefereesTool implements AiToolInterface
 {
@@ -38,6 +41,10 @@ class CompareRefereesTool implements AiToolInterface
                     'type' => 'integer',
                     'description' => 'Optional Camp ID to scope evaluations to a specific camp',
                 ],
+                'camp_name' => [
+                    'type' => 'string',
+                    'description' => 'Optional Camp name or title to scope evaluations to a specific camp (e.g. "Camp Alpha 2026")',
+                ],
             ],
             'required' => [],
         ];
@@ -47,7 +54,21 @@ class CompareRefereesTool implements AiToolInterface
     {
         $refereeIds = $arguments['referee_ids'] ?? [];
         $refereeNames = $arguments['referee_names'] ?? [];
-        $campId = $arguments['camp_id'] ?? null;
+        $campId = !empty($arguments['camp_id']) ? (int) $arguments['camp_id'] : null;
+        $campName = $arguments['camp_name'] ?? null;
+
+        // Resolve camp from camp_name if camp_id is not provided
+        if (empty($campId) && !empty($campName)) {
+            $campSearch = trim($campName);
+            $camp = Camp::forDirectorOrAssistant($userId)
+                ->where('camp_name', 'LIKE', "%{$campSearch}%")
+                ->first()
+                ?? Camp::where('camp_name', 'LIKE', "%{$campSearch}%")->first();
+
+            if ($camp) {
+                $campId = $camp->id;
+            }
+        }
 
         // Resolve referee IDs from names if IDs are not directly provided
         if (empty($refereeIds) && !empty($refereeNames)) {
@@ -68,15 +89,38 @@ class CompareRefereesTool implements AiToolInterface
 
         $refereeIds = array_unique(array_filter($refereeIds));
 
+        // If no referees explicitly specified but a camp is provided, automatically find evaluated referees in that camp
+        if (empty($refereeIds) && $campId) {
+            $refereeIds = RefereeEvaluation::where('camp_id', $campId)
+                ->where('status', 'submitted')
+                ->distinct()
+                ->pluck('referee_id')
+                ->take(5)
+                ->all();
+
+            if (empty($refereeIds)) {
+                $checkinRefs = CampRefereeCheckin::where('camp_id', $campId)
+                    ->pluck('referee_id')
+                    ->all();
+                $jerseyRefs = CampRefereeJearsyNumber::where('camp_id', $campId)
+                    ->pluck('referee_id')
+                    ->all();
+                $refereeIds = array_unique(array_filter(array_merge($checkinRefs, $jerseyRefs)));
+            }
+        }
+
         if (empty($refereeIds)) {
+            $msg = $campId
+                ? 'No matching referees or evaluations found for this camp.'
+                : 'No matching referees found for the provided names or IDs.';
             return [
                 'result' => [
-                    'message' => 'No matching referees found for the provided names or IDs.',
+                    'message' => $msg,
                     'comparisons' => [],
                 ],
                 'widget_type' => null,
                 'widget_payload' => null,
-                'summary' => 'No referees found.',
+                'summary' => $msg,
             ];
         }
 

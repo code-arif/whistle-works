@@ -272,4 +272,26 @@ class AiChatController extends Controller
             'session_uuid' => $sessionUuid,
         ], 200);
     }
+
+    /**
+     * Download a generated AI export file directly without static server permission issues.
+     * GET /api/v1/director/ai/export/download/{filename}
+     */
+    public function downloadExport(string $filename)
+    {
+        $cleanFilename = basename($filename);
+        $fullPath = storage_path('app/public/ai_exports/' . $cleanFilename);
+
+        if (!file_exists($fullPath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The requested export file was not found or has expired.',
+            ], 404);
+        }
+
+        return response()->download($fullPath, $cleanFilename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-cache, must-revalidate',
+        ]);
+    }
 }

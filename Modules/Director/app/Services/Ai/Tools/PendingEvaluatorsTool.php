@@ -40,23 +40,39 @@ class PendingEvaluatorsTool implements AiToolInterface
 
     public function execute(array $arguments, int $userId): array
     {
-        $campId = $arguments['camp_id'] ?? null;
+        $campId = !empty($arguments['camp_id']) ? (int) $arguments['camp_id'] : null;
         $campName = $arguments['camp_name'] ?? null;
+        $isAllCamps = empty($campId) && empty($campName);
 
-        $camp = null;
+        $camps = collect();
         if ($campId) {
-            $camp = Camp::find($campId);
+            $c = Camp::find($campId);
+            if ($c) {
+                $camps->push($c);
+            }
         } elseif (!empty($campName)) {
-            $camp = Camp::where('camp_name', 'LIKE', "%{$campName}%")->first();
+            $c = Camp::where('camp_name', 'LIKE', "%{$campName}%")->first();
+            if ($c) {
+                $camps->push($c);
+            }
         }
 
-        if (!$camp) {
-            // Pick most recent active camp for user if none specified
-            $camp = Camp::where('director_id', $userId)->orderBy('id', 'desc')->first()
-                ?? Camp::orderBy('id', 'desc')->first();
+        if ($camps->isEmpty()) {
+            if ($isAllCamps) {
+                $camps = Camp::forDirectorOrAssistant($userId)->get();
+                if ($camps->isEmpty()) {
+                    $camps = Camp::orderBy('id', 'desc')->limit(5)->get();
+                }
+            } else {
+                $c = Camp::where('director_id', $userId)->orderBy('id', 'desc')->first()
+                    ?? Camp::orderBy('id', 'desc')->first();
+                if ($c) {
+                    $camps->push($c);
+                }
+            }
         }
 
-        if (!$camp) {
+        if ($camps->isEmpty()) {
             return [
                 'result' => [
                     'message' => 'No camps found in the system to audit.',
@@ -68,8 +84,11 @@ class PendingEvaluatorsTool implements AiToolInterface
             ];
         }
 
-        // Get all approved evaluators for this camp
-        $registrations = CampEvaluatorRegistration::where('camp_id', $camp->id)
+        $campIds = $camps->pluck('id')->all();
+        $campTitle = $isAllCamps ? 'All Camps' : ($camps->first()->camp_name ?? 'Camp #' . $camps->first()->id);
+
+        // Get all approved evaluators for target camp(s)
+        $registrations = CampEvaluatorRegistration::whereIn('camp_id', $campIds)
             ->where('status', 'approved')
             ->get();
 
@@ -82,20 +101,24 @@ class PendingEvaluatorsTool implements AiToolInterface
                 continue;
             }
 
-            $submittedCount = RefereeEvaluation::where('camp_id', $camp->id)
+            $submittedCount = RefereeEvaluation::where('camp_id', $reg->camp_id)
                 ->where('evaluator_id', $evaluator->id)
                 ->where('status', 'submitted')
                 ->count();
 
-            $draftCount = RefereeEvaluation::where('camp_id', $camp->id)
+            $draftCount = RefereeEvaluation::where('camp_id', $reg->camp_id)
                 ->where('evaluator_id', $evaluator->id)
                 ->where('status', 'draft')
                 ->count();
 
             $fullName = trim("{$evaluator->first_name} {$evaluator->last_name}") ?: $evaluator->username;
+            $campObj = $camps->firstWhere('id', $reg->camp_id);
+            $cName = $campObj ? ($campObj->camp_name ?? "Camp #{$campObj->id}") : "Camp #{$reg->camp_id}";
 
             $evaluatorData = [
                 'evaluator_id' => $evaluator->id,
+                'camp_id' => $reg->camp_id,
+                'camp_name' => $cName,
                 'name' => $fullName,
                 'email' => $evaluator->email,
                 'phone' => $evaluator->phone ?: 'N/A',
@@ -111,27 +134,36 @@ class PendingEvaluatorsTool implements AiToolInterface
             }
         }
 
-        $campTitle = $camp->camp_name ?? $camp->name ?? 'Camp #' . $camp->id;
+        $headers = $isAllCamps
+            ? ['Evaluator Name', 'Camp', 'Submitted Evals', 'Drafts', 'Email', 'Phone', 'Approved Date']
+            : ['Evaluator Name', 'Submitted Evals', 'Drafts', 'Email', 'Phone', 'Approved Date'];
 
         $widgetPayload = [
             'type' => 'table',
             'title' => "Evaluator Submission Audit: {$campTitle}",
-            'headers' => ['Evaluator Name', 'Submitted Evals', 'Drafts', 'Email', 'Phone', 'Approved Date'],
-            'rows' => array_map(function ($ev) {
-                return [
+            'headers' => $headers,
+            'rows' => array_map(function ($ev) use ($isAllCamps) {
+                $row = [
                     'name' => $ev['name'],
+                    'evaluator_name' => $ev['name'],
                     'submitted' => $ev['submitted_evaluations'],
+                    'submitted_evaluations' => $ev['submitted_evaluations'],
                     'drafts' => $ev['draft_evaluations'],
+                    'draft_evaluations' => $ev['draft_evaluations'],
                     'email' => $ev['email'],
                     'phone' => $ev['phone'],
                     'approved_at' => $ev['approved_at'],
                 ];
+                if ($isAllCamps) {
+                    $row['camp'] = $ev['camp_name'];
+                }
+                return $row;
             }, $nonCompliantEvaluators),
         ];
 
         return [
             'result' => [
-                'camp_id' => $camp->id,
+                'camp_id' => $isAllCamps ? null : $camps->first()->id,
                 'camp_name' => $campTitle,
                 'total_approved_evaluators' => count($registrations),
                 'zero_submission_count' => count($nonCompliantEvaluators),

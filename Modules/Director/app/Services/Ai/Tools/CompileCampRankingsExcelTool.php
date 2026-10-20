@@ -68,8 +68,8 @@ class CompileCampRankingsExcelTool implements AiToolInterface
         $camps = $campsQuery->get();
 
         if ($camps->isEmpty()) {
-            // Fallback to recent camps for this director
-            $camps = Camp::forDirectorOrAssistant($userId)->orderBy('id', 'desc')->limit(2)->get();
+            // Fallback to all camps for this director
+            $camps = Camp::forDirectorOrAssistant($userId)->orderBy('id', 'desc')->get();
         }
 
         if ($camps->isEmpty()) {
@@ -263,7 +263,8 @@ class CompileCampRankingsExcelTool implements AiToolInterface
 
         $fileSizeBytes = File::size($fullPath);
         $fileSizeFormatted = round($fileSizeBytes / 1024, 1) . ' KB';
-        $downloadUrl = url("storage/ai_exports/{$filename}");
+        // Direct controller download URL to avoid 403 Forbidden issues on static file storage
+        $downloadUrl = url("api/v1/director/ai/export/download/{$filename}");
 
         $top5Preview = array_slice($mergedRows, 0, 5);
 
@@ -273,7 +274,7 @@ class CompileCampRankingsExcelTool implements AiToolInterface
             'download_url' => $downloadUrl,
             'filename' => $filename,
             'file_size' => $fileSizeFormatted,
-            'camps_included' => $campTitles,
+            'camps_included' => array_values(array_unique($campTitles)),
             'total_ranked_referees' => count($mergedRows),
             'preview_headers' => ['Rank', 'Camp', 'Referee', 'Avg Score', 'Evals'],
             'preview_rows' => array_map(function ($r, $idx) {

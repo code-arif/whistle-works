@@ -37,6 +37,10 @@ class RefereeImprovementTool implements AiToolInterface
                     'type' => 'integer',
                     'description' => 'Optional Camp ID to scope evaluation records',
                 ],
+                'camp_name' => [
+                    'type' => 'string',
+                    'description' => 'Optional Camp name or title to scope evaluation records',
+                ],
             ],
             'required' => [],
         ];
@@ -46,7 +50,19 @@ class RefereeImprovementTool implements AiToolInterface
     {
         $yearsBack = (int) ($arguments['years_back'] ?? 3);
         $limit = (int) ($arguments['limit'] ?? 10);
-        $campId = $arguments['camp_id'] ?? null;
+        $campId = !empty($arguments['camp_id']) ? (int) $arguments['camp_id'] : null;
+        $campName = $arguments['camp_name'] ?? null;
+
+        if (empty($campId) && !empty($campName)) {
+            $campSearch = trim($campName);
+            $camp = \Modules\Director\Models\Camp::forDirectorOrAssistant($userId)
+                ->where('camp_name', 'LIKE', "%{$campSearch}%")
+                ->first()
+                ?? \Modules\Director\Models\Camp::where('camp_name', 'LIKE', "%{$campSearch}%")->first();
+            if ($camp) {
+                $campId = $camp->id;
+            }
+        }
 
         $startDate = Carbon::now()->subYears($yearsBack)->startOfDay();
 
@@ -67,8 +83,11 @@ class RefereeImprovementTool implements AiToolInterface
 
         if ($evaluations->isEmpty()) {
             // Fallback to all submitted evaluations if time constraint is too tight in test environments
-            $evaluations = RefereeEvaluation::where('status', 'submitted')
-                ->select(['id', 'referee_id', 'average_score', 'created_at'])
+            $fallbackQuery = RefereeEvaluation::where('status', 'submitted');
+            if ($campId) {
+                $fallbackQuery->where('camp_id', $campId);
+            }
+            $evaluations = $fallbackQuery->select(['id', 'referee_id', 'average_score', 'created_at'])
                 ->orderBy('created_at', 'asc')
                 ->get();
         }
@@ -135,11 +154,26 @@ class RefereeImprovementTool implements AiToolInterface
                 return [
                     'rank' => '#' . ($idx + 1),
                     'name' => $item['name'],
+                    'referee_name' => $item['name'],
+                    'referee' => $item['name'],
                     'baseline' => number_format($item['baseline_avg_score'], 2),
+                    'baseline_avg' => number_format($item['baseline_avg_score'], 2),
+                    'baseline_avg_score' => $item['baseline_avg_score'],
+                    'baseline_score' => number_format($item['baseline_avg_score'], 2),
                     'latest' => number_format($item['latest_avg_score'], 2),
+                    'latest_avg' => number_format($item['latest_avg_score'], 2),
+                    'latest_avg_score' => $item['latest_avg_score'],
+                    'latest_score' => number_format($item['latest_avg_score'], 2),
                     'delta' => ($item['score_delta'] >= 0 ? '+' : '') . number_format($item['score_delta'], 2),
+                    'growth' => ($item['score_delta'] >= 0 ? '+' : '') . number_format($item['score_delta'], 2),
+                    'growth_delta' => ($item['score_delta'] >= 0 ? '+' : '') . number_format($item['score_delta'], 2),
+                    'score_delta' => $item['score_delta'],
                     'percentage' => ($item['percentage_improvement'] >= 0 ? '+' : '') . $item['percentage_improvement'] . '%',
+                    'percentage_improvement' => $item['percentage_improvement'],
+                    'improvement_percentage' => ($item['percentage_improvement'] >= 0 ? '+' : '') . $item['percentage_improvement'] . '%',
                     'count' => $item['evaluations_count'],
+                    'evaluations_count' => $item['evaluations_count'],
+                    'total_evals' => $item['evaluations_count'],
                 ];
             }, $topImprovers, array_keys($topImprovers)),
         ];
