@@ -1205,9 +1205,7 @@ class CourtAssignService
                         'avatar'        => $member->avatar ? asset($member->avatar) : asset('default/profile.jpg'),
                         'position'      => $member->pivot->position ?? null,
                         'joined_at'     => $member->pivot->joined_at,
-                        'jersey_number' => $jerseyNumbers[$member->id] ?? null,
                         'jourcy_number' => $jerseyNumbers[$member->id] ?? null,
-                        'note'          => $refereeNotes[$member->id] ?? null,
                         'notes'         => $refereeNotes[$member->id] ?? null,
                     ];
                 }),
