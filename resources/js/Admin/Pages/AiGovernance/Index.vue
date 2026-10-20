@@ -864,7 +864,7 @@ const areaPathD = computed(() => {
                       <Sliders class="w-4 h-4" />
                     </button>
 
-                    <!-- [FUTURE FEATURE]: Dedicated User AI History Page Link (Uncomment when needed)
+                    <!-- [FUTURE FEATURE]: Dedicated User AI History Page Link (Uncomment when needed) -->
                     <Link 
                       :href="`/admin/v2/ai-governance/users/${q.user_id}/history`"
                       class="p-1.5 text-slate-400 hover:text-[#3B8FF3] hover:bg-[#3B8FF3]/10 dark:hover:bg-[#1E1E2C] rounded-md transition-colors cursor-pointer inline-flex items-center justify-center"
@@ -872,7 +872,7 @@ const areaPathD = computed(() => {
                     >
                       <History class="w-4 h-4" />
                     </Link>
-                    -->
+                   
 
                     <!-- Usage Trend Line Graph Modal Button -->
                     <button 
