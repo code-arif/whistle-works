@@ -17,6 +17,7 @@ class RefereeEvaluationController extends Controller
     use ApiResponse;
 
     protected RefereeEvaluationService $refereeEvaluationService;
+
     protected RefereeEvaluationExportService $exportService;
 
     public function __construct(
@@ -29,21 +30,18 @@ class RefereeEvaluationController extends Controller
 
     /**
      * Create a new referee evaluation.
-     *
-     * @param  RefereeEvaluationRequest  $request
-     * @return JsonResponse
      */
     public function store(RefereeEvaluationRequest $request): JsonResponse
     {
         $user = auth('api')->user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error([], 'Unauthenticated.', 401);
         }
 
         $result = $this->refereeEvaluationService->store($user, $request->validated());
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
         }
 
@@ -53,21 +51,19 @@ class RefereeEvaluationController extends Controller
     /**
      * Update an existing referee evaluation.
      *
-     * @param  UpdateRefereeEvaluationRequest  $request
-     * @param  int|string                      $id
-     * @return JsonResponse
+     * @param  int|string  $id
      */
     public function update(UpdateRefereeEvaluationRequest $request, $id): JsonResponse
     {
         $user = auth('api')->user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error([], 'Unauthenticated.', 401);
         }
 
         $result = $this->refereeEvaluationService->update($user, $id, $request->validated());
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
         }
 
@@ -76,9 +72,6 @@ class RefereeEvaluationController extends Controller
 
     /**
      * Alias for store to support 'create' action.
-     *
-     * @param  RefereeEvaluationRequest  $request
-     * @return JsonResponse
      */
     public function create(RefereeEvaluationRequest $request): JsonResponse
     {
@@ -87,9 +80,6 @@ class RefereeEvaluationController extends Controller
 
     /**
      * Backward-compatible alias for store.
-     *
-     * @param  RefereeEvaluationRequest  $request
-     * @return JsonResponse
      */
     public function storeOrUpdate(RefereeEvaluationRequest $request): JsonResponse
     {
@@ -99,21 +89,19 @@ class RefereeEvaluationController extends Controller
     /**
      * Get evaluations by camp.
      *
-     * @param  Request     $request
      * @param  int|string  $campId
-     * @return JsonResponse
      */
     public function getEvaluationsByCamp(Request $request, $campId): JsonResponse
     {
         $user = auth('api')->user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error([], 'Unauthenticated.', 401);
         }
 
         $result = $this->refereeEvaluationService->getEvaluationsByCamp($user, $campId);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
         }
 
@@ -121,9 +109,8 @@ class RefereeEvaluationController extends Controller
     }
 
     /**
-     * Export referee evaluations by camp as CSV or Excel (Director only).
+     * Export referee evaluations by camp as CSV or Excel (Directors & Evaluators).
      *
-     * @param  Request     $request
      * @param  int|string  $campId
      * @return StreamedResponse|JsonResponse
      */
@@ -131,14 +118,14 @@ class RefereeEvaluationController extends Controller
     {
         $user = auth('api')->user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error([], 'Unauthenticated.', 401);
         }
 
-        $format = (string) $request->query('format', $request->query('type', 'csv'));
+        $format = (string) $request->query('format', $request->query('type', 'xlsx'));
         $result = $this->exportService->exportEvaluationsByCamp($user, $campId, $format);
 
-        if (is_array($result) && !($result['success'] ?? true)) {
+        if (is_array($result) && ! ($result['success'] ?? true)) {
             return $this->error($result['data'] ?? [], $result['message'] ?? 'Failed to export.', $result['code'] ?? 400);
         }
 
@@ -148,22 +135,20 @@ class RefereeEvaluationController extends Controller
     /**
      * Get evaluations created by the authenticated evaluator.
      *
-     * @param  Request     $request
      * @param  int|string  $campId
-     * @return JsonResponse
      */
     public function getMyEvaluations(Request $request, $campId): JsonResponse
     {
         $user = auth('api')->user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error([], 'Unauthenticated.', 401);
         }
 
         $perPage = (int) $request->get('per_page', 15);
         $result = $this->refereeEvaluationService->getMyEvaluations($user, $campId, $perPage);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
         }
 
@@ -174,19 +159,18 @@ class RefereeEvaluationController extends Controller
      * Get a single evaluation by ID.
      *
      * @param  int|string  $id
-     * @return JsonResponse
      */
     public function show($id): JsonResponse
     {
         $user = auth('api')->user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error([], 'Unauthenticated.', 401);
         }
 
         $result = $this->refereeEvaluationService->show($user, $id);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
         }
 
@@ -197,19 +181,18 @@ class RefereeEvaluationController extends Controller
      * Delete an evaluation.
      *
      * @param  int|string  $id
-     * @return JsonResponse
      */
     public function destroy($id): JsonResponse
     {
         $user = auth('api')->user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error([], 'Unauthenticated.', 401);
         }
 
         $result = $this->refereeEvaluationService->destroy($user, $id);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
         }
 
@@ -220,19 +203,18 @@ class RefereeEvaluationController extends Controller
      * Get referee statistics.
      *
      * @param  int|string  $refereeId
-     * @return JsonResponse
      */
     public function getRefereeStats($refereeId): JsonResponse
     {
         $user = auth('api')->user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error([], 'Unauthenticated.', 401);
         }
 
         $result = $this->refereeEvaluationService->getRefereeStats($user, $refereeId);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
         }
 
@@ -242,22 +224,20 @@ class RefereeEvaluationController extends Controller
     /**
      * Get all checked-in referees for a camp (paginated).
      *
-     * @param  Request     $request
      * @param  int|string  $campId
-     * @return JsonResponse
      */
     public function getAllRegisteredInReferees(Request $request, $campId): JsonResponse
     {
         $user = auth('api')->user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error([], 'Unauthenticated.', 401);
         }
 
         $perPage = (int) $request->get('per_page', 15);
         $result = $this->refereeEvaluationService->getAllRegisteredInReferees($user, $campId, $perPage);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
         }
 
@@ -268,19 +248,18 @@ class RefereeEvaluationController extends Controller
      * Get all referees for a camp (unpaginated).
      *
      * @param  int|string  $campId
-     * @return JsonResponse
      */
     public function getAllReferees($campId): JsonResponse
     {
         $user = auth('api')->user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error([], 'Unauthenticated.', 401);
         }
 
         $result = $this->refereeEvaluationService->getAllReferees($user, $campId);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
         }
 
@@ -290,16 +269,14 @@ class RefereeEvaluationController extends Controller
     /**
      * Get evaluation history for a specific referee in a camp.
      *
-     * @param  Request     $request
      * @param  int|string  $campId
      * @param  int|string  $refereeId
-     * @return JsonResponse
      */
     public function getRefereeEvaluationHistory(Request $request, $campId, $refereeId): JsonResponse
     {
         $user = auth('api')->user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->error([], 'Unauthenticated.', 401);
         }
 
@@ -307,7 +284,7 @@ class RefereeEvaluationController extends Controller
         $perPage = (int) $request->get('per_page', 15);
         $result = $this->refereeEvaluationService->getRefereeEvaluationHistory($user, $campId, $refereeId, $status, $perPage);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
         }
 
@@ -316,9 +293,6 @@ class RefereeEvaluationController extends Controller
 
     /**
      * Get sports types and recommended evaluation levels.
-     *
-     * @param  Request  $request
-     * @return JsonResponse
      */
     public function getSportTypes(Request $request): JsonResponse
     {

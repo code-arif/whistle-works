@@ -7,6 +7,7 @@ use App\Http\Resources\RefereeEvaluationResource;
 use App\Models\AssistantDirectorPermission;
 use App\Models\CampEvaluatorRegistration;
 use App\Models\CampRefereeJearsyNumber;
+use App\Models\CampRefereeNote;
 use App\Models\RecommendedLevel;
 use App\Models\RefereeEvaluation;
 use App\Models\SportsType;
@@ -22,66 +23,62 @@ class RefereeEvaluationService
 {
     /**
      * Create a new referee evaluation.
-     *
-     * @param  User   $user
-     * @param  array  $validated
-     * @return array
      */
     public function store(User $user, array $validated): array
     {
-        if (!$user->hasAnyRole(['evaluator', 'director'])) {
+        if (! $user->hasAnyRole(['evaluator', 'director'])) {
             return [
                 'success' => false,
-                'code'    => 403,
+                'code' => 403,
                 'message' => 'Only evaluators and directors can create evaluations.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
         $camp = Camp::find($validated['camp_id']);
-        if (!$camp) {
+        if (! $camp) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Camp not found.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
-        if (!RefereeEvaluation::canEvaluateInCamp($user, $camp->id)) {
+        if (! RefereeEvaluation::canEvaluateInCamp($user, $camp->id)) {
             if ($user->hasRole('director')) {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You can only evaluate referees in your own camps.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             } else {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You must be registered and approved for this camp to evaluate referees.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             }
         }
 
         $referee = User::find($validated['referee_id']);
-        if (!$referee || !$referee->hasRole('referee')) {
+        if (! $referee || ! $referee->hasRole('referee')) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Invalid referee selected.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
         if ($referee->id === $user->id) {
             return [
                 'success' => false,
-                'code'    => 403,
+                'code' => 403,
                 'message' => 'You cannot evaluate yourself.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
@@ -89,12 +86,12 @@ class RefereeEvaluationService
             ->where('referee_id', $referee->id)
             ->first();
 
-        if (!$checkin) {
+        if (! $checkin) {
             return [
                 'success' => false,
-                'code'    => 400,
+                'code' => 400,
                 'message' => 'Referee has not registered for this camp.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
@@ -102,20 +99,20 @@ class RefereeEvaluationService
 
         try {
             $evaluation = RefereeEvaluation::create([
-                'referee_id'               => $validated['referee_id'],
-                'evaluator_id'             => $user->id,
-                'camp_id'                  => $validated['camp_id'],
-                'game_slot_id'             => $validated['game_slot_id'] ?? null,
-                'call_accuracy'            => $validated['call_accuracy'] ?? null,
-                'communication_skills'     => $validated['communication_skills'] ?? null,
-                'consistency_of_calls'     => $validated['consistency_of_calls'] ?? null,
+                'referee_id' => $validated['referee_id'],
+                'evaluator_id' => $user->id,
+                'camp_id' => $validated['camp_id'],
+                'game_slot_id' => $validated['game_slot_id'] ?? null,
+                'call_accuracy' => $validated['call_accuracy'] ?? null,
+                'communication_skills' => $validated['communication_skills'] ?? null,
+                'consistency_of_calls' => $validated['consistency_of_calls'] ?? null,
                 'court_position_mechanics' => $validated['court_position_mechanics'] ?? null,
-                'fitness_mobility'         => $validated['fitness_mobility'] ?? null,
-                'game_awareness'           => $validated['game_awareness'] ?? null,
-                'private_comments'         => $validated['private_comments'] ?? null,
-                'referee_feedback'         => $validated['referee_feedback'] ?? null,
-                'status'                   => $validated['status'] ?? 'draft',
-                'submitted_at'             => ($validated['status'] ?? 'draft') === 'submitted' ? now() : null,
+                'fitness_mobility' => $validated['fitness_mobility'] ?? null,
+                'game_awareness' => $validated['game_awareness'] ?? null,
+                'private_comments' => $validated['private_comments'] ?? null,
+                'referee_feedback' => $validated['referee_feedback'] ?? null,
+                'status' => $validated['status'] ?? 'draft',
+                'submitted_at' => ($validated['status'] ?? 'draft') === 'submitted' ? now() : null,
             ]);
 
             $this->saveRecommendedLevel($evaluation, $validated);
@@ -124,18 +121,18 @@ class RefereeEvaluationService
 
             return [
                 'success' => true,
-                'code'    => 201,
+                'code' => 201,
                 'message' => 'Evaluation created successfully.',
-                'data'    => new RefereeEvaluationResource($evaluation->load(['referee', 'evaluator', 'camp', 'gameSlot', 'recommendedLevels.sportsTypeLevel'])),
+                'data' => new RefereeEvaluationResource($evaluation->load(['referee', 'evaluator', 'camp', 'gameSlot', 'recommendedLevels.sportsTypeLevel'])),
             ];
         } catch (Exception $e) {
             DB::rollBack();
 
             return [
                 'success' => false,
-                'code'    => 500,
-                'message' => 'Failed to save evaluation: ' . $e->getMessage(),
-                'data'    => [],
+                'code' => 500,
+                'message' => 'Failed to save evaluation: '.$e->getMessage(),
+                'data' => [],
             ];
         }
     }
@@ -143,39 +140,36 @@ class RefereeEvaluationService
     /**
      * Update an existing referee evaluation.
      *
-     * @param  User        $user
      * @param  int|string  $id
-     * @param  array       $validated
-     * @return array
      */
     public function update(User $user, $id, array $validated): array
     {
-        if (!$user->hasAnyRole(['evaluator', 'director'])) {
+        if (! $user->hasAnyRole(['evaluator', 'director'])) {
             return [
                 'success' => false,
-                'code'    => 403,
+                'code' => 403,
                 'message' => 'Only evaluators and directors can update evaluations.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
         $evaluation = RefereeEvaluation::find($id);
 
-        if (!$evaluation) {
+        if (! $evaluation) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Evaluation not found.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
-        if (!$evaluation->canBeEditedBy($user)) {
+        if (! $evaluation->canBeEditedBy($user)) {
             return [
                 'success' => false,
-                'code'    => 403,
+                'code' => 403,
                 'message' => 'You do not have permission to update this evaluation.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
@@ -203,14 +197,14 @@ class RefereeEvaluationService
             }
 
             if (isset($updateData['status'])) {
-                if ($updateData['status'] === 'submitted' && !$evaluation->submitted_at) {
+                if ($updateData['status'] === 'submitted' && ! $evaluation->submitted_at) {
                     $updateData['submitted_at'] = now();
                 } elseif ($updateData['status'] === 'draft') {
                     $updateData['submitted_at'] = null;
                 }
             }
 
-            if (!empty($updateData)) {
+            if (! empty($updateData)) {
                 $evaluation->update($updateData);
             }
 
@@ -220,32 +214,28 @@ class RefereeEvaluationService
 
             return [
                 'success' => true,
-                'code'    => 200,
+                'code' => 200,
                 'message' => 'Evaluation updated successfully.',
-                'data'    => new RefereeEvaluationResource($evaluation->fresh()->load(['referee', 'evaluator', 'camp', 'gameSlot', 'recommendedLevels.sportsTypeLevel'])),
+                'data' => new RefereeEvaluationResource($evaluation->fresh()->load(['referee', 'evaluator', 'camp', 'gameSlot', 'recommendedLevels.sportsTypeLevel'])),
             ];
         } catch (Exception $e) {
             DB::rollBack();
 
             return [
                 'success' => false,
-                'code'    => 500,
-                'message' => 'Failed to update evaluation: ' . $e->getMessage(),
-                'data'    => [],
+                'code' => 500,
+                'message' => 'Failed to update evaluation: '.$e->getMessage(),
+                'data' => [],
             ];
         }
     }
 
     /**
      * Backward-compatible storeOrUpdate method.
-     *
-     * @param  User   $user
-     * @param  array  $validated
-     * @return array
      */
     public function storeOrUpdate(User $user, array $validated): array
     {
-        if (!empty($validated['evaluation_id'])) {
+        if (! empty($validated['evaluation_id'])) {
             return $this->update($user, $validated['evaluation_id'], $validated);
         }
 
@@ -255,28 +245,26 @@ class RefereeEvaluationService
     /**
      * Get evaluations by camp for directors, evaluators, or referees.
      *
-     * @param  User        $user
      * @param  int|string  $campId
-     * @return array
      */
     public function getEvaluationsByCamp(User $user, $campId): array
     {
-        if (!$user->hasAnyRole(['director', 'evaluator', 'referee'])) {
+        if (! $user->hasAnyRole(['director', 'evaluator', 'referee'])) {
             return [
                 'success' => false,
-                'code'    => 403,
+                'code' => 403,
                 'message' => 'Unauthorized access.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
         $camp = Camp::find($campId);
-        if (!$camp) {
+        if (! $camp) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Camp not found.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
@@ -286,61 +274,61 @@ class RefereeEvaluationService
                 ->where('assistant_director_id', $user->id)
                 ->exists();
 
-            if (!$isOwner && !$isAssistant) {
+            if (! $isOwner && ! $isAssistant) {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You can only view evaluations from your own or assigned camps.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             }
         }
 
-        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
+        if ($user->hasRole('evaluator') && ! $user->hasRole('director')) {
             $registration = CampEvaluatorRegistration::where('camp_id', $campId)
                 ->where('evaluator_id', $user->id)
                 ->where('status', 'approved')
                 ->first();
 
-            if (!$registration) {
+            if (! $registration) {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You must be registered and approved for this camp.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             }
 
-            if (!$registration->can_view_own_evaluations) {
+            if (! $registration->can_view_own_evaluations) {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You do not have permission to view evaluations for this camp. Contact the director.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             }
         }
 
-        if ($user->hasRole('referee') && !$user->hasRole('director')) {
+        if ($user->hasRole('referee') && ! $user->hasRole('director')) {
             $refereeRegistration = CampRefereeCheckin::where('camp_id', $campId)
                 ->where('referee_id', $user->id)
                 ->first();
 
-            if (!$refereeRegistration) {
+            if (! $refereeRegistration) {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You must be registered for this camp.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             }
 
-            if (!$camp->publish_ranking_for_referees) {
+            if (! $camp->publish_ranking_for_referees) {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You do not have permission to view evaluations for this camp. Contact the director.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             }
         }
@@ -353,8 +341,14 @@ class RefereeEvaluationService
         $groupedByReferee = $evaluations->groupBy('referee_id');
         $formattedData = [];
 
+        $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $campId)->pluck('jersey_number', 'referee_id');
+        $refereeNotes = CampRefereeNote::where('camp_id', $campId)->pluck('note', 'referee_id');
+
         foreach ($groupedByReferee as $refereeId => $refereeEvaluations) {
             $referee = $refereeEvaluations->first()->referee;
+            if (! $referee) {
+                continue;
+            }
 
             $avgCallAccuracy = round($refereeEvaluations->avg('call_accuracy'), 3);
             $avgCommunication = round($refereeEvaluations->avg('communication_skills'), 3);
@@ -372,7 +366,7 @@ class RefereeEvaluationService
                     $levelId = $recLevel->sports_type_level_id;
                     $levelName = $recLevel->sportsTypeLevel?->name ?? $recLevel->level;
 
-                    if (is_numeric($levelName) && !$recLevel->sportsTypeLevel) {
+                    if (is_numeric($levelName) && ! $recLevel->sportsTypeLevel) {
                         $matchedLevel = SportsTypeLevel::find($levelName);
                         if ($matchedLevel) {
                             $levelName = $matchedLevel->name;
@@ -381,7 +375,7 @@ class RefereeEvaluationService
                     }
 
                     $key = $levelName ?? (string) $levelId;
-                    if (!$key) {
+                    if (! $key) {
                         continue;
                     }
 
@@ -390,61 +384,87 @@ class RefereeEvaluationService
                     } else {
                         $recommendedLevels[$key] = [
                             'sports_type_level_id' => $levelId,
-                            'name'                 => $levelName,
-                            'level'                => $levelName,
-                            'count'                => 1,
+                            'name' => $levelName,
+                            'level' => $levelName,
+                            'count' => 1,
                         ];
                     }
                 }
             }
 
             $recommendedLevelsFormatted = array_values($recommendedLevels);
-            usort($recommendedLevelsFormatted, fn($a, $b) => $b['count'] <=> $a['count']);
+            usort($recommendedLevelsFormatted, fn ($a, $b) => $b['count'] <=> $a['count']);
 
-            $highestRecommendedLevel = !empty($recommendedLevelsFormatted)
+            $highestRecommendedLevel = ! empty($recommendedLevelsFormatted)
                 ? $recommendedLevelsFormatted[0]['name']
                 : null;
 
             $evaluators = $refereeEvaluations->map(function ($eval) {
-                return $eval->evaluator->first_name . ' ' . $eval->evaluator->last_name;
-            })->unique()->values()->toArray();
+                return $eval->evaluator ? trim(($eval->evaluator->first_name ?? '').' '.($eval->evaluator->last_name ?? '')) : null;
+            })->filter()->unique()->values()->toArray();
 
             $allComments = $refereeEvaluations->filter(function ($eval) {
-                return !empty($eval->referee_feedback);
-            })->pluck('referee_feedback')->toArray();
+                return ! empty($eval->referee_feedback);
+            })->pluck('referee_feedback')->filter()->values()->toArray();
+
+            if ($user->hasRole('director')) {
+                $privateComments = $refereeEvaluations->filter(function ($eval) {
+                    return ! empty($eval->private_comments);
+                })->pluck('private_comments')->filter()->values()->toArray();
+            } elseif ($user->hasRole('evaluator')) {
+                $privateComments = $refereeEvaluations->where('evaluator_id', $user->id)->filter(function ($eval) {
+                    return ! empty($eval->private_comments);
+                })->pluck('private_comments')->filter()->values()->toArray();
+            } else {
+                $privateComments = [];
+            }
+
+            $refereeName = trim(($referee->first_name ?? '').' '.($referee->last_name ?? ''));
+            if (empty($refereeName)) {
+                $refereeName = $referee->username ?: 'Referee #'.$referee->id;
+            }
 
             $formattedData[] = [
-                'referee_id'                => $referee->id,
-                'referee_name'              => $referee->first_name . ' ' . $referee->last_name,
-                'referee_email'             => $referee->email,
-                'referee_avatar'            => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
-                'referee_address'           => $referee->address ?? '',
-                'total_evaluations'         => $refereeEvaluations->count(),
-                'averages'                  => [
-                    'overall'                  => $overallAvg,
-                    'call_accuracy'            => $avgCallAccuracy,
-                    'communication_skills'     => $avgCommunication,
-                    'consistency_of_calls'     => $avgConsistency,
+                'referee_id' => $referee->id,
+                'jersey_number' => $jerseyNumbers[$referee->id] ?? null,
+                'referee_name' => $refereeName,
+                'referee_email' => $referee->email,
+                'referee_phone' => $referee->phone ?? null,
+                'referee_avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
+                'referee_address' => $referee->address ?? '',
+                'total_evaluations' => $refereeEvaluations->count(),
+                'averages' => [
+                    'overall' => $overallAvg,
+                    'call_accuracy' => $avgCallAccuracy,
+                    'communication_skills' => $avgCommunication,
+                    'consistency_of_calls' => $avgConsistency,
                     'court_position_mechanics' => $avgCourtPosition,
-                    'fitness_mobility'         => $avgFitness,
-                    'game_awareness'           => $avgGameAwareness,
+                    'fitness_mobility' => $avgFitness,
+                    'game_awareness' => $avgGameAwareness,
                 ],
-                'recommended_levels'        => $recommendedLevelsFormatted,
+                'recommended_levels' => $recommendedLevelsFormatted,
                 'highest_recommended_level' => $highestRecommendedLevel,
-                'evaluators'                => $evaluators,
-                'comments'                  => $allComments,
+                'evaluators' => $evaluators,
+                'comments' => $allComments,
+                'private_comments' => $privateComments,
+                'referee_note' => $refereeNotes[$referee->id] ?? null,
             ];
         }
 
-        usort($formattedData, fn($a, $b) => $b['averages']['overall'] <=> $a['averages']['overall']);
+        usort($formattedData, fn ($a, $b) => $b['averages']['overall'] <=> $a['averages']['overall']);
+
+        foreach ($formattedData as $index => &$item) {
+            $item['rank'] = $index + 1;
+        }
+        unset($item);
 
         return [
             'success' => true,
-            'code'    => 200,
+            'code' => 200,
             'message' => 'Evaluations retrieved successfully.',
-            'data'    => [
-                'evaluations'       => $formattedData,
-                'total_referees'    => count($formattedData),
+            'data' => [
+                'evaluations' => $formattedData,
+                'total_referees' => count($formattedData),
                 'total_evaluations' => $evaluations->count(),
             ],
         ];
@@ -453,44 +473,41 @@ class RefereeEvaluationService
     /**
      * Get evaluations created by the authenticated evaluator.
      *
-     * @param  User        $user
      * @param  int|string  $campId
-     * @param  int         $perPage
-     * @return array
      */
     public function getMyEvaluations(User $user, $campId, int $perPage = 15): array
     {
-        if (!$user->hasAnyRole(['evaluator', 'director'])) {
+        if (! $user->hasAnyRole(['evaluator', 'director'])) {
             return [
                 'success' => false,
-                'code'    => 403,
+                'code' => 403,
                 'message' => 'Only evaluators and directors can access this.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
         $camp = Camp::find($campId);
-        if (!$camp) {
+        if (! $camp) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Camp not found.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
-        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
+        if ($user->hasRole('evaluator') && ! $user->hasRole('director')) {
             $registration = CampEvaluatorRegistration::where('camp_id', $campId)
                 ->where('evaluator_id', $user->id)
                 ->where('status', 'approved')
                 ->first();
 
-            if (!$registration || !$registration->can_view_own_evaluations) {
+            if (! $registration || ! $registration->can_view_own_evaluations) {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You do not have permission to view evaluations for this camp. Contact the director.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             }
         }
@@ -498,9 +515,9 @@ class RefereeEvaluationService
         if ($user->hasRole('director') && $camp->director_id !== $user->id) {
             return [
                 'success' => false,
-                'code'    => 403,
+                'code' => 403,
                 'message' => 'You can only view evaluations from your own camps.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
@@ -533,7 +550,7 @@ class RefereeEvaluationService
             }
         }
 
-        usort($overallSummary, fn($a, $b) => $b['count'] <=> $a['count']);
+        usort($overallSummary, fn ($a, $b) => $b['count'] <=> $a['count']);
 
         $uniqueRefereesEvaluated = RefereeEvaluation::where('evaluator_id', $user->id)
             ->where('camp_id', $campId)
@@ -542,28 +559,28 @@ class RefereeEvaluationService
 
         return [
             'success' => true,
-            'code'    => 200,
+            'code' => 200,
             'message' => 'Your evaluations retrieved successfully.',
-            'data'    => [
-                'camp'                  => [
-                    'id'         => $camp->id,
-                    'name'       => $camp->camp_name,
-                    'location'   => $camp->location,
+            'data' => [
+                'camp' => [
+                    'id' => $camp->id,
+                    'name' => $camp->camp_name,
+                    'location' => $camp->location,
                     'start_date' => $camp->start_date,
-                    'end_date'   => $camp->end_date,
-                    'address'    => $camp->address,
+                    'end_date' => $camp->end_date,
+                    'address' => $camp->address,
                 ],
-                'evaluations'           => RefereeEvaluationListResource::collection($evaluations),
+                'evaluations' => RefereeEvaluationListResource::collection($evaluations),
                 'overall_level_summary' => $overallSummary,
-                'statistics'            => [
-                    'total_evaluations'         => $evaluations->total(),
+                'statistics' => [
+                    'total_evaluations' => $evaluations->total(),
                     'unique_referees_evaluated' => $uniqueRefereesEvaluated,
                 ],
-                'pagination'            => [
-                    'total'        => $evaluations->total(),
-                    'per_page'     => $evaluations->perPage(),
+                'pagination' => [
+                    'total' => $evaluations->total(),
+                    'per_page' => $evaluations->perPage(),
                     'current_page' => $evaluations->currentPage(),
-                    'last_page'    => $evaluations->lastPage(),
+                    'last_page' => $evaluations->lastPage(),
                 ],
             ],
         ];
@@ -572,9 +589,7 @@ class RefereeEvaluationService
     /**
      * Get a single evaluation by ID.
      *
-     * @param  User        $user
      * @param  int|string  $id
-     * @return array
      */
     public function show(User $user, $id): array
     {
@@ -586,58 +601,56 @@ class RefereeEvaluationService
             'recommendedLevels.sportsTypeLevel',
         ])->find($id);
 
-        if (!$evaluation) {
+        if (! $evaluation) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Evaluation not found.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
-        if (!$evaluation->canBeViewedBy($user)) {
+        if (! $evaluation->canBeViewedBy($user)) {
             return [
                 'success' => false,
-                'code'    => 403,
+                'code' => 403,
                 'message' => 'You do not have permission to view this evaluation.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
         return [
             'success' => true,
-            'code'    => 200,
+            'code' => 200,
             'message' => 'Evaluation retrieved successfully.',
-            'data'    => new RefereeEvaluationResource($evaluation),
+            'data' => new RefereeEvaluationResource($evaluation),
         ];
     }
 
     /**
      * Delete an evaluation.
      *
-     * @param  User        $user
      * @param  int|string  $id
-     * @return array
      */
     public function destroy(User $user, $id): array
     {
         $evaluation = RefereeEvaluation::find($id);
 
-        if (!$evaluation) {
+        if (! $evaluation) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Evaluation not found.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
-        if (!$evaluation->canBeEditedBy($user)) {
+        if (! $evaluation->canBeEditedBy($user)) {
             return [
                 'success' => false,
-                'code'    => 403,
+                'code' => 403,
                 'message' => 'You do not have permission to delete this evaluation.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
@@ -645,37 +658,35 @@ class RefereeEvaluationService
 
         return [
             'success' => true,
-            'code'    => 200,
+            'code' => 200,
             'message' => 'Evaluation deleted successfully.',
-            'data'    => [],
+            'data' => [],
         ];
     }
 
     /**
      * Get referee evaluation statistics.
      *
-     * @param  User        $user
      * @param  int|string  $refereeId
-     * @return array
      */
     public function getRefereeStats(User $user, $refereeId): array
     {
-        if (!$user->hasAnyRole(['director', 'evaluator']) && $user->id != $refereeId) {
+        if (! $user->hasAnyRole(['director', 'evaluator']) && $user->id != $refereeId) {
             return [
                 'success' => false,
-                'code'    => 403,
+                'code' => 403,
                 'message' => 'Unauthorized access.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
         $referee = User::find($refereeId);
-        if (!$referee || !$referee->hasRole('referee')) {
+        if (! $referee || ! $referee->hasRole('referee')) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Referee not found.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
@@ -684,80 +695,77 @@ class RefereeEvaluationService
         if ($evaluations->isEmpty()) {
             return [
                 'success' => true,
-                'code'    => 200,
+                'code' => 200,
                 'message' => 'No evaluations found for this referee.',
-                'data'    => [
-                    'referee'           => [
-                        'id'   => $referee->id,
-                        'name' => $referee->first_name . ' ' . $referee->last_name,
+                'data' => [
+                    'referee' => [
+                        'id' => $referee->id,
+                        'name' => $referee->first_name.' '.$referee->last_name,
                     ],
                     'total_evaluations' => 0,
-                    'averages'          => null,
+                    'averages' => null,
                 ],
             ];
         }
 
         $stats = [
-            'referee'            => [
-                'id'    => $referee->id,
-                'name'  => $referee->first_name . ' ' . $referee->last_name,
+            'referee' => [
+                'id' => $referee->id,
+                'name' => $referee->first_name.' '.$referee->last_name,
                 'email' => $referee->email,
             ],
-            'total_evaluations'  => $evaluations->count(),
-            'averages'           => [
-                'call_accuracy'            => round($evaluations->avg('call_accuracy'), 2),
-                'communication_skills'     => round($evaluations->avg('communication_skills'), 2),
-                'consistency_of_calls'     => round($evaluations->avg('consistency_of_calls'), 2),
+            'total_evaluations' => $evaluations->count(),
+            'averages' => [
+                'call_accuracy' => round($evaluations->avg('call_accuracy'), 2),
+                'communication_skills' => round($evaluations->avg('communication_skills'), 2),
+                'consistency_of_calls' => round($evaluations->avg('consistency_of_calls'), 2),
                 'court_position_mechanics' => round($evaluations->avg('court_position_mechanics'), 2),
-                'fitness_mobility'         => round($evaluations->avg('fitness_mobility'), 2),
-                'game_awareness'           => round($evaluations->avg('game_awareness'), 2),
-                'total_score'              => round($evaluations->avg('total_score'), 2),
+                'fitness_mobility' => round($evaluations->avg('fitness_mobility'), 2),
+                'game_awareness' => round($evaluations->avg('game_awareness'), 2),
+                'total_score' => round($evaluations->avg('total_score'), 2),
             ],
             'overall_percentage' => round(($evaluations->avg('total_score') / 60) * 100, 2),
         ];
 
         return [
             'success' => true,
-            'code'    => 200,
+            'code' => 200,
             'message' => 'Referee statistics retrieved successfully.',
-            'data'    => $stats,
+            'data' => $stats,
         ];
     }
 
     /**
      * Get paginated registered referees for a camp.
      *
-     * @param  User        $user
      * @param  int|string  $campId
-     * @param  int         $perPage
-     * @return array
      */
     public function getAllRegisteredInReferees(User $user, $campId, int $perPage = 15): array
     {
         $camp = Camp::find($campId);
-        if (!$camp) {
+        if (! $camp) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Camp not found.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
-        if (!RefereeEvaluation::canEvaluateInCamp($user, $campId)) {
+        if (! RefereeEvaluation::canEvaluateInCamp($user, $campId)) {
             if ($user->hasRole('director')) {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You can only view referees from your own camps.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             } else {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You must be registered and approved for this camp.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             }
         }
@@ -775,21 +783,22 @@ class RefereeEvaluationService
 
         $checkedInReferees->getCollection()->transform(function ($checkin) use ($jerseyNumbers) {
             $checkin->jersey_number = $jerseyNumbers[$checkin->referee_id] ?? null;
+
             return $checkin;
         });
 
         return [
             'success' => true,
-            'code'    => 200,
+            'code' => 200,
             'message' => 'Registered referees fetched successfully.',
-            'data'    => [
-                'total'      => $checkedInReferees->total(),
-                'referees'   => CheckedInRefereeResource::collection($checkedInReferees),
+            'data' => [
+                'total' => $checkedInReferees->total(),
+                'referees' => CheckedInRefereeResource::collection($checkedInReferees),
                 'pagination' => [
-                    'total'        => $checkedInReferees->total(),
-                    'per_page'     => $checkedInReferees->perPage(),
+                    'total' => $checkedInReferees->total(),
+                    'per_page' => $checkedInReferees->perPage(),
                     'current_page' => $checkedInReferees->currentPage(),
-                    'last_page'    => $checkedInReferees->lastPage(),
+                    'last_page' => $checkedInReferees->lastPage(),
                 ],
             ],
         ];
@@ -798,39 +807,37 @@ class RefereeEvaluationService
     /**
      * Get all unpaginated referees for a camp.
      *
-     * @param  User        $user
      * @param  int|string  $campId
-     * @return array
      */
     public function getAllReferees(User $user, $campId): array
     {
         $camp = Camp::find($campId);
-        if (!$camp) {
+        if (! $camp) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Camp not found.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)
             ->pluck('jersey_number', 'referee_id');
 
-        if (!RefereeEvaluation::canEvaluateInCamp($user, $campId)) {
+        if (! RefereeEvaluation::canEvaluateInCamp($user, $campId)) {
             if ($user->hasRole('director')) {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You can only view referees from your own or assigned camps.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             } else {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You must be registered and approved for this camp.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             }
         }
@@ -843,15 +850,16 @@ class RefereeEvaluationService
             ->get()
             ->map(function ($checkin) use ($jerseyNumbers) {
                 $checkin->jersey_number = $jerseyNumbers[$checkin->referee_id] ?? null;
+
                 return $checkin;
             });
 
         return [
             'success' => true,
-            'code'    => 200,
+            'code' => 200,
             'message' => 'Registered referees fetched successfully.',
-            'data'    => [
-                'total'    => $checkedInReferees->count(),
+            'data' => [
+                'total' => $checkedInReferees->count(),
                 'referees' => CheckedInRefereeResource::collection($checkedInReferees),
             ],
         ];
@@ -860,31 +868,27 @@ class RefereeEvaluationService
     /**
      * Get evaluation history for a referee in a camp.
      *
-     * @param  User         $user
-     * @param  int|string   $campId
-     * @param  int|string   $refereeId
-     * @param  string|null  $status
-     * @param  int          $perPage
-     * @return array
+     * @param  int|string  $campId
+     * @param  int|string  $refereeId
      */
     public function getRefereeEvaluationHistory(User $user, $campId, $refereeId, ?string $status = null, int $perPage = 15): array
     {
-        if (!$user->hasAnyRole(['director', 'evaluator'])) {
+        if (! $user->hasAnyRole(['director', 'evaluator'])) {
             return [
                 'success' => false,
-                'code'    => 403,
+                'code' => 403,
                 'message' => 'Unauthorized access.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
         $camp = Camp::find($campId);
-        if (!$camp) {
+        if (! $camp) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Camp not found.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
@@ -894,48 +898,48 @@ class RefereeEvaluationService
                 ->where('assistant_director_id', $user->id)
                 ->exists();
 
-            if (!$isOwner && !$isAssistant) {
+            if (! $isOwner && ! $isAssistant) {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You can only view evaluations from your own or assigned camps.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             }
         }
 
-        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
+        if ($user->hasRole('evaluator') && ! $user->hasRole('director')) {
             $registration = CampEvaluatorRegistration::where('camp_id', $campId)
                 ->where('evaluator_id', $user->id)
                 ->where('status', 'approved')
                 ->first();
 
-            if (!$registration) {
+            if (! $registration) {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You must be registered and approved for this camp.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             }
 
-            if (!$registration->can_view_own_evaluations) {
+            if (! $registration->can_view_own_evaluations) {
                 return [
                     'success' => false,
-                    'code'    => 403,
+                    'code' => 403,
                     'message' => 'You do not have permission to view evaluations for this camp. Contact the director.',
-                    'data'    => [],
+                    'data' => [],
                 ];
             }
         }
 
         $referee = User::find($refereeId);
-        if (!$referee || !$referee->hasRole('referee')) {
+        if (! $referee || ! $referee->hasRole('referee')) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Referee not found.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
@@ -943,12 +947,12 @@ class RefereeEvaluationService
             ->where('referee_id', $refereeId)
             ->first();
 
-        if (!$checkin) {
+        if (! $checkin) {
             return [
                 'success' => false,
-                'code'    => 404,
+                'code' => 404,
                 'message' => 'Referee is not registered for this camp.',
-                'data'    => [],
+                'data' => [],
             ];
         }
 
@@ -961,7 +965,7 @@ class RefereeEvaluationService
             $query->where('status', $status);
         }
 
-        if ($user->hasRole('evaluator') && !$user->hasRole('director')) {
+        if ($user->hasRole('evaluator') && ! $user->hasRole('director')) {
             $query->where('evaluator_id', $user->id);
         }
 
@@ -970,7 +974,7 @@ class RefereeEvaluationService
         $allEvaluations = RefereeEvaluation::with('recommendedLevels.sportsTypeLevel')
             ->where('camp_id', $campId)
             ->where('referee_id', $refereeId)
-            ->when($user->hasRole('evaluator') && !$user->hasRole('director'), function ($q) use ($user) {
+            ->when($user->hasRole('evaluator') && ! $user->hasRole('director'), function ($q) use ($user) {
                 $q->where('evaluator_id', $user->id);
             })
             ->get();
@@ -1008,21 +1012,21 @@ class RefereeEvaluationService
                 ];
             }
 
-            usort($recommendedLevelsFormatted, fn($a, $b) => $b['count'] <=> $a['count']);
+            usort($recommendedLevelsFormatted, fn ($a, $b) => $b['count'] <=> $a['count']);
 
             $statistics = [
-                'total_evaluations'         => $allEvaluations->count(),
-                'averages'                  => [
-                    'overall'                  => $overallAvg,
-                    'call_accuracy'            => $avgCallAccuracy,
-                    'communication_skills'     => $avgCommunication,
-                    'consistency_of_calls'     => $avgConsistency,
+                'total_evaluations' => $allEvaluations->count(),
+                'averages' => [
+                    'overall' => $overallAvg,
+                    'call_accuracy' => $avgCallAccuracy,
+                    'communication_skills' => $avgCommunication,
+                    'consistency_of_calls' => $avgConsistency,
                     'court_position_mechanics' => $avgCourtPosition,
-                    'fitness_mobility'         => $avgFitness,
-                    'game_awareness'           => $avgGameAwareness,
+                    'fitness_mobility' => $avgFitness,
+                    'game_awareness' => $avgGameAwareness,
                 ],
-                'recommended_levels'        => $recommendedLevelsFormatted,
-                'highest_recommended_level' => !empty($recommendedLevelsFormatted)
+                'recommended_levels' => $recommendedLevelsFormatted,
+                'highest_recommended_level' => ! empty($recommendedLevelsFormatted)
                     ? $recommendedLevelsFormatted[0]['level']
                     : null,
             ];
@@ -1030,71 +1034,71 @@ class RefereeEvaluationService
 
         $formattedEvaluations = $evaluations->map(function ($evaluation) {
             return [
-                'id'                 => $evaluation->id,
-                'evaluator'          => [
-                    'id'    => $evaluation->evaluator_id,
-                    'name'  => $evaluation->evaluator->first_name . ' ' . $evaluation->evaluator->last_name,
+                'id' => $evaluation->id,
+                'evaluator' => [
+                    'id' => $evaluation->evaluator_id,
+                    'name' => $evaluation->evaluator->first_name.' '.$evaluation->evaluator->last_name,
                     'email' => $evaluation->evaluator->email,
-                    'role'  => $evaluation->evaluator->getRoleNames()->first(),
+                    'role' => $evaluation->evaluator->getRoleNames()->first(),
                 ],
-                'game_slot'          => $evaluation->game_slot_id ? [
-                    'id'    => $evaluation->gameSlot->id,
-                    'date'  => $evaluation->gameSlot->game_date,
-                    'time'  => $evaluation->gameSlot->start_time . ' - ' . $evaluation->gameSlot->end_time,
+                'game_slot' => $evaluation->game_slot_id ? [
+                    'id' => $evaluation->gameSlot->id,
+                    'date' => $evaluation->gameSlot->game_date,
+                    'time' => $evaluation->gameSlot->start_time.' - '.$evaluation->gameSlot->end_time,
                     'court' => $evaluation->gameSlot->court_name ?? 'N/A',
                 ] : null,
-                'scores'             => [
-                    'call_accuracy'            => $evaluation->call_accuracy,
-                    'communication_skills'     => $evaluation->communication_skills,
-                    'consistency_of_calls'     => $evaluation->consistency_of_calls,
+                'scores' => [
+                    'call_accuracy' => $evaluation->call_accuracy,
+                    'communication_skills' => $evaluation->communication_skills,
+                    'consistency_of_calls' => $evaluation->consistency_of_calls,
                     'court_position_mechanics' => $evaluation->court_position_mechanics,
-                    'fitness_mobility'         => $evaluation->fitness_mobility,
-                    'game_awareness'           => $evaluation->game_awareness,
+                    'fitness_mobility' => $evaluation->fitness_mobility,
+                    'game_awareness' => $evaluation->game_awareness,
                 ],
-                'total_score'        => (float) $evaluation->total_score,
-                'average_score'      => (float) $evaluation->average_score,
-                'max_score'          => 60,
-                'percentage'         => $evaluation->total_score ? round(($evaluation->total_score / 60) * 100, 2) : 0,
-                'recommended_level'  => $evaluation->relationLoaded('recommendedLevels') && $evaluation->recommendedLevels->isNotEmpty()
+                'total_score' => (float) $evaluation->total_score,
+                'average_score' => (float) $evaluation->average_score,
+                'max_score' => 60,
+                'percentage' => $evaluation->total_score ? round(($evaluation->total_score / 60) * 100, 2) : 0,
+                'recommended_level' => $evaluation->relationLoaded('recommendedLevels') && $evaluation->recommendedLevels->isNotEmpty()
                     ? ($evaluation->recommendedLevels->first()->sportsTypeLevel?->name ?? $evaluation->recommendedLevels->first()->level)
                     : null,
                 'sports_type_level_id' => $evaluation->relationLoaded('recommendedLevels') && $evaluation->recommendedLevels->isNotEmpty()
                     ? $evaluation->recommendedLevels->first()->sports_type_level_id
                     : null,
-                'private_comments'   => $evaluation->private_comments,
-                'referee_feedback'   => $evaluation->referee_feedback,
-                'status'             => $evaluation->status,
-                'submitted_at'       => $evaluation->submitted_at ? $evaluation->submitted_at->toDateString() : null,
-                'created_at'         => $evaluation->created_at->toDateString(),
+                'private_comments' => $evaluation->private_comments,
+                'referee_feedback' => $evaluation->referee_feedback,
+                'status' => $evaluation->status,
+                'submitted_at' => $evaluation->submitted_at ? $evaluation->submitted_at->toDateString() : null,
+                'created_at' => $evaluation->created_at->toDateString(),
             ];
         });
 
         return [
             'success' => true,
-            'code'    => 200,
+            'code' => 200,
             'message' => 'Referee evaluation history retrieved successfully.',
-            'data'    => [
-                'camp'        => [
-                    'id'         => $camp->id,
-                    'name'       => $camp->camp_name,
-                    'location'   => $camp->location,
+            'data' => [
+                'camp' => [
+                    'id' => $camp->id,
+                    'name' => $camp->camp_name,
+                    'location' => $camp->location,
                     'start_date' => $camp->start_date,
-                    'end_date'   => $camp->end_date,
-                    'address'    => $camp->address,
+                    'end_date' => $camp->end_date,
+                    'address' => $camp->address,
                 ],
-                'referee'     => [
-                    'id'     => $referee->id,
-                    'name'   => $referee->first_name . ' ' . $referee->last_name,
-                    'email'  => $referee->email,
+                'referee' => [
+                    'id' => $referee->id,
+                    'name' => $referee->first_name.' '.$referee->last_name,
+                    'email' => $referee->email,
                     'avatar' => $referee->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
                 ],
-                'statistics'  => $statistics,
+                'statistics' => $statistics,
                 'evaluations' => $formattedEvaluations,
-                'pagination'  => [
-                    'total'        => $evaluations->total(),
-                    'per_page'     => $evaluations->perPage(),
+                'pagination' => [
+                    'total' => $evaluations->total(),
+                    'per_page' => $evaluations->perPage(),
                     'current_page' => $evaluations->currentPage(),
-                    'last_page'    => $evaluations->lastPage(),
+                    'last_page' => $evaluations->lastPage(),
                 ],
             ],
         ];
@@ -1102,10 +1106,6 @@ class RefereeEvaluationService
 
     /**
      * Save or sync recommended evaluation level (with both relational ID and immutable snapshot).
-     *
-     * @param  RefereeEvaluation  $evaluation
-     * @param  array              $validated
-     * @return void
      */
     protected function saveRecommendedLevel(RefereeEvaluation $evaluation, array $validated): void
     {
@@ -1113,7 +1113,7 @@ class RefereeEvaluationService
         $levelName = $validated['recommended_level'] ?? null;
 
         // If neither was provided, leave existing
-        if (!$sportsTypeLevelId && !$levelName) {
+        if (! $sportsTypeLevelId && ! $levelName) {
             return;
         }
 
@@ -1131,7 +1131,7 @@ class RefereeEvaluationService
                 }
             }
 
-            if (!$sportsTypeLevelId) {
+            if (! $sportsTypeLevelId) {
                 $campId = $validated['camp_id'] ?? $evaluation->camp_id;
                 if ($campId) {
                     $camp = Camp::find($campId);
@@ -1150,9 +1150,9 @@ class RefereeEvaluationService
         $evaluation->recommendedLevels()->delete();
 
         RecommendedLevel::create([
-            'evaluation_id'        => $evaluation->id,
+            'evaluation_id' => $evaluation->id,
             'sports_type_level_id' => $sportsTypeLevelId,
-            'level'                => $levelName,
+            'level' => $levelName,
         ]);
     }
 
@@ -1162,11 +1162,8 @@ class RefereeEvaluationService
      * Supports filtering by camp_id, sports_type_id, or legacy sports_name.
      * Supports format='objects' for rich level models, default returns string array.
      *
-     * @param  string|null      $sportsName
      * @param  int|string|null  $campId
      * @param  int|string|null  $sportsTypeId
-     * @param  string|null      $format
-     * @return array
      */
     public function getSportTypes(?string $sportsName = null, $campId = null, $sportsTypeId = null, ?string $format = null): array
     {
@@ -1179,17 +1176,17 @@ class RefereeEvaluationService
             }
         }
 
-        if (!$sportType && $sportsTypeId) {
+        if (! $sportType && $sportsTypeId) {
             $sportType = SportsType::with('activeLevels')->find($sportsTypeId);
         }
 
-        if (!$sportType && $sportsName) {
+        if (! $sportType && $sportsName) {
             $sportType = SportsType::with('activeLevels')
                 ->where('sports_name', $sportsName)
                 ->first();
         }
 
-        if (!$sportType) {
+        if (! $sportType) {
             $sportType = SportsType::with('activeLevels')
                 ->where('status', 'active')
                 ->first();
@@ -1203,24 +1200,24 @@ class RefereeEvaluationService
             if ($levels) {
                 $data = $levels->map(function ($lvl) {
                     return [
-                        'id'             => $lvl->id,
+                        'id' => $lvl->id,
                         'sports_type_id' => $lvl->sports_type_id,
-                        'name'           => $lvl->name,
-                        'level'          => $lvl->name,
-                        'sort_order'     => $lvl->sort_order,
-                        'status'         => $lvl->status,
+                        'name' => $lvl->name,
+                        'level' => $lvl->name,
+                        'sort_order' => $lvl->sort_order,
+                        'status' => $lvl->status,
                     ];
                 })->values()->all();
             } else {
                 $fallback = ['NCAA D1', 'NCAA D2', 'NAIA', 'JUCO', 'HS', 'JH/ELEM'];
                 $data = array_map(function ($name, $index) {
                     return [
-                        'id'             => null,
+                        'id' => null,
                         'sports_type_id' => null,
-                        'name'           => $name,
-                        'level'          => $name,
-                        'sort_order'     => $index + 1,
-                        'status'         => 'active',
+                        'name' => $name,
+                        'level' => $name,
+                        'sort_order' => $index + 1,
+                        'status' => 'active',
                     ];
                 }, $fallback, array_keys($fallback));
             }
@@ -1240,14 +1237,14 @@ class RefereeEvaluationService
         }
 
         return [
-            'success'     => true,
-            'code'        => 200,
-            'message'     => 'Data retrieved successfully.',
+            'success' => true,
+            'code' => 200,
+            'message' => 'Data retrieved successfully.',
             'sports_type' => $sportType ? [
-                'id'          => $sportType->id,
+                'id' => $sportType->id,
                 'sports_name' => $sportType->sports_name,
             ] : null,
-            'data'        => $data,
+            'data' => $data,
         ];
     }
 }

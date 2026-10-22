@@ -1,36 +1,36 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\TwilioTestController;
-use App\Http\Controllers\Api\Auth\UserController;
+use App\Http\Controllers\Api\Announcement\AnnouncementController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\RegisterController;
-use App\Http\Controllers\Api\Contact\ContactController;
-use App\Http\Controllers\Api\Settings\SettingsController;
 use App\Http\Controllers\Api\Auth\ResetPasswordController;
+use App\Http\Controllers\Api\Auth\UserController;
 use App\Http\Controllers\Api\Auth\V2\V2RegisterController;
-use App\Http\Controllers\Api\Announcement\AnnouncementController;
-use App\Http\Controllers\Api\CMS\HomePageController;
-use App\Http\Controllers\Api\Notification\NotificationController;
-use App\Http\Controllers\Api\CMS\AboutPageController;
-use App\Http\Controllers\Api\Legal\PrivacyPolicyController;
-use App\Http\Controllers\Api\Roster\RosterController;
-use App\Http\Controllers\Api\Subscribe\SubscribeController;
 use App\Http\Controllers\Api\Auth\V2\V2ResetPasswordController;
-use App\Http\Controllers\Api\RefereeEvaluation\RefereeEvaluationController;
+use App\Http\Controllers\Api\CampRanking\CampRankingSettingsController;
+use App\Http\Controllers\Api\CMS\AboutPageController;
+use App\Http\Controllers\Api\CMS\HomePageController;
+use App\Http\Controllers\Api\Contact\ContactController;
+use App\Http\Controllers\Api\DirectorCampManage\AssistantDirectorPermissionController;
+use App\Http\Controllers\Api\Evaluator\CampEvaluatorRegisterManageForDirectorController;
+use App\Http\Controllers\Api\Evaluator\CampEvaluatorRegistrationController;
 use App\Http\Controllers\Api\Evaluator\EvaluatorController;
 use App\Http\Controllers\Api\Evaluator\GameOverviewController;
+use App\Http\Controllers\Api\Legal\PrivacyPolicyController;
+use App\Http\Controllers\Api\Notification\NotificationController;
+use App\Http\Controllers\Api\Payment\StripeWebhookController;
 use App\Http\Controllers\Api\Referee\EvaluatedRefereeController;
 use App\Http\Controllers\Api\Referee\RefereeAssignmentController;
 use App\Http\Controllers\Api\Referee\RefereeAssignmentCrewController;
-use App\Http\Controllers\Api\CampRanking\CampRankingSettingsController;
 use App\Http\Controllers\Api\Referee\RefereeDetailsController;
+use App\Http\Controllers\Api\RefereeEvaluation\RefereeEvaluationController;
+use App\Http\Controllers\Api\Roster\RosterController;
+use App\Http\Controllers\Api\Settings\SettingsController;
+use App\Http\Controllers\Api\Subscribe\SubscribeController;
+use App\Http\Controllers\Api\TwilioTestController;
+use Illuminate\Support\Facades\Route;
 use Modules\Director\Http\Controllers\Api\Crew\CrewManageController;
-use App\Http\Controllers\Api\Evaluator\CampEvaluatorRegistrationController;
-use App\Http\Controllers\Api\Evaluator\CampEvaluatorRegisterManageForDirectorController;
-use App\Http\Controllers\Api\DirectorCampManage\AssistantDirectorPermissionController;
-use App\Http\Controllers\Api\Payment\StripeWebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,7 +39,7 @@ use App\Http\Controllers\Api\Payment\StripeWebhookController;
 */
 
 Route::get('/health-check', function () {
-    return "All Right... 👍";
+    return 'All Right... 👍';
 });
 
 /*
@@ -153,6 +153,7 @@ Route::middleware(['auth:api', 'role:director|evaluator|referee,api'])->group(fu
     Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetails']); // Roster camp details
     Route::get('/camp/{campId}/referee/{refereeId}/history', [RefereeEvaluationController::class, 'getRefereeEvaluationHistory']); // Referee history
     Route::get('/referee/evaluation/camp/{campId}', [RefereeEvaluationController::class, 'getEvaluationsByCamp']); // Referee evaluation history
+    Route::get('/referee/evaluation/export/camp/{campId}', [RefereeEvaluationController::class, 'exportEvaluationsByCamp']); // Export referee evaluations
     Route::get('/referee-details/{campId}/{refereeId}', [RefereeDetailsController::class, 'getRefereeDetails']); // Referee details (profile, evaluations, assigned slots)
 });
 
@@ -238,9 +239,6 @@ Route::middleware(['auth:api', 'role:director,api'])->group(function () {
     // Export Roster Camp Details CSV
     Route::get('/roster/export/camp/{campId}', [RosterController::class, 'exportCampDetailsCsv']);
     Route::get('/roster/export/referees/camp/{campId}', [RosterController::class, 'exportCampReferees']);
-
-    // Export Referee Evaluations CSV/Excel
-    Route::get('/referee/evaluation/export/camp/{campId}', [RefereeEvaluationController::class, 'exportEvaluationsByCamp']);
 
     // Export Evaluator Registrations CSV/Excel
     Route::get('/evaluator-registrations/export/camp/{campId}', [CampEvaluatorRegisterManageForDirectorController::class, 'exportEvaluatorRegistrations']);
