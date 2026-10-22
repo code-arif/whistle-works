@@ -166,6 +166,7 @@ Route::middleware(['auth:api', 'role:director|evaluator|referee,api'])->group(fu
 Route::middleware(['auth:api', 'role:referee'])->group(function () {
     // Get my evaluations (for logged-in referee)
     Route::get('/referee/my-evaluations/{campId}', [EvaluatedRefereeController::class, 'getRefereeEvaluations']);
+    Route::get('/referee/my-evaluations/details/{id}', [EvaluatedRefereeController::class, 'getRefereeEvaluationDetails']);
 
     Route::prefix('referee')->group(function () {
         // Assignments & Slots

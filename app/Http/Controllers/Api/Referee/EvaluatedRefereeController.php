@@ -23,7 +23,6 @@ class EvaluatedRefereeController extends Controller
      * Get all evaluations for a specific referee (for referee's own view).
      *
      * @param  int|string  $campId
-     * @return JsonResponse
      */
     public function getRefereeEvaluations($campId): JsonResponse
     {
@@ -31,7 +30,29 @@ class EvaluatedRefereeController extends Controller
 
         $result = $this->service->getRefereeEvaluations($user, $campId);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
+            return $this->error($result['data'], $result['message'], $result['code']);
+        }
+
+        return $this->success($result['message'], $result['data'], $result['code']);
+    }
+
+    /**
+     * Get details of a single evaluation for the authenticated referee.
+     *
+     * @param  int|string  $id
+     */
+    public function getRefereeEvaluationDetails($id): JsonResponse
+    {
+        $user = auth('api')->user();
+
+        if (! $user) {
+            return $this->error([], 'Unauthenticated.', 401);
+        }
+
+        $result = $this->service->getRefereeEvaluationDetails($user, $id);
+
+        if (! $result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);
         }
 
