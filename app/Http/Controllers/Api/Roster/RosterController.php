@@ -28,7 +28,8 @@ class RosterController extends Controller
      */
     public function campDetails($id): JsonResponse
     {
-        $result = $this->rosterService->getCampDetails($id);
+        $user = auth('api')->user();
+        $result = $this->rosterService->getCampDetails($id, $user);
 
         if (!$result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);

@@ -4,6 +4,7 @@ namespace App\Services\Api\Roster;
 
 use App\Models\CampRefereeJearsyNumber;
 use App\Models\CampRefereeNote;
+use App\Models\EvaluatorRefereeNote;
 use App\Models\User;
 use Modules\Director\Models\Camp;
 use Modules\Director\Models\GameSlot;
@@ -18,10 +19,13 @@ class RosterService
      * Get comprehensive camp details for roster view.
      *
      * @param  int|string  $campId
+     * @param  User|null  $user
      * @return array
      */
-    public function getCampDetails($campId): array
+    public function getCampDetails($campId, ?User $user = null): array
     {
+        $user = $user ?? auth('api')->user();
+
         $camp = Camp::where('id', $campId)
             ->with([
                 'sportsType',
@@ -49,9 +53,40 @@ class RosterService
             return $gameSlot->slotAssignments;
         }) ?? collect();
 
-        // Preload jersey numbers and director notes for all referees in this camp
+        // Preload jersey numbers for all referees in this camp
         $jerseyNumbers = CampRefereeJearsyNumber::where('camp_id', $camp->id)->pluck('jersey_number', 'referee_id');
-        $refereeNotes  = CampRefereeNote::where('camp_id', $camp->id)->pluck('note', 'referee_id');
+
+        // Condition-based notes:
+        // Evaluators only see their own EvaluatorRefereeNotes (never another evaluator's or director's note).
+        // Referees see null (cannot see notes).
+        // Directors see CampRefereeNote (director notes).
+        $isEvaluator = $user && $user->hasRole('evaluator') && ($user->id !== $camp->director_id);
+        $isReferee = $user && $user->hasRole('referee') && ! $user->hasRole('director') && ! $user->hasRole('evaluator');
+
+        $slotNotes = [];
+        $generalNotes = [];
+        $latestNotes = [];
+        $directorNotes = collect();
+
+        if ($isEvaluator) {
+            $evaluatorNotes = EvaluatorRefereeNote::where('camp_id', $camp->id)
+                ->where('evaluator_id', $user->id)
+                ->get();
+
+            foreach ($evaluatorNotes as $noteModel) {
+                if ($noteModel->game_slot_id) {
+                    $slotNotes[$noteModel->game_slot_id . '_' . $noteModel->referee_id] = $noteModel->note;
+                } else {
+                    $generalNotes[$noteModel->referee_id] = $noteModel->note;
+                }
+
+                if (!isset($latestNotes[$noteModel->referee_id]) || $noteModel->id > ($latestNotes[$noteModel->referee_id]['id'] ?? 0)) {
+                    $latestNotes[$noteModel->referee_id] = ['id' => $noteModel->id, 'note' => $noteModel->note];
+                }
+            }
+        } elseif (! $isReferee) {
+            $directorNotes = CampRefereeNote::where('camp_id', $camp->id)->pluck('note', 'referee_id');
+        }
 
         $response = [
             'camp' => [
@@ -87,7 +122,7 @@ class RosterService
                             'address'   => $location->address ?? null,
                         ];
                     }) ?? collect(),
-                    'game_courts' => $camp->schedule?->gameSlots->map(function ($gameSlot) use ($camp, $jerseyNumbers, $refereeNotes) {
+                    'game_courts' => $camp->schedule?->gameSlots->map(function ($gameSlot) use ($camp, $jerseyNumbers, $isEvaluator, $isReferee, $slotNotes, $generalNotes, $directorNotes) {
                         return [
                             'id'           => $gameSlot->id,
                             'game_date'    => $gameSlot->game_date->toDateString(),
@@ -99,7 +134,7 @@ class RosterService
                             'location'     => $gameSlot->location->location_name ?? 'N/A',
                             'address'      => $gameSlot->location->address ?? null,
                             'assignments'  => $gameSlot->slotAssignments
-                                ->map(function ($assignment) use ($camp, $jerseyNumbers, $refereeNotes) {
+                                ->map(function ($assignment) use ($camp, $jerseyNumbers, $gameSlot, $isEvaluator, $isReferee, $slotNotes, $generalNotes, $directorNotes) {
                                     if ($assignment->assignment_type === 'crew') {
                                         return [
                                             'type'             => 'crew',
@@ -120,7 +155,15 @@ class RosterService
                                     $referee      = $assignment->assignable;
                                     $refereeId    = $referee?->id;
                                     $jerseyNumber = $refereeId ? ($jerseyNumbers[$refereeId] ?? null) : null;
-                                    $refereeNote  = $refereeId ? ($refereeNotes[$refereeId] ?? null) : null;
+
+                                    if ($isEvaluator) {
+                                        $refereeNote = $slotNotes[$gameSlot->id . '_' . $refereeId]
+                                            ?? ($generalNotes[$refereeId] ?? null);
+                                    } elseif ($isReferee) {
+                                        $refereeNote = null;
+                                    } else {
+                                        $refereeNote = $refereeId ? ($directorNotes[$refereeId] ?? null) : null;
+                                    }
 
                                     return [
                                         'type'             => 'individual',
@@ -150,7 +193,7 @@ class RosterService
                 ],
                 'referees'    => $camp->checkedInReferees
                     ->sortBy(fn($checkin) => strtolower($checkin->referee?->last_name ?? ''))
-                    ->map(function ($referee) use ($gameSlotAssignments, $camp, $jerseyNumbers, $refereeNotes) {
+                    ->map(function ($referee) use ($gameSlotAssignments, $camp, $jerseyNumbers, $isEvaluator, $isReferee, $generalNotes, $latestNotes, $directorNotes) {
                         $refereeUser = $referee->referee;
                         if (!$refereeUser) {
                             return null;
@@ -168,7 +211,15 @@ class RosterService
                                 ->count();
 
                         $jerseyNumber = $jerseyNumbers[$refereeUser->id] ?? null;
-                        $refereeNote  = $refereeNotes[$refereeUser->id] ?? null;
+
+                        if ($isEvaluator) {
+                            $refereeNote = $generalNotes[$refereeUser->id]
+                                ?? ($latestNotes[$refereeUser->id]['note'] ?? null);
+                        } elseif ($isReferee) {
+                            $refereeNote = null;
+                        } else {
+                            $refereeNote = $directorNotes[$refereeUser->id] ?? null;
+                        }
 
                         return [
                             'id'                   => $refereeUser->id,
@@ -207,7 +258,7 @@ class RosterService
                     }),
                 'crews'       => $camp->crews
                     ->sortBy(fn($crew) => strtolower($crew->name ?? ''))
-                    ->map(function ($crew) use ($camp, $jerseyNumbers, $refereeNotes) {
+                    ->map(function ($crew) use ($camp, $jerseyNumbers, $isEvaluator, $isReferee, $generalNotes, $latestNotes, $directorNotes) {
                         return [
                             'id'          => $crew->id,
                             'name'        => $crew->name ?? 'N/A',
@@ -215,9 +266,17 @@ class RosterService
                             'status'      => $crew->status ?? 'N/A',
                             'members'     => $crew->members
                                 ->sortBy(fn($member) => strtolower($member->last_name ?? ''))
-                                ->map(function ($member) use ($camp, $jerseyNumbers, $refereeNotes) {
+                                ->map(function ($member) use ($camp, $jerseyNumbers, $isEvaluator, $isReferee, $generalNotes, $latestNotes, $directorNotes) {
                                     $jerseyNumber = $jerseyNumbers[$member->id] ?? null;
-                                    $refereeNote  = $refereeNotes[$member->id] ?? null;
+
+                                    if ($isEvaluator) {
+                                        $refereeNote = $generalNotes[$member->id]
+                                            ?? ($latestNotes[$member->id]['note'] ?? null);
+                                    } elseif ($isReferee) {
+                                        $refereeNote = null;
+                                    } else {
+                                        $refereeNote = $directorNotes[$member->id] ?? null;
+                                    }
 
                                     return [
                                         'id'            => $member->id,

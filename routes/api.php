@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\DirectorCampManage\AssistantDirectorPermissionContr
 use App\Http\Controllers\Api\Evaluator\CampEvaluatorRegisterManageForDirectorController;
 use App\Http\Controllers\Api\Evaluator\CampEvaluatorRegistrationController;
 use App\Http\Controllers\Api\Evaluator\EvaluatorController;
+use App\Http\Controllers\Api\Evaluator\EvaluatorRefereeNoteController;
 use App\Http\Controllers\Api\Evaluator\GameOverviewController;
 use App\Http\Controllers\Api\Legal\PrivacyPolicyController;
 use App\Http\Controllers\Api\Notification\NotificationController;
@@ -229,6 +230,24 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
     // Game overview
     Route::get('/evaluator/{campId}/game-overview', [GameOverviewController::class, 'gameOverview']);
 
+    // Evaluator referee notes per game / referee
+    Route::prefix('referee/evaluation/note')->group(function () {
+        Route::post('/store', [EvaluatorRefereeNoteController::class, 'store']);
+        Route::post('/update/{id}', [EvaluatorRefereeNoteController::class, 'update']);
+        Route::delete('/destroy/{id}', [EvaluatorRefereeNoteController::class, 'destroy']);
+
+        // Route::get('/details/{id}', [EvaluatorRefereeNoteController::class, 'show']);
+        // Route::get('/find', [EvaluatorRefereeNoteController::class, 'getNote']);
+        // Route::get('/camp/{campId}/referee/{refereeId}', [EvaluatorRefereeNoteController::class, 'getNotesByReferee']);
+    });
+
+    // Path-based evaluator note routes
+    // Route::prefix('evaluator/note')->group(function () {
+    //     Route::post('/camp/{campId}/slot/{gameSlotId}/referee/{refereeId}', [EvaluatorRefereeNoteController::class, 'saveNoteByPath']);
+    //     Route::patch('/camp/{campId}/slot/{gameSlotId}/referee/{refereeId}', [EvaluatorRefereeNoteController::class, 'saveNoteByPath']);
+    //     Route::get('/camp/{campId}/slot/{gameSlotId}/referee/{refereeId}', [EvaluatorRefereeNoteController::class, 'getNoteByPath']);
+    //     Route::delete('/camp/{campId}/slot/{gameSlotId}/referee/{refereeId}', [EvaluatorRefereeNoteController::class, 'deleteNoteByPath']);
+    // });
 });
 
 /*
