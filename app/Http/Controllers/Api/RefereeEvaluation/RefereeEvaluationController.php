@@ -200,6 +200,39 @@ class RefereeEvaluationController extends Controller
     }
 
     /**
+     * Delete an evaluation within camp and referee history context (Director only).
+     */
+    public function destroyRefereeEvaluation(Request $request, ...$params): JsonResponse
+    {
+        $user = auth('api')->user();
+
+        if (! $user) {
+            return $this->error([], 'Unauthenticated.', 401);
+        }
+
+        $campId = $params[0] ?? null;
+        $refereeId = null;
+        $evaluationId = null;
+
+        if (count($params) >= 3) {
+            $refereeId = $params[1] ?? null;
+            $evaluationId = $params[2] ?? null;
+        } elseif (count($params) === 2) {
+            $evaluationId = $params[1] ?? null;
+        } elseif (count($params) === 1) {
+            $evaluationId = $params[0] ?? null;
+        }
+
+        $result = $this->refereeEvaluationService->destroy($user, $evaluationId, $campId, $refereeId);
+
+        if (! $result['success']) {
+            return $this->error($result['data'], $result['message'], $result['code']);
+        }
+
+        return $this->success($result['message'], $result['data'], $result['code']);
+    }
+
+    /**
      * Get referee statistics.
      *
      * @param  int|string  $refereeId

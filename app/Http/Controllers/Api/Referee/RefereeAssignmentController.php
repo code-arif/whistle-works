@@ -32,8 +32,9 @@ class RefereeAssignmentController extends Controller
         $referee = auth('api')->user();
         $perPage = (int) $request->get('per_page', 15);
         $page    = (int) $request->get('page', 1);
+        $filter  = $request->query('filter', $request->query('status', $request->query('type')));
 
-        $result = $this->service->getCampAssignedSlots($referee, $campId, $perPage, $page);
+        $result = $this->service->getCampAssignedSlots($referee, $campId, $perPage, $page, $filter);
 
         if (!$result['success']) {
             return $this->error($result['data'], $result['message'], $result['code']);

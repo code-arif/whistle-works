@@ -3,6 +3,7 @@
 namespace App\Services\Api\Referee;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Modules\Director\Models\Camp;
 use Modules\Director\Models\CampRefereeCheckin;
@@ -13,15 +14,63 @@ use Modules\Director\Models\GameSlotAssignment;
 class RefereeAssignmentService
 {
     /**
+     * Determine the timing status of a game slot ('past', 'ongoing', 'upcoming').
+     *
+     * @param  GameSlot  $gameSlot
+     * @param  Carbon|null  $now
+     * @return string
+     */
+    public function getSlotTimingStatus(GameSlot $gameSlot, ?Carbon $now = null): string
+    {
+        $now = $now ?? Carbon::now();
+
+        if ($gameSlot->status === 'completed') {
+            return 'past';
+        }
+
+        $dateStr = $gameSlot->game_date instanceof \DateTimeInterface
+            ? $gameSlot->game_date->format('Y-m-d')
+            : (string) $gameSlot->game_date;
+
+        try {
+            $startDateTime = Carbon::parse($dateStr . ' ' . $gameSlot->start_time);
+            $endDateTime   = Carbon::parse($dateStr . ' ' . $gameSlot->end_time);
+
+            if ($endDateTime->lt($startDateTime)) {
+                $endDateTime->addDay();
+            }
+
+            if ($now->gt($endDateTime)) {
+                return 'past';
+            }
+
+            if ($now->gte($startDateTime) && $now->lte($endDateTime)) {
+                return 'ongoing';
+            }
+
+            return 'upcoming';
+        } catch (\Throwable $e) {
+            $today = $now->toDateString();
+            if ($dateStr < $today) {
+                return 'past';
+            } elseif ($dateStr > $today) {
+                return 'upcoming';
+            }
+            return 'ongoing';
+        }
+    }
+
+    /**
      * Get all game slots assigned to referee for a specific camp (individual & crew merged).
      *
      * @param  User  $referee
      * @param  int|string  $campId
      * @param  int  $perPage
      * @param  int  $page
+     * @param  string|null  $filter
      * @return array
      */
-    public function getCampAssignedSlots(User $referee, $campId, int $perPage = 15, int $page = 1): array
+    public function getCampAssignedSlots(User $referee, $campId, int $perPage = 15, int $page = 1, ?string $filter = null): array
     {
         if (!$referee->hasRole('referee')) {
             return [
@@ -73,8 +122,6 @@ class RefereeAssignmentService
             ];
         }
 
-        $today = now()->toDateString();
-
         // 1. Individual assignments
         $individualAssignments = GameSlotAssignment::with([
             'gameSlot.location',
@@ -107,8 +154,24 @@ class RefereeAssignmentService
                 ->get();
         }
 
-        // 3. Merge & Deduplicate
-        $allAssignments = $individualAssignments->concat($crewAssignments);
+        // 3. Merge & Deduplicate by game_slot_id
+        $allAssignments = $individualAssignments->concat($crewAssignments)
+            ->filter(fn($a) => $a->gameSlot !== null)
+            ->unique('game_slot_id')
+            ->values();
+
+        // 4. Normalize filter keyword
+        $normalizedFilter = null;
+        if (!empty($filter)) {
+            $f = strtolower(trim((string) $filter));
+            if (in_array($f, ['past', 'completed', 'history', 'finished', 'previous'], true)) {
+                $normalizedFilter = 'past';
+            } elseif (in_array($f, ['ongoing', 'current', 'live', 'in_progress', 'present'], true)) {
+                $normalizedFilter = 'ongoing';
+            } elseif (in_array($f, ['upcoming', 'future', 'next'], true)) {
+                $normalizedFilter = 'upcoming';
+            }
+        }
 
         if ($allAssignments->isEmpty()) {
             return [
@@ -116,32 +179,80 @@ class RefereeAssignmentService
                 'code'    => 200,
                 'message' => 'No game slots assigned to you in this camp yet.',
                 'data'    => [
-                    'camp'              => $this->formatCamp($camp),
+                    'camp'          => $this->formatCamp($camp),
+                    'active_filter' => $normalizedFilter ?: 'all',
+                    'statistics'    => [
+                        'total_assigned_slots' => 0,
+                        'upcoming_slots'       => 0,
+                        'ongoing_slots'        => 0,
+                        'past_slots'           => 0,
+                        'completed_slots'      => 0,
+                    ],
                     'total_assignments' => 0,
                     'game_slots'        => [],
+                    'pagination'        => [
+                        'total'        => 0,
+                        'per_page'     => (int) $perPage,
+                        'current_page' => (int) $page,
+                        'last_page'    => 1,
+                    ],
                 ],
             ];
         }
 
-        $allAssignments = $allAssignments->sortBy(
-            fn($a) => $a->gameSlot->game_date->toDateString() . ' ' . $a->gameSlot->start_time
-        );
+        // 5. Calculate slot timing status using camp timezone if available
+        $now = Carbon::now();
+        if (!empty($camp->timezone)) {
+            try {
+                $now = Carbon::now($camp->timezone);
+            } catch (\Throwable $e) {
+                $now = Carbon::now();
+            }
+        }
 
-        $paginated = $allAssignments->forPage($page, $perPage);
-        $total     = $allAssignments->count();
-        $lastPage  = (int) ceil($total / $perPage);
+        foreach ($allAssignments as $assignment) {
+            $assignment->timing_status = $this->getSlotTimingStatus($assignment->gameSlot, $now);
+        }
 
-        // 4. Format slots
-        $seenSlotIds = [];
-        $gameSlots   = collect();
+        // Calculate statistics across all assigned slots
+        $totalSlots     = $allAssignments->count();
+        $upcomingSlots  = $allAssignments->where('timing_status', 'upcoming')->count();
+        $ongoingSlots   = $allAssignments->where('timing_status', 'ongoing')->count();
+        $pastSlots      = $allAssignments->where('timing_status', 'past')->count();
+        $completedSlots = $allAssignments->filter(fn($a) => $a->gameSlot->status === 'completed')->count();
+
+        // 6. Apply filter
+        if ($normalizedFilter) {
+            $filteredAssignments = $allAssignments->where('timing_status', $normalizedFilter)->values();
+        } else {
+            $filteredAssignments = $allAssignments;
+        }
+
+        // 7. Sort: past slots descending (most recent first), upcoming/ongoing ascending
+        if ($normalizedFilter === 'past') {
+            $filteredAssignments = $filteredAssignments->sortByDesc(
+                fn($a) => ($a->gameSlot->game_date instanceof \DateTimeInterface
+                    ? $a->gameSlot->game_date->format('Y-m-d')
+                    : (string) $a->gameSlot->game_date) . ' ' . $a->gameSlot->start_time
+            )->values();
+        } else {
+            $filteredAssignments = $filteredAssignments->sortBy(
+                fn($a) => ($a->gameSlot->game_date instanceof \DateTimeInterface
+                    ? $a->gameSlot->game_date->format('Y-m-d')
+                    : (string) $a->gameSlot->game_date) . ' ' . $a->gameSlot->start_time
+            )->values();
+        }
+
+        // 8. Paginate filtered slots
+        $total     = $filteredAssignments->count();
+        $paginated = $filteredAssignments->forPage($page, $perPage);
+        $lastPage  = $total > 0 ? (int) ceil($total / $perPage) : 1;
+
+        // 9. Format slots
+        $gameSlots = collect();
 
         foreach ($paginated as $assignment) {
             $gameSlot = $assignment->gameSlot;
-
-            if (in_array($gameSlot->id, $seenSlotIds, true)) {
-                continue;
-            }
-            $seenSlotIds[] = $gameSlot->id;
 
             $allSlotAssignments = $gameSlot->slotAssignments;
             $crewMembersList    = [];
@@ -191,15 +302,19 @@ class RefereeAssignmentService
             $gameSlots->push([
                 'game_slot_id'      => $gameSlot->id,
                 'assignment_source' => $assignmentSource,
+                'timing_status'     => $assignment->timing_status,
                 'crew_name'         => $crewNameIfVia,
                 'game_details'      => [
-                    'date'         => $gameSlot->game_date->toDateString(),
-                    'start_time'   => $gameSlot->start_time,
-                    'end_time'     => $gameSlot->end_time,
-                    'court_name'   => $gameSlot->court_name,
-                    'court_number' => $gameSlot->court_number,
-                    'status'       => $gameSlot->status,
-                    'is_blocked'   => (bool) $gameSlot->is_block,
+                    'date'          => $gameSlot->game_date instanceof \DateTimeInterface
+                        ? $gameSlot->game_date->toDateString()
+                        : (string) $gameSlot->game_date,
+                    'start_time'    => $gameSlot->start_time,
+                    'end_time'      => $gameSlot->end_time,
+                    'court_name'    => $gameSlot->court_name,
+                    'court_number'  => $gameSlot->court_number,
+                    'status'        => $gameSlot->status,
+                    'timing_status' => $assignment->timing_status,
+                    'is_blocked'    => (bool) $gameSlot->is_block,
                 ],
                 'location' => [
                     'id'        => $gameSlot->location->id ?? null,
@@ -209,7 +324,9 @@ class RefereeAssignmentService
                     'address'   => $gameSlot->location->address ?? null,
                 ],
                 'my_position'       => $assignment->position,
-                'assigned_at'       => $assignment->assigned_at->format('Y-m-d H:i:s'),
+                'assigned_at'       => $assignment->assigned_at instanceof \DateTimeInterface
+                    ? $assignment->assigned_at->format('Y-m-d H:i:s')
+                    : ($assignment->assigned_at ? (string) $assignment->assigned_at : null),
                 'is_auto_assigned'  => (bool) $assignment->is_auto_assigned,
                 'assigned_referees' => [
                     'total'    => count($allReferees),
@@ -218,20 +335,18 @@ class RefereeAssignmentService
             ]);
         }
 
-        $allFormatted   = $allAssignments->pluck('gameSlot');
-        $totalSlots     = $allFormatted->unique('id')->count();
-        $upcomingSlots  = $allFormatted->unique('id')->filter(fn($s) => $s->game_date->toDateString() >= $today)->count();
-        $completedSlots = $allFormatted->unique('id')->filter(fn($s) => $s->status === 'completed')->count();
-
         return [
             'success' => true,
             'code'    => 200,
             'message' => 'Your assigned game slots for this camp retrieved successfully.',
             'data'    => [
-                'camp'       => $this->formatCamp($camp),
-                'statistics' => [
+                'camp'          => $this->formatCamp($camp),
+                'active_filter' => $normalizedFilter ?: 'all',
+                'statistics'    => [
                     'total_assigned_slots' => $totalSlots,
                     'upcoming_slots'       => $upcomingSlots,
+                    'ongoing_slots'        => $ongoingSlots,
+                    'past_slots'           => $pastSlots,
                     'completed_slots'      => $completedSlots,
                 ],
                 'game_slots' => $gameSlots,

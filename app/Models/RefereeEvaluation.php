@@ -139,6 +139,30 @@ class RefereeEvaluation extends Model
         return false;
     }
 
+    /**
+     * Check if an evaluation can be deleted by the user.
+     * Only the camp director (or assigned assistant director) can delete evaluations.
+     */
+    public function canBeDeletedBy(User $user): bool
+    {
+        if (! $user->hasRole('director')) {
+            return false;
+        }
+
+        $camp = $this->camp;
+        if (! $camp) {
+            return false;
+        }
+
+        if ($camp->director_id === $user->id) {
+            return true;
+        }
+
+        return AssistantDirectorPermission::where('camp_id', $camp->id)
+            ->where('assistant_director_id', $user->id)
+            ->exists();
+    }
+
     public function canBeViewedBy(User $user): bool
     {
         // Referee can view their own submitted evaluations

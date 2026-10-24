@@ -628,13 +628,17 @@ class RefereeEvaluationService
     }
 
     /**
-     * Delete an evaluation.
+     * Delete an evaluation. Only the camp director can delete evaluations.
      *
+     * @param  User  $user
      * @param  int|string  $id
+     * @param  int|string|null  $campId
+     * @param  int|string|null  $refereeId
+     * @return array
      */
-    public function destroy(User $user, $id): array
+    public function destroy(User $user, $id, $campId = null, $refereeId = null): array
     {
-        $evaluation = RefereeEvaluation::find($id);
+        $evaluation = RefereeEvaluation::with('camp')->find($id);
 
         if (! $evaluation) {
             return [
@@ -645,15 +649,43 @@ class RefereeEvaluationService
             ];
         }
 
-        if (! $evaluation->canBeEditedBy($user)) {
+        if ($campId && (string) $evaluation->camp_id !== (string) $campId) {
             return [
                 'success' => false,
-                'code' => 403,
-                'message' => 'You do not have permission to delete this evaluation.',
+                'code' => 404,
+                'message' => 'Evaluation does not belong to this camp.',
                 'data' => [],
             ];
         }
 
+        if ($refereeId && (string) $evaluation->referee_id !== (string) $refereeId) {
+            return [
+                'success' => false,
+                'code' => 404,
+                'message' => 'Evaluation does not belong to this referee.',
+                'data' => [],
+            ];
+        }
+
+        if (! $user->hasRole('director')) {
+            return [
+                'success' => false,
+                'code' => 403,
+                'message' => 'Unauthorized. Only the camp director can delete evaluations.',
+                'data' => [],
+            ];
+        }
+
+        if (! $evaluation->canBeDeletedBy($user)) {
+            return [
+                'success' => false,
+                'code' => 403,
+                'message' => 'You can only delete evaluations from your own camps.',
+                'data' => [],
+            ];
+        }
+
+        $evaluation->recommendedLevels()->delete();
         $evaluation->delete();
 
         return [

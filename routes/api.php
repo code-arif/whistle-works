@@ -153,6 +153,7 @@ Route::middleware(['auth:api', 'role:director|evaluator|referee,api'])->group(fu
 
     Route::get('/roster/camp/details/{campId}', [RosterController::class, 'campDetails']); // Roster camp details
     Route::get('/camp/{campId}/referee/{refereeId}/history', [RefereeEvaluationController::class, 'getRefereeEvaluationHistory']); // Referee history
+    Route::delete('/camp/{campId}/referee/{refereeId}/evaluation/{evaluationId}', [RefereeEvaluationController::class, 'destroyRefereeEvaluation']); // Delete single evaluation (Director only)
     Route::get('/referee/evaluation/camp/{campId}', [RefereeEvaluationController::class, 'getEvaluationsByCamp']); // Referee evaluation history
     Route::get('/referee/evaluation/export/camp/{campId}', [RefereeEvaluationController::class, 'exportEvaluationsByCamp']); // Export referee evaluations
     Route::get('/referee-details/{campId}/{refereeId}', [RefereeDetailsController::class, 'getRefereeDetails']); // Referee details (profile, evaluations, assigned slots)
@@ -168,6 +169,7 @@ Route::middleware(['auth:api', 'role:referee'])->group(function () {
     // Get my evaluations (for logged-in referee)
     Route::get('/referee/my-evaluations/{campId}', [EvaluatedRefereeController::class, 'getRefereeEvaluations']);
     Route::get('/referee/my-evaluations/details/{id}', [EvaluatedRefereeController::class, 'getRefereeEvaluationDetails']);
+    Route::get('/camp/{campId}/assigned-slots', [RefereeAssignmentController::class, 'getCampAssignedSlots']);
 
     Route::prefix('referee')->group(function () {
         // Assignments & Slots
