@@ -272,14 +272,16 @@ class EvaluatorRefereeNoteService
             ];
         }
 
-        $referee = User::find($refereeId);
-        if (! $referee || ! $referee->hasRole('referee')) {
-            return [
-                'success' => false,
-                'code' => 404,
-                'message' => 'Invalid referee selected.',
-                'data' => [],
-            ];
+        if ($refereeId) {
+            $referee = User::find($refereeId);
+            if (! $referee || ! $referee->hasRole('referee')) {
+                return [
+                    'success' => false,
+                    'code' => 404,
+                    'message' => 'Invalid referee selected.',
+                    'data' => [],
+                ];
+            }
         }
 
         if ($gameSlotId) {

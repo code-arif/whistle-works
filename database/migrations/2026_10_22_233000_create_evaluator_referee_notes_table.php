@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('evaluator_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('camp_id')->constrained('camps')->onDelete('cascade');
-            $table->foreignId('referee_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('referee_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->foreignId('game_slot_id')->nullable()->constrained('game_slots')->onDelete('cascade');
             $table->text('note')->nullable();
             $table->timestamps();

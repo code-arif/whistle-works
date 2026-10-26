@@ -17,7 +17,7 @@ class SaveEvaluatorRefereeNoteRequest extends FormRequest
     {
         return [
             'camp_id' => ['required', 'integer', 'exists:camps,id'],
-            'referee_id' => ['required', 'integer', 'exists:users,id'],
+            'referee_id' => ['nullable', 'integer', 'exists:users,id'],
             'game_slot_id' => ['nullable', 'integer', 'exists:game_slots,id'],
             'note' => ['required', 'string', 'max:5000'],
         ];
