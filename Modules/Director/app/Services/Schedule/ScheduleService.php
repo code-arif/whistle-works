@@ -536,6 +536,7 @@ class ScheduleService
                             'status'             => $slot->status,
                             'is_blocked'         => $slot->is_block,
                             'mode'               => $slot->mode,
+                            'timezone'           => $campTimezone,
                             'start_time'         => $startTime->format('H:i'),
                             'end_time'           => $endTime->format('H:i'),
                             'start_time_display' => $startTime->format('h:i A'),
