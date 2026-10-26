@@ -128,6 +128,7 @@ class RosterService
                             'game_date'    => $gameSlot->game_date->toDateString(),
                             'start_time'   => $gameSlot->start_time,
                             'end_time'     => $gameSlot->end_time,
+                            'timezone'     => $camp->timezone ?? config('app.timezone', 'UTC'),
                             'court_name'   => $gameSlot->court_name,
                             'status'       => $gameSlot->status,
                             'is_block'     => $gameSlot->is_block,
