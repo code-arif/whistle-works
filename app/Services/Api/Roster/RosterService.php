@@ -64,6 +64,8 @@ class RosterService
         $isReferee = $user && $user->hasRole('referee') && ! $user->hasRole('director') && ! $user->hasRole('evaluator');
 
         $slotNotes = [];
+        $courtNotes = [];
+        $courtNoteIds = [];
         $generalNotes = [];
         $latestNotes = [];
         $directorNotes = collect();
@@ -75,12 +77,17 @@ class RosterService
 
             foreach ($evaluatorNotes as $noteModel) {
                 if ($noteModel->game_slot_id) {
-                    $slotNotes[$noteModel->game_slot_id . '_' . $noteModel->referee_id] = $noteModel->note;
-                } else {
+                    if (empty($noteModel->referee_id)) {
+                        $courtNotes[$noteModel->game_slot_id] = $noteModel->note;
+                        $courtNoteIds[$noteModel->game_slot_id] = $noteModel->id;
+                    } else {
+                        $slotNotes[$noteModel->game_slot_id . '_' . $noteModel->referee_id] = $noteModel->note;
+                    }
+                } elseif ($noteModel->referee_id) {
                     $generalNotes[$noteModel->referee_id] = $noteModel->note;
                 }
 
-                if (!isset($latestNotes[$noteModel->referee_id]) || $noteModel->id > ($latestNotes[$noteModel->referee_id]['id'] ?? 0)) {
+                if ($noteModel->referee_id && (!isset($latestNotes[$noteModel->referee_id]) || $noteModel->id > ($latestNotes[$noteModel->referee_id]['id'] ?? 0))) {
                     $latestNotes[$noteModel->referee_id] = ['id' => $noteModel->id, 'note' => $noteModel->note];
                 }
             }
@@ -122,8 +129,8 @@ class RosterService
                             'address'   => $location->address ?? null,
                         ];
                     }) ?? collect(),
-                    'game_courts' => $camp->schedule?->gameSlots->map(function ($gameSlot) use ($camp, $jerseyNumbers, $isEvaluator, $isReferee, $slotNotes, $generalNotes, $directorNotes) {
-                        return [
+                    'game_courts' => $camp->schedule?->gameSlots->map(function ($gameSlot) use ($camp, $jerseyNumbers, $isEvaluator, $isReferee, $slotNotes, $courtNotes, $courtNoteIds, $generalNotes, $directorNotes) {
+                        $courtData = [
                             'id'           => $gameSlot->id,
                             'game_date'    => $gameSlot->game_date->toDateString(),
                             'start_time'   => $gameSlot->start_time,
@@ -134,62 +141,70 @@ class RosterService
                             'is_block'     => $gameSlot->is_block,
                             'location'     => $gameSlot->location->location_name ?? 'N/A',
                             'address'      => $gameSlot->location->address ?? null,
-                            'assignments'  => $gameSlot->slotAssignments
-                                ->map(function ($assignment) use ($camp, $jerseyNumbers, $gameSlot, $isEvaluator, $isReferee, $slotNotes, $generalNotes, $directorNotes) {
-                                    if ($assignment->assignment_type === 'crew') {
-                                        return [
-                                            'type'             => 'crew',
-                                            'crew_id'          => $assignment->assignable_id,
-                                            'crew_name'        => $assignment->assignable->name ?? 'N/A',
-                                            'position'         => $assignment->position,
-                                            'is_auto_assigned' => $assignment->is_auto_assigned,
-                                            'jersey_number'    => $assignment->jourcy_number ?? null,
-                                            'note'             => null,
-                                            'notes'            => null,
-                                            'phone'            => $assignment->phone ?? null,
-                                            'address'          => $assignment->address ?? null,
-                                            'biography'        => $assignment->biography ?? null,
-                                            'sort_name'        => $assignment->assignable->name ?? 'N/A',
-                                        ];
-                                    }
+                        ];
 
-                                    $referee      = $assignment->assignable;
-                                    $refereeId    = $referee?->id;
-                                    $jerseyNumber = $refereeId ? ($jerseyNumbers[$refereeId] ?? null) : null;
+                        if ($isEvaluator) {
+                            $courtData['evaluator_note'] = $courtNotes[$gameSlot->id] ?? null;
+                            $courtData['evaluator_note_id'] = $courtNoteIds[$gameSlot->id] ?? null;
+                        }
 
-                                    if ($isEvaluator) {
-                                        $refereeNote = $slotNotes[$gameSlot->id . '_' . $refereeId]
-                                            ?? ($generalNotes[$refereeId] ?? null);
-                                    } elseif ($isReferee) {
-                                        $refereeNote = null;
-                                    } else {
-                                        $refereeNote = $refereeId ? ($directorNotes[$refereeId] ?? null) : null;
-                                    }
-
+                        $courtData['assignments'] = $gameSlot->slotAssignments
+                            ->map(function ($assignment) use ($camp, $jerseyNumbers, $gameSlot, $isEvaluator, $isReferee, $slotNotes, $generalNotes, $directorNotes) {
+                                if ($assignment->assignment_type === 'crew') {
                                     return [
-                                        'type'             => 'individual',
-                                        'referee_id'       => $refereeId,
-                                        'name'             => $referee ? trim($referee->first_name . ' ' . $referee->last_name) : 'N/A',
-                                        'avatar'           => $referee?->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
-                                        'email'            => $referee->email ?? null,
+                                        'type'             => 'crew',
+                                        'crew_id'          => $assignment->assignable_id,
+                                        'crew_name'        => $assignment->assignable->name ?? 'N/A',
                                         'position'         => $assignment->position,
                                         'is_auto_assigned' => $assignment->is_auto_assigned,
-                                        'jersey_number'    => $jerseyNumber,
-                                        'note'             => $refereeNote,
-                                        'notes'            => $refereeNote,
-                                        'phone'            => $referee->phone ?? null,
-                                        'address'          => $referee->address ?? null,
-                                        'biography'        => $referee->biography ?? null,
-                                        'sort_name'        => $referee ? ($referee->first_name . ' ' . $referee->last_name) : 'N/A',
+                                        'jersey_number'    => $assignment->jourcy_number ?? null,
+                                        'note'             => null,
+                                        'notes'            => null,
+                                        'phone'            => $assignment->phone ?? null,
+                                        'address'          => $assignment->address ?? null,
+                                        'biography'        => $assignment->biography ?? null,
+                                        'sort_name'        => $assignment->assignable->name ?? 'N/A',
                                     ];
-                                })
-                                ->sortBy('sort_name')
-                                ->map(function ($item) {
-                                    unset($item['sort_name']);
-                                    return $item;
-                                })
-                                ->values(),
-                        ];
+                                }
+
+                                $referee      = $assignment->assignable;
+                                $refereeId    = $referee?->id;
+                                $jerseyNumber = $refereeId ? ($jerseyNumbers[$refereeId] ?? null) : null;
+
+                                if ($isEvaluator) {
+                                    $refereeNote = $slotNotes[$gameSlot->id . '_' . $refereeId]
+                                        ?? ($generalNotes[$refereeId] ?? null);
+                                } elseif ($isReferee) {
+                                    $refereeNote = null;
+                                } else {
+                                    $refereeNote = $refereeId ? ($directorNotes[$refereeId] ?? null) : null;
+                                }
+
+                                return [
+                                    'type'             => 'individual',
+                                    'referee_id'       => $refereeId,
+                                    'name'             => $referee ? trim($referee->first_name . ' ' . $referee->last_name) : 'N/A',
+                                    'avatar'           => $referee?->avatar ? asset($referee->avatar) : asset('default/profile.jpg'),
+                                    'email'            => $referee->email ?? null,
+                                    'position'         => $assignment->position,
+                                    'is_auto_assigned' => $assignment->is_auto_assigned,
+                                    'jersey_number'    => $jerseyNumber,
+                                    'note'             => $refereeNote,
+                                    'notes'            => $refereeNote,
+                                    'phone'            => $referee->phone ?? null,
+                                    'address'          => $referee->address ?? null,
+                                    'biography'        => $referee->biography ?? null,
+                                    'sort_name'        => $referee ? ($referee->first_name . ' ' . $referee->last_name) : 'N/A',
+                                ];
+                            })
+                            ->sortBy('sort_name')
+                            ->map(function ($item) {
+                                unset($item['sort_name']);
+                                return $item;
+                            })
+                            ->values();
+
+                        return $courtData;
                     }) ?? collect(),
                 ],
                 'referees'    => $camp->checkedInReferees

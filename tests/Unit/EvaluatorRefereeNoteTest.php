@@ -447,4 +447,62 @@ class EvaluatorRefereeNoteTest extends TestCase
         $delRes->assertStatus(200)
             ->assertJsonPath('success', true);
     }
+
+    public function test_court_level_evaluator_note_in_game_courts_is_isolated_and_conditional(): void
+    {
+        $service = app(EvaluatorRefereeNoteService::class);
+
+        // Evaluator 1 writes a court-level note (referee_id is null)
+        $service->saveOrUpdateNote($this->evaluator, [
+            'camp_id' => $this->camp->id,
+            'referee_id' => null,
+            'game_slot_id' => $this->slot1->id,
+            'note' => 'Court 1 evaluator note.',
+        ]);
+
+        // 1. Evaluator 1 sees the evaluator_note on the court
+        $eval1Res = $this->actingAs($this->evaluator, 'api')
+            ->getJson("/api/roster/camp/details/{$this->camp->id}");
+        $eval1Res->assertStatus(200);
+
+        $eval1Courts = $eval1Res->json('data.camp.schedule.game_courts');
+        $eval1Slot1 = collect($eval1Courts)->firstWhere('id', $this->slot1->id);
+
+        $this->assertArrayHasKey('evaluator_note', $eval1Slot1);
+        $this->assertEquals('Court 1 evaluator note.', $eval1Slot1['evaluator_note']);
+        $this->assertNotNull($eval1Slot1['evaluator_note_id']);
+
+        // 2. Evaluator 2 CANNOT see Evaluator 1's court note (they see null)
+        $eval2Res = $this->actingAs($this->otherEvaluator, 'api')
+            ->getJson("/api/roster/camp/details/{$this->camp->id}");
+        $eval2Res->assertStatus(200);
+
+        $eval2Courts = $eval2Res->json('data.camp.schedule.game_courts');
+        $eval2Slot1 = collect($eval2Courts)->firstWhere('id', $this->slot1->id);
+
+        $this->assertArrayHasKey('evaluator_note', $eval2Slot1);
+        $this->assertNull($eval2Slot1['evaluator_note']);
+
+        // 3. Director does NOT see evaluator_note property at all
+        $dirRes = $this->actingAs($this->director, 'api')
+            ->getJson("/api/roster/camp/details/{$this->camp->id}");
+        $dirRes->assertStatus(200);
+
+        $dirCourts = $dirRes->json('data.camp.schedule.game_courts');
+        $dirSlot1 = collect($dirCourts)->firstWhere('id', $this->slot1->id);
+
+        $this->assertArrayNotHasKey('evaluator_note', $dirSlot1);
+        $this->assertArrayNotHasKey('evaluator_note_id', $dirSlot1);
+
+        // 4. Referee does NOT see evaluator_note property at all
+        $refRes = $this->actingAs($this->referee, 'api')
+            ->getJson("/api/roster/camp/details/{$this->camp->id}");
+        $refRes->assertStatus(200);
+
+        $refCourts = $refRes->json('data.camp.schedule.game_courts');
+        $refSlot1 = collect($refCourts)->firstWhere('id', $this->slot1->id);
+
+        $this->assertArrayNotHasKey('evaluator_note', $refSlot1);
+        $this->assertArrayNotHasKey('evaluator_note_id', $refSlot1);
+    }
 }
