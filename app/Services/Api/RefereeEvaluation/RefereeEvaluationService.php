@@ -667,14 +667,14 @@ class RefereeEvaluationService
             ];
         }
 
-        if (! $user->hasRole('director')) {
-            return [
-                'success' => false,
-                'code' => 403,
-                'message' => 'Unauthorized. Only the camp director can delete evaluations.',
-                'data' => [],
-            ];
-        }
+        // if (! $user->hasRole('director')) {
+        //     return [
+        //         'success' => false,
+        //         'code' => 403,
+        //         'message' => 'Unauthorized. Only the camp director can delete evaluations.',
+        //         'data' => [],
+        //     ];
+        // }
 
         if (! $evaluation->canBeDeletedBy($user)) {
             return [
