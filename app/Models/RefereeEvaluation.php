@@ -145,9 +145,9 @@ class RefereeEvaluation extends Model
      */
     public function canBeDeletedBy(User $user): bool
     {
-        if (! $user->hasRole('director')) {
-            return false;
-        }
+        // if (! $user->hasRole('director')) {
+        //     return false;
+        // }
 
         $camp = $this->camp;
         if (! $camp) {
