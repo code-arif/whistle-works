@@ -676,14 +676,14 @@ class RefereeEvaluationService
         //     ];
         // }
 
-        if (! $evaluation->canBeDeletedBy($user)) {
-            return [
-                'success' => false,
-                'code' => 403,
-                'message' => 'You can only delete evaluations from your own camps.',
-                'data' => [],
-            ];
-        }
+        // if (! $evaluation->canBeDeletedBy($user)) {
+        //     return [
+        //         'success' => false,
+        //         'code' => 403,
+        //         'message' => 'You can only delete evaluations from your own camps.',
+        //         'data' => [],
+        //     ];
+        // }
 
         $evaluation->recommendedLevels()->delete();
         $evaluation->delete();
