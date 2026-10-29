@@ -237,19 +237,7 @@ Route::middleware(['auth:api', 'role:director|evaluator,api'])->group(function (
         Route::post('/store', [EvaluatorRefereeNoteController::class, 'store']);
         Route::post('/update/{id}', [EvaluatorRefereeNoteController::class, 'update']);
         Route::delete('/destroy/{id}', [EvaluatorRefereeNoteController::class, 'destroy']);
-
-        // Route::get('/details/{id}', [EvaluatorRefereeNoteController::class, 'show']);
-        // Route::get('/find', [EvaluatorRefereeNoteController::class, 'getNote']);
-        // Route::get('/camp/{campId}/referee/{refereeId}', [EvaluatorRefereeNoteController::class, 'getNotesByReferee']);
     });
-
-    // Path-based evaluator note routes
-    // Route::prefix('evaluator/note')->group(function () {
-    //     Route::post('/camp/{campId}/slot/{gameSlotId}/referee/{refereeId}', [EvaluatorRefereeNoteController::class, 'saveNoteByPath']);
-    //     Route::patch('/camp/{campId}/slot/{gameSlotId}/referee/{refereeId}', [EvaluatorRefereeNoteController::class, 'saveNoteByPath']);
-    //     Route::get('/camp/{campId}/slot/{gameSlotId}/referee/{refereeId}', [EvaluatorRefereeNoteController::class, 'getNoteByPath']);
-    //     Route::delete('/camp/{campId}/slot/{gameSlotId}/referee/{refereeId}', [EvaluatorRefereeNoteController::class, 'deleteNoteByPath']);
-    // });
 });
 
 /*
