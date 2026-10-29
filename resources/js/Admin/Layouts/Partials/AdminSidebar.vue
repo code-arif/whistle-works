@@ -15,7 +15,10 @@ import {
   BookOpen,
   Sparkles,
   Terminal,
-  X
+  X,
+  ChevronDown,
+  FolderKanban,
+  Newspaper
 } from 'lucide-vue-next';
 
 defineProps({
@@ -50,6 +53,23 @@ const isCurrent = (href) => {
   return currentUrl.value.startsWith(href);
 };
 
+const collapsedSections = ref({});
+
+const isCollapsedOpen = (item) => {
+  if (collapsedSections.value[item.name] !== undefined) {
+    return collapsedSections.value[item.name];
+  }
+  return item.children?.some(child => isCurrent(child.href)) ?? false;
+};
+
+const toggleCollapse = (item) => {
+  collapsedSections.value[item.name] = !isCollapsedOpen(item);
+};
+
+const isParentActive = (item) => {
+  return item.children?.some(child => isCurrent(child.href)) ?? false;
+};
+
 const navGroups = [
   {
     name: 'Core Overview',
@@ -75,8 +95,15 @@ const navGroups = [
   {
     name: 'Content & CMS',
     items: [
-      { name: 'Home Page CMS', href: '/admin/v2/cms/home', icon: LayoutTemplate },
-      { name: 'About Page CMS', href: '/admin/v2/cms/about', icon: BookOpen },
+      {
+        name: 'Content Manage',
+        icon: FolderKanban,
+        children: [
+          { name: 'Home Page CMS', href: '/admin/v2/cms/home', icon: LayoutTemplate },
+          { name: 'About Page CMS', href: '/admin/v2/cms/about', icon: BookOpen },
+          { name: 'Blog', href: '#', icon: Newspaper, badge: 'In progress', disabled: true },
+        ]
+      },
     ]
   },
   {
@@ -148,42 +175,140 @@ const navGroups = [
           {{ group.name }}
         </p>
         <div class="space-y-1">
-          <Link
-            v-for="item in group.items"
-            :key="item.name"
-            :href="item.href"
-            :title="!isOpen ? item.name : undefined"
-            :class="[
-              isCurrent(item.href) 
-                ? 'bg-gradient-to-r from-[#F29F67]/15 via-[#F29F67]/10 to-transparent dark:from-[#F29F67]/20 dark:via-[#F29F67]/10 dark:to-transparent text-[#E08A50] dark:text-[#F29F67] border border-[#F29F67]/25 font-semibold shadow-xs' 
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-slate-100 border border-transparent',
-              isOpen ? 'px-3 py-2.5 gap-3' : 'px-0 py-2.5 justify-center',
-              'relative group flex items-center rounded-lg text-[13px] sm:text-sm transition-all duration-150'
-            ]"
-          >
-            <!-- Floating Active Left Accent Bar -->
-            <span 
-              v-if="isCurrent(item.href)" 
-              class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-[#F29F67] shadow-[0_0_8px_rgba(242,159,103,0.7)]"
-            ></span>
+          <template v-for="item in group.items" :key="item.name">
+            <!-- Collapsible Item with Sub-items -->
+            <div v-if="item.children" class="space-y-1">
+              <button
+                type="button"
+                @click="toggleCollapse(item)"
+                :title="!isOpen ? item.name : undefined"
+                :class="[
+                  isParentActive(item) 
+                    ? 'bg-gradient-to-r from-[#F29F67]/10 via-[#F29F67]/5 to-transparent dark:from-[#F29F67]/15 dark:via-[#F29F67]/5 dark:to-transparent text-slate-900 dark:text-white font-semibold' 
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-slate-100',
+                  isOpen ? 'px-3 py-2.5 gap-3' : 'px-0 py-2.5 justify-center',
+                  'relative group flex items-center w-full rounded-lg text-[13px] sm:text-sm transition-all duration-150 cursor-pointer text-left'
+                ]"
+              >
+                <!-- Floating Active Left Accent Bar when collapsed and child active -->
+                <span 
+                  v-if="isParentActive(item) && (!isCollapsedOpen(item) || !isOpen)" 
+                  class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-[#F29F67] shadow-[0_0_8px_rgba(242,159,103,0.7)]"
+                ></span>
 
-            <component 
-              :is="item.icon" 
+                <component 
+                  :is="item.icon" 
+                  :class="[
+                    isParentActive(item) 
+                      ? 'text-[#F29F67]' 
+                      : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200',
+                    'w-[18px] h-[18px] transition-colors flex-shrink-0'
+                  ]" 
+                />
+                <span v-show="isOpen" class="truncate flex-1">{{ item.name }}</span>
+
+                <!-- Chevron Indicator -->
+                <ChevronDown 
+                  v-show="isOpen"
+                  :class="[
+                    isCollapsedOpen(item) ? 'rotate-180' : '',
+                    'w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0'
+                  ]" 
+                />
+              </button>
+
+              <!-- Sub-items List -->
+              <div 
+                v-show="isCollapsedOpen(item) && isOpen" 
+                class="pl-3.5 space-y-1 ml-4 my-1 border-l border-slate-200/80 dark:border-white/[0.08]"
+              >
+                <component
+                  :is="child.disabled || !child.href || child.href === '#' ? 'button' : Link"
+                  v-for="child in item.children"
+                  :key="child.name"
+                  :href="child.disabled || !child.href || child.href === '#' ? undefined : child.href"
+                  :type="child.disabled || !child.href || child.href === '#' ? 'button' : undefined"
+                  :title="!isOpen ? child.name : undefined"
+                  :class="[
+                    !child.disabled && isCurrent(child.href) 
+                      ? 'bg-gradient-to-r from-[#F29F67]/15 via-[#F29F67]/10 to-transparent dark:from-[#F29F67]/20 dark:via-[#F29F67]/10 dark:to-transparent text-[#E08A50] dark:text-[#F29F67] border border-[#F29F67]/25 font-semibold shadow-xs' 
+                      : child.disabled
+                        ? 'text-slate-400 dark:text-slate-500 hover:bg-slate-100/50 dark:hover:bg-white/[0.03] cursor-default border border-transparent'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-slate-100 border border-transparent cursor-pointer',
+                    'relative group flex items-center w-full px-3 py-2 gap-2.5 rounded-lg text-xs sm:text-[13px] transition-all duration-150 text-left'
+                  ]"
+                >
+                  <!-- Floating Active Left Accent Bar on Child -->
+                  <span 
+                    v-if="!child.disabled && isCurrent(child.href)" 
+                    class="absolute -left-[15px] top-1/2 -translate-y-1/2 w-1 h-4 rounded-r-full bg-[#F29F67] shadow-[0_0_8px_rgba(242,159,103,0.7)]"
+                  ></span>
+
+                  <component 
+                    :is="child.icon" 
+                    :class="[
+                      !child.disabled && isCurrent(child.href) 
+                        ? 'text-[#F29F67]' 
+                        : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200',
+                      'w-4 h-4 transition-colors flex-shrink-0'
+                    ]" 
+                  />
+                  <span class="truncate">{{ child.name }}</span>
+
+                  <!-- In Progress Badge -->
+                  <span 
+                    v-if="child.badge" 
+                    class="ml-auto text-[9.5px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0 uppercase tracking-tight"
+                  >
+                    {{ child.badge }}
+                  </span>
+
+                  <!-- Active Status Micro-dot -->
+                  <span 
+                    v-else-if="!child.disabled && isCurrent(child.href)" 
+                    class="ml-auto w-1.5 h-1.5 rounded-full bg-[#F29F67] shadow-[0_0_8px_rgba(242,159,103,0.8)] shrink-0"
+                  ></span>
+                </component>
+              </div>
+            </div>
+
+            <!-- Standard Single Item -->
+            <Link
+              v-else
+              :href="item.href"
+              :title="!isOpen ? item.name : undefined"
               :class="[
                 isCurrent(item.href) 
-                  ? 'text-[#F29F67]' 
-                  : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200',
-                'w-[18px] h-[18px] transition-colors flex-shrink-0'
-              ]" 
-            />
-            <span v-show="isOpen" class="truncate">{{ item.name }}</span>
+                  ? 'bg-gradient-to-r from-[#F29F67]/15 via-[#F29F67]/10 to-transparent dark:from-[#F29F67]/20 dark:via-[#F29F67]/10 dark:to-transparent text-[#E08A50] dark:text-[#F29F67] border border-[#F29F67]/25 font-semibold shadow-xs' 
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-slate-100 border border-transparent',
+                isOpen ? 'px-3 py-2.5 gap-3' : 'px-0 py-2.5 justify-center',
+                'relative group flex items-center rounded-lg text-[13px] sm:text-sm transition-all duration-150'
+              ]"
+            >
+              <!-- Floating Active Left Accent Bar -->
+              <span 
+                v-if="isCurrent(item.href)" 
+                class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-[#F29F67] shadow-[0_0_8px_rgba(242,159,103,0.7)]"
+              ></span>
 
-            <!-- Active Status Micro-dot -->
-            <span 
-              v-if="isCurrent(item.href) && isOpen" 
-              class="ml-auto w-1.5 h-1.5 rounded-full bg-[#F29F67] shadow-[0_0_8px_rgba(242,159,103,0.8)] shrink-0"
-            ></span>
-          </Link>
+              <component 
+                :is="item.icon" 
+                :class="[
+                  isCurrent(item.href) 
+                    ? 'text-[#F29F67]' 
+                    : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200',
+                  'w-[18px] h-[18px] transition-colors flex-shrink-0'
+                ]" 
+              />
+              <span v-show="isOpen" class="truncate">{{ item.name }}</span>
+
+              <!-- Active Status Micro-dot -->
+              <span 
+                v-if="isCurrent(item.href) && isOpen" 
+                class="ml-auto w-1.5 h-1.5 rounded-full bg-[#F29F67] shadow-[0_0_8px_rgba(242,159,103,0.8)] shrink-0"
+              ></span>
+            </Link>
+          </template>
         </div>
       </div>
     </div>

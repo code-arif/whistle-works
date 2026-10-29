@@ -53,6 +53,7 @@ const props = defineProps({
 
 // Active Tab
 const activeTab = ref('overview'); // 'overview' | 'config' | 'users'
+const selectedChartIdx = ref(null);
 
 // Settings Form
 const showOpenAiKey = ref(false);
@@ -406,14 +407,14 @@ const areaPathD = computed(() => {
     </div>
 
     <!-- 3. Navigation Tabs -->
-    <div class="flex border-b border-slate-200 dark:border-white/[0.08] gap-1 sm:gap-2">
+    <div class="flex border-b border-slate-200 dark:border-white/[0.08] gap-1 sm:gap-2 overflow-x-auto no-scrollbar">
       <button
         @click="activeTab = 'overview'"
         :class="[
           activeTab === 'overview'
             ? 'border-[#F29F67] text-[#E08A50] dark:text-[#F29F67] dark:border-[#F29F67] font-bold'
             : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200',
-          'flex items-center gap-2 py-3 px-3.5 sm:px-4 border-b-2 font-medium text-xs sm:text-sm transition-colors cursor-pointer'
+          'flex items-center gap-2 py-3 px-3.5 sm:px-4 border-b-2 font-medium text-xs sm:text-sm transition-colors cursor-pointer shrink-0'
         ]"
       >
         <BarChart3 class="w-4 h-4" />
@@ -426,7 +427,7 @@ const areaPathD = computed(() => {
           activeTab === 'config'
             ? 'border-[#F29F67] text-[#E08A50] dark:text-[#F29F67] dark:border-[#F29F67] font-bold'
             : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200',
-          'flex items-center gap-2 py-3 px-3.5 sm:px-4 border-b-2 font-medium text-xs sm:text-sm transition-colors cursor-pointer'
+          'flex items-center gap-2 py-3 px-3.5 sm:px-4 border-b-2 font-medium text-xs sm:text-sm transition-colors cursor-pointer shrink-0'
         ]"
       >
         <Sliders class="w-4 h-4" />
@@ -439,7 +440,7 @@ const areaPathD = computed(() => {
           activeTab === 'users'
             ? 'border-[#F29F67] text-[#E08A50] dark:text-[#F29F67] dark:border-[#F29F67] font-bold'
             : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200',
-          'flex items-center gap-2 py-3 px-3.5 sm:px-4 border-b-2 font-medium text-xs sm:text-sm transition-colors cursor-pointer'
+          'flex items-center gap-2 py-3 px-3.5 sm:px-4 border-b-2 font-medium text-xs sm:text-sm transition-colors cursor-pointer shrink-0'
         ]"
       >
         <Users class="w-4 h-4" />
@@ -451,32 +452,51 @@ const areaPathD = computed(() => {
     <div v-if="activeTab === 'overview'" class="space-y-5 sm:space-y-6">
       <!-- 14-Day Usage Trend Visualization -->
       <div class="rounded-lg bg-white dark:bg-[#262638] border border-slate-200 dark:border-white/[0.08] shadow-xs p-4 sm:p-5 space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
           <div>
-            <h3 class="text-base font-bold font-display text-slate-900 dark:text-white tracking-tight">14-Day Query Volume Trend</h3>
+            <h3 class="text-sm sm:text-base font-bold font-display text-slate-900 dark:text-white tracking-tight">14-Day Query Volume Trend</h3>
             <p class="text-xs text-slate-500 dark:text-slate-400">Daily conversational turns and tool executions</p>
           </div>
-          <span class="text-[11px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] px-2.5 py-1 rounded-md">
-            Last 14 Days
-          </span>
+          <div class="flex items-center gap-2 self-start sm:self-auto">
+            <span class="text-[11px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#1E1E2C] border border-slate-200 dark:border-white/[0.08] px-2.5 py-1 rounded-md shrink-0">
+              Last 14 Days
+            </span>
+          </div>
         </div>
 
-        <div class="h-44 flex items-end gap-2 pt-6 pb-2 px-2 border-b border-slate-100 dark:border-white/[0.06]">
-          <div 
-            v-for="(label, idx) in metrics.chart_data?.labels || []" 
-            :key="idx" 
-            class="flex-1 flex flex-col items-center gap-2 group relative"
-          >
-            <div 
-              class="w-full bg-[#F29F67] hover:bg-[#E08A50] rounded-t transition-all duration-300 relative cursor-pointer"
-              :style="{ height: `${Math.max(8, ((metrics.chart_data.queries[idx] || 0) / (Math.max(...(metrics.chart_data.queries || [1]), 1))) * 120)}px` }"
-            >
-              <!-- Tooltip -->
-              <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-[#181824] border border-slate-700 dark:border-white/[0.1] text-white text-[11px] font-mono font-semibold py-1 px-2.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg pointer-events-none z-10">
-                {{ metrics.chart_data.queries[idx] }} queries ({{ (metrics.chart_data.tokens[idx] || 0).toLocaleString() }} tok)
+        <div class="relative">
+          <div class="overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
+            <div class="h-44 min-w-[560px] sm:min-w-0 flex items-end gap-1.5 sm:gap-2 pt-8 pb-2 px-2 border-b border-slate-100 dark:border-white/[0.06]">
+              <div 
+                v-for="(label, idx) in metrics.chart_data?.labels || []" 
+                :key="idx" 
+                class="flex-1 flex flex-col items-center gap-2 group relative"
+                @click="selectedChartIdx = selectedChartIdx === idx ? null : idx"
+              >
+                <div 
+                  class="w-full bg-[#F29F67] hover:bg-[#E08A50] rounded-t transition-all duration-300 relative cursor-pointer"
+                  :class="selectedChartIdx === idx ? 'bg-[#E08A50] ring-2 ring-[#F29F67]/50 ring-offset-1 dark:ring-offset-[#262638]' : ''"
+                  :style="{ height: `${Math.max(8, ((metrics.chart_data.queries[idx] || 0) / (Math.max(...(metrics.chart_data.queries || [1]), 1))) * 120)}px` }"
+                >
+                  <!-- Tooltip -->
+                  <div 
+                    :class="[
+                      selectedChartIdx === idx ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+                      'absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-[#181824] border border-slate-700 dark:border-white/[0.1] text-white text-[11px] font-mono font-semibold py-1 px-2.5 rounded-md transition-opacity whitespace-nowrap shadow-lg pointer-events-none z-20'
+                    ]"
+                  >
+                    {{ metrics.chart_data.queries[idx] }} queries ({{ (metrics.chart_data.tokens[idx] || 0).toLocaleString() }} tok)
+                  </div>
+                </div>
+                <span class="text-[10px] text-slate-400 dark:text-slate-500 font-mono font-medium truncate w-full text-center">{{ label }}</span>
               </div>
             </div>
-            <span class="text-[10px] text-slate-400 dark:text-slate-500 font-mono font-medium truncate w-full text-center">{{ label }}</span>
+          </div>
+          <!-- Mobile Scroll Indicator Hint -->
+          <div class="flex items-center justify-between sm:hidden pt-1.5 px-1 text-[10px] font-mono text-slate-400 dark:text-slate-500">
+            <span>&larr; Earlier</span>
+            <span class="italic">Swipe to view all 14 days</span>
+            <span>Recent &rarr;</span>
           </div>
         </div>
       </div>
@@ -1167,23 +1187,23 @@ const areaPathD = computed(() => {
           </div>
 
           <!-- Active Hovered Point Info Pill -->
-          <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-200/60 dark:border-white/[0.06] mb-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs pb-2 border-b border-slate-200/60 dark:border-white/[0.06] mb-2">
             <span class="text-[11px] font-mono text-slate-500 dark:text-slate-400">
               {{ graphMetric === 'queries' ? 'Daily Prompt & Query Turn Trends' : 'Daily Token Consumption Trends' }}
             </span>
-            <span v-if="hoveredPoint" class="font-mono text-xs font-bold text-slate-900 dark:text-white bg-white dark:bg-[#262638] px-2 py-0.5 rounded border border-slate-200 dark:border-white/[0.08] shadow-2xs">
+            <span v-if="hoveredPoint" class="font-mono text-xs font-bold text-slate-900 dark:text-white bg-white dark:bg-[#262638] px-2 py-0.5 rounded border border-slate-200 dark:border-white/[0.08] shadow-2xs self-start sm:self-auto">
               {{ hoveredPoint.label }}: <span :class="graphMetric === 'queries' ? 'text-[#F29F67]' : 'text-[#34B1AA]'">{{ hoveredPoint.value.toLocaleString() }} {{ graphMetric }}</span> ({{ hoveredPoint.tokens.toLocaleString() }} tok)
             </span>
             <span v-else class="text-[10px] font-mono text-slate-400">
-              Hover on nodes for details
+              Hover or tap on nodes for details
             </span>
           </div>
 
           <!-- Interactive SVG Line Chart -->
-          <div class="w-full overflow-x-auto">
+          <div class="w-full overflow-x-auto pb-1">
             <svg 
               viewBox="0 0 560 160" 
-              class="w-full h-40 overflow-visible select-none"
+              class="w-full min-w-[500px] sm:min-w-0 h-40 overflow-visible select-none"
             >
               <defs>
                 <!-- Queries Gradient -->
