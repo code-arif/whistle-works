@@ -15,6 +15,7 @@ class CampRefereeCheckin extends Model
     protected $casts = [
         'registered_at' => 'datetime',
         'checked_in_at' => 'datetime',
+        'can_view_evaluations' => 'boolean',
     ];
 
     protected $hidden = [

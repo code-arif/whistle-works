@@ -50,6 +50,24 @@ class EvaluatedRefereeService
             ];
         }
 
+        if (isset($camp->publish_evaluations_for_referees) && ! $camp->publish_evaluations_for_referees) {
+            return [
+                'success' => false,
+                'code' => 403,
+                'message' => 'You do not have permission to view evaluations for this camp. Contact the director.',
+                'data' => [],
+            ];
+        }
+
+        if (isset($checkin->can_view_evaluations) && ! $checkin->can_view_evaluations) {
+            return [
+                'success' => false,
+                'code' => 403,
+                'message' => 'You do not have permission to view evaluations for this camp. Contact the director.',
+                'data' => [],
+            ];
+        }
+
         $evaluations = RefereeEvaluation::with(['evaluator', 'camp', 'gameSlot', 'recommendedLevels'])
             ->forReferee($user->id)
             ->where('camp_id', $campId)
@@ -315,6 +333,29 @@ class EvaluatedRefereeService
         }
 
         $camp = $evaluation->camp;
+
+        if ($camp && isset($camp->publish_evaluations_for_referees) && ! $camp->publish_evaluations_for_referees) {
+            return [
+                'success' => false,
+                'code' => 403,
+                'message' => 'You do not have permission to view evaluation details for this camp. Contact the director.',
+                'data' => [],
+            ];
+        }
+
+        $checkin = CampRefereeCheckin::where('camp_id', $evaluation->camp_id)
+            ->where('referee_id', $user->id)
+            ->first();
+
+        if (isset($checkin->can_view_evaluations) && ! $checkin->can_view_evaluations) {
+            return [
+                'success' => false,
+                'code' => 403,
+                'message' => 'You do not have permission to view evaluation details for this camp. Contact the director.',
+                'data' => [],
+            ];
+        }
+
         $jerseyNumber = CampRefereeJearsyNumber::where('camp_id', $evaluation->camp_id)
             ->where('referee_id', $user->id)
             ->value('jersey_number');

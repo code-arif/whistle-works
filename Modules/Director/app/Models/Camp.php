@@ -25,6 +25,11 @@ class Camp extends Model
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
         'price' => 'decimal:2',
+        'publish_ranking_for_evaluators' => 'boolean',
+        'hide_evaluator_name_from_referees' => 'boolean',
+        'hide_ranking_numbers_from_referees' => 'boolean',
+        'publish_ranking_for_referees' => 'boolean',
+        'publish_evaluations_for_referees' => 'boolean',
     ];
 
     protected $appends = [

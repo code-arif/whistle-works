@@ -13,6 +13,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Modules\Director\Models\Camp;
+use Modules\Director\Models\CampRefereeCheckin;
 
 class CampService
 {
@@ -444,6 +445,13 @@ class CampService
         }
         if (array_key_exists('publish_ranking_for_referees', $data)) {
             $camp->publish_ranking_for_referees = filter_var($data['publish_ranking_for_referees'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (array_key_exists('publish_evaluations_for_referees', $data)) {
+            $camp->publish_evaluations_for_referees = filter_var($data['publish_evaluations_for_referees'], FILTER_VALIDATE_BOOLEAN);
+            CampRefereeCheckin::where('camp_id', $camp->id)
+                ->update([
+                    'can_view_evaluations' => $camp->publish_evaluations_for_referees,
+                ]);
         }
 
         $camp->save();

@@ -9,6 +9,7 @@ use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Director\Models\Camp;
+use Modules\Director\Models\CampRefereeCheckin;
 
 class CampRankingSettingsService
 {
@@ -57,12 +58,13 @@ class CampRankingSettingsService
         }
 
         $settings = [
-            'camp_id'                => $camp->id,
-            'camp_name'              => $camp->camp_name,
-            'publish_for_evaluators' => $camp->publish_ranking_for_evaluators ?? true,
-            'hide_evaluator_name'    => $camp->hide_evaluator_name_from_referees ?? false,
-            'hide_ranking_numbers'   => $camp->hide_ranking_numbers_from_referees ?? false,
-            'publish_for_referees'   => $camp->publish_ranking_for_referees ?? false,
+            'camp_id'                          => $camp->id,
+            'camp_name'                        => $camp->camp_name,
+            'publish_for_evaluators'           => (bool) ($camp->publish_ranking_for_evaluators ?? true),
+            'hide_evaluator_name'              => (bool) ($camp->hide_evaluator_name_from_referees ?? false),
+            'hide_ranking_numbers'             => (bool) ($camp->hide_ranking_numbers_from_referees ?? false),
+            'publish_for_referees'             => (bool) ($camp->publish_ranking_for_referees ?? false),
+            'publish_evaluations_for_referees' => (bool) ($camp->publish_evaluations_for_referees ?? true),
         ];
 
         return [
@@ -141,6 +143,15 @@ class CampRankingSettingsService
                 $camp->publish_ranking_for_referees = $validated['publish_for_referees'];
             }
 
+            if (isset($validated['publish_evaluations_for_referees'])) {
+                $camp->publish_evaluations_for_referees = (bool) $validated['publish_evaluations_for_referees'];
+
+                CampRefereeCheckin::where('camp_id', $campId)
+                    ->update([
+                        'can_view_evaluations' => (bool) $validated['publish_evaluations_for_referees'],
+                    ]);
+            }
+
             if (isset($validated['publish_for_evaluators'])) {
                 $camp->publish_ranking_for_evaluators = $validated['publish_for_evaluators'];
 
@@ -155,12 +166,13 @@ class CampRankingSettingsService
             DB::commit();
 
             $settings = [
-                'camp_id'                => $camp->id,
-                'camp_name'              => $camp->camp_name,
-                'publish_for_evaluators' => $camp->publish_ranking_for_evaluators ?? true,
-                'hide_evaluator_name'    => $camp->hide_evaluator_name_from_referees ?? false,
-                'hide_ranking_numbers'   => $camp->hide_ranking_numbers_from_referees ?? false,
-                'publish_for_referees'   => $camp->publish_ranking_for_referees ?? false,
+                'camp_id'                          => $camp->id,
+                'camp_name'                        => $camp->camp_name,
+                'publish_for_evaluators'           => (bool) ($camp->publish_ranking_for_evaluators ?? true),
+                'hide_evaluator_name'              => (bool) ($camp->hide_evaluator_name_from_referees ?? false),
+                'hide_ranking_numbers'             => (bool) ($camp->hide_ranking_numbers_from_referees ?? false),
+                'publish_for_referees'             => (bool) ($camp->publish_ranking_for_referees ?? false),
+                'publish_evaluations_for_referees' => (bool) ($camp->publish_evaluations_for_referees ?? true),
             ];
 
             return [
@@ -258,6 +270,105 @@ class CampRankingSettingsService
                 'exception'    => $e,
                 'camp_id'      => $campId,
                 'evaluator_id' => $evaluatorId,
+            ]);
+
+            return [
+                'success' => false,
+                'code'    => 500,
+                'message' => 'Failed to update permission: ' . $e->getMessage(),
+                'data'    => [],
+            ];
+        }
+    }
+
+    /**
+     * Toggle individual referee's permission to view evaluations.
+     *
+     * @param  User  $user
+     * @param  int|string  $campId
+     * @param  int|string  $refereeId
+     * @param  bool  $canViewEvaluations
+     * @return array
+     */
+    public function toggleRefereePermission(User $user, $campId, $refereeId, bool $canViewEvaluations): array
+    {
+        if (!$user->hasRole('director')) {
+            return [
+                'success' => false,
+                'code'    => 403,
+                'message' => 'Only directors can manage referee permissions.',
+                'data'    => [],
+            ];
+        }
+
+        $camp = Camp::find($campId);
+
+        if (!$camp) {
+            return [
+                'success' => false,
+                'code'    => 404,
+                'message' => 'Camp not found.',
+                'data'    => [],
+            ];
+        }
+
+        if ($camp->director_id !== $user->id) {
+            $permission = AssistantDirectorPermission::where('camp_id', $camp->id)
+                ->where('assistant_director_id', $user->id)
+                ->first();
+
+            if (!$permission || (! $permission->manage_ranking_reports && ! $permission->manage_roster_referees)) {
+                return [
+                    'success' => false,
+                    'code'    => 403,
+                    'message' => 'You can only manage referees for your own camps.',
+                    'data'    => [],
+                ];
+            }
+        }
+
+        $referee = User::find($refereeId);
+        if (!$referee || !$referee->hasRole('referee')) {
+            return [
+                'success' => false,
+                'code'    => 404,
+                'message' => 'Referee not found.',
+                'data'    => [],
+            ];
+        }
+
+        $checkin = CampRefereeCheckin::where('camp_id', $campId)
+            ->where('referee_id', $refereeId)
+            ->first();
+
+        if (!$checkin) {
+            return [
+                'success' => false,
+                'code'    => 404,
+                'message' => 'Referee registration not found for this camp.',
+                'data'    => [],
+            ];
+        }
+
+        try {
+            $checkin->can_view_evaluations = $canViewEvaluations;
+            $checkin->save();
+
+            return [
+                'success' => true,
+                'code'    => 200,
+                'message' => 'Referee permission updated successfully.',
+                'data'    => [
+                    'referee_id'           => (int) $refereeId,
+                    'camp_id'              => (int) $campId,
+                    'can_view_evaluations' => (bool) $checkin->can_view_evaluations,
+                ],
+            ];
+        } catch (Exception $e) {
+            Log::error('Failed to update referee permission: ' . $e->getMessage(), [
+                'exception'  => $e,
+                'camp_id'    => $campId,
+                'referee_id' => $refereeId,
             ]);
 
             return [

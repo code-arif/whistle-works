@@ -41,6 +41,7 @@ class CheckedInRefereeResource extends JsonResource
                 : asset('default/profile.jpg'),
 
             'jourcy_number' => $jersey,
+            'can_view_evaluations' => (bool) ($this->can_view_evaluations ?? true),
             'note'          => $this->refereeNotes[$refereeId] ?? null,
             'notes'         => $this->refereeNotes[$refereeId] ?? null,
         ];

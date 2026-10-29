@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\CampRanking;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\CampRanking\ToggleEvaluatorPermissionRequest;
+use App\Http\Requests\Api\CampRanking\ToggleRefereePermissionRequest;
 use App\Http\Requests\Api\CampRanking\UpdateRankingSettingsRequest;
 use App\Services\Api\CampRanking\CampRankingSettingsService;
 use App\Traits\ApiResponse;
@@ -76,6 +77,32 @@ class CampRankingSettingsController extends Controller
             $user,
             $campId,
             $evaluatorId,
+            (bool) $request->validated('can_view_evaluations')
+        );
+
+        if (!$result['success']) {
+            return $this->error($result['data'], $result['message'], $result['code']);
+        }
+
+        return $this->success($result['message'], $result['data']);
+    }
+
+    /**
+     * Toggle individual referee's permission to view evaluations.
+     *
+     * @param  ToggleRefereePermissionRequest  $request
+     * @param  int|string  $campId
+     * @param  int|string  $refereeId
+     * @return JsonResponse
+     */
+    public function toggleRefereePermission(ToggleRefereePermissionRequest $request, $campId, $refereeId): JsonResponse
+    {
+        $user = auth('api')->user();
+
+        $result = $this->service->toggleRefereePermission(
+            $user,
+            $campId,
+            $refereeId,
             (bool) $request->validated('can_view_evaluations')
         );
 

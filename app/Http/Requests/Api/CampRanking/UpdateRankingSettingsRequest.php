@@ -20,6 +20,7 @@ class UpdateRankingSettingsRequest extends FormRequest
             'hide_evaluator_name'    => 'sometimes|boolean',
             'hide_ranking_numbers'   => 'sometimes|boolean',
             'publish_for_referees'   => 'sometimes|boolean',
+            'publish_evaluations_for_referees' => 'sometimes|boolean',
         ];
     }
 
