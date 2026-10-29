@@ -287,7 +287,7 @@ Route::middleware(['auth:api', 'role:director,api'])->group(function () {
         Route::get('/', [CampRankingSettingsController::class, 'getRankingSettings']);
         Route::put('/', [CampRankingSettingsController::class, 'updateRankingSettings']);
         Route::put('/evaluator/{evaluatorId}/toggle-permission', [CampRankingSettingsController::class, 'toggleEvaluatorPermission']);
-        Route::put('/referee/{refereeId}/toggle-permission', [CampRankingSettingsController::class, 'toggleRefereePermission']);
+        Route::put('/referee/{refereeId}/toggle-permission', [CampRankingSettingsController::class, 'toggleRefereePermission']); // Hide or show evaluations for specific referee
     });
 });
 
