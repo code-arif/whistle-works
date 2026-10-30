@@ -205,6 +205,7 @@ class EvaluatedRefereeService
             'settings' => [
                 'hide_evaluator_name' => $camp->hide_evaluator_name_from_referees,
                 'hide_ranking_numbers' => $camp->hide_ranking_numbers_from_referees,
+                'can_view_evaluations' => $camp->publish_evaluations_for_referees
             ],
         ];
 
