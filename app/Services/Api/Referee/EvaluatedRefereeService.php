@@ -50,23 +50,23 @@ class EvaluatedRefereeService
             ];
         }
 
-        if (isset($camp->publish_evaluations_for_referees) && ! $camp->publish_evaluations_for_referees) {
-            return [
-                'success' => false,
-                'code' => 403,
-                'message' => 'You do not have permission to view evaluations for this camp. Contact the director.',
-                'data' => [],
-            ];
-        }
+        // if (isset($camp->publish_evaluations_for_referees) && ! $camp->publish_evaluations_for_referees) {
+        //     return [
+        //         'success' => false,
+        //         'code' => 403,
+        //         'message' => 'You do not have permission to view evaluations for this camp. Contact the director.',
+        //         'data' => [],
+        //     ];
+        // }
 
-        if (isset($checkin->can_view_evaluations) && ! $checkin->can_view_evaluations) {
-            return [
-                'success' => false,
-                'code' => 403,
-                'message' => 'You do not have permission to view evaluations for this camp. Contact the director.',
-                'data' => [],
-            ];
-        }
+        // if (isset($checkin->can_view_evaluations) && ! $checkin->can_view_evaluations) {
+        //     return [
+        //         'success' => false,
+        //         'code' => 403,
+        //         'message' => 'You do not have permission to view evaluations for this camp. Contact the director.',
+        //         'data' => [],
+        //     ];
+        // }
 
         $evaluations = RefereeEvaluation::with(['evaluator', 'camp', 'gameSlot', 'recommendedLevels'])
             ->forReferee($user->id)
